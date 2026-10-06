@@ -27,7 +27,7 @@
                     @csrf
                     <div>
                         <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Correo Electrónico</label>
-                        <input type="email" name="email" value="{{ old('email') }}" class="input w-full" placeholder="admin@example.com" required autofocus>
+                        <input type="email" name="email" value="{{ old('email') }}" class="input w-full" placeholder="tu@correo.com" required autofocus>
                     </div>
                     <div>
                         <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Contraseña</label>
@@ -43,20 +43,6 @@
                         Ingresar al Panel
                     </button>
                 </form>
-
-                <div class="mt-6 pt-5 border-t border-border text-center space-y-2">
-                    <p class="text-text-muted text-xs font-medium">Cuentas disponibles para pruebas:</p>
-                    <div class="flex flex-col gap-1.5 text-xs">
-                        <div>
-                            <span class="text-text-secondary">Admin:</span>
-                            <code class="text-primary bg-surface px-2 py-0.5 rounded ml-1">admin@example.com / password</code>
-                        </div>
-                        <div>
-                            <span class="text-text-secondary">User:</span>
-                            <code class="text-text bg-surface px-2 py-0.5 rounded ml-1">user@example.com / password</code>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
