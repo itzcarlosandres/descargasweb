@@ -331,6 +331,23 @@ class ScraperController extends Controller
     }
 
     /**
+     * Instant toggle of automated Cron status
+     */
+    public function toggleCron(Request $request): JsonResponse
+    {
+        $current = (bool) Setting::get('scraper_cron_enabled', false);
+        $new = ! $current;
+        Setting::set('scraper_cron_enabled', $new ? 1 : 0, 'scraper');
+        Setting::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'cron_enabled' => $new,
+            'message' => $new ? 'Cron activado exitosamente.' : 'Cron pausado.',
+        ]);
+    }
+
+    /**
      * Get paginated latest programs from TorrentMac (with category filter support)
      */
     public function getTorrentmacLatest(Request $request): JsonResponse

@@ -579,16 +579,51 @@
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Versiones Guardadas</span>
             <div class="text-2xl font-black text-success font-mono">{{ number_format($stats['total_versions']) }}</div>
         </div>
-        <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow">
-            <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Estado de Cron</span>
+        <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow" x-data="{
+            cronActive: {{ $stats['cron_enabled'] ? 'true' : 'false' }},
+            togglingCron: false,
+            async toggleCron() {
+                this.togglingCron = true;
+                try {
+                    const res = await fetch('{{ route('admin.scraper.toggle-cron') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.cronActive = data.cron_enabled;
+                    }
+                } catch (e) {
+                    alert('Error al cambiar estado de cron');
+                } finally {
+                    this.togglingCron = false;
+                }
+            }
+        }">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block">Estado de Cron</span>
+                <button type="button" @click="toggleCron()" :disabled="togglingCron"
+                        class="text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all cursor-pointer"
+                        :class="cronActive ? 'bg-danger/15 border-danger/30 text-danger hover:bg-danger/25' : 'bg-success/15 border-success/30 text-success hover:bg-success/25'"
+                        x-text="togglingCron ? '...' : (cronActive ? 'Pausar' : 'Activar Ahora')">
+                </button>
+            </div>
             <div class="flex items-center gap-2 mt-1">
-                @if($stats['cron_enabled'])
-                    <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
-                    <span class="text-xs font-bold text-success">Activo ({{ $stats['cron_limit'] ?? 10 }} apps / cada 2h)</span>
-                @else
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#6B645C]"></span>
-                    <span class="text-xs font-bold text-[#8C847A]">Inactivo</span>
-                @endif
+                <template x-if="cronActive">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse flex-shrink-0"></span>
+                        <span class="text-xs font-bold text-success truncate">Activo ({{ $stats['cron_limit'] ?? 10 }} apps / cada 2h)</span>
+                    </div>
+                </template>
+                <template x-if="!cronActive">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#6B645C] flex-shrink-0"></span>
+                        <span class="text-xs font-bold text-[#8C847A]">Inactivo</span>
+                    </div>
+                </template>
             </div>
         </div>
     </div>

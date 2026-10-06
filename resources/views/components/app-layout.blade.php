@@ -68,9 +68,13 @@
     @yield('schema')
 
     @if(setting('favicon_image'))
-    <link rel="icon" type="image/x-icon" href="{{ setting('favicon_image') }}">
+    <link rel="icon" href="{{ setting('favicon_image') }}">
+    <link rel="shortcut icon" href="{{ setting('favicon_image') }}">
+    <link rel="apple-touch-icon" href="{{ setting('favicon_image') }}">
     @else
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.svg') }}">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

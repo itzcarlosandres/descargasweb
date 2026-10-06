@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Setting;
 use App\Services\Scraper\HaxmacImporter;
 use Illuminate\Console\Command;
 
@@ -107,6 +108,10 @@ class HaxmacScrapeCommand extends Command
 
         // 5. Smart Sync Latest Updates (Homepage scanner)
         if ($this->option('sync-latest')) {
+            Setting::set('scraper_cron_enabled', 1, 'scraper');
+            Setting::set('scraper_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
+            Setting::clearCache();
+
             $limit = (int) $this->option('limit');
             $this->info('Consultando portada de HaxMac para detectar novedades y actualizaciones...');
             $result = $importer->syncLatestUpdates($downloadImages, $limit);

@@ -440,7 +440,7 @@ class AdminController extends Controller
             'logo_icon' => 'nullable|string|max:50',
             'logo_size' => 'nullable|integer|min:14|max:48',
             'logo_image' => 'nullable|image|max:2048',
-            'favicon_image' => 'nullable|mimes:ico,png,svg|max:1024',
+            'favicon_image' => 'nullable|file|extensions:ico,png,svg,webp|max:2048',
             'seo_meta_title' => 'nullable|string|max:255',
             'seo_meta_description' => 'nullable|string|max:500',
             'seo_keywords' => 'nullable|string|max:500',

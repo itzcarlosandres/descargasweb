@@ -451,25 +451,74 @@
                     </div>
                 </div>
 
-                <!-- Favicon Upload -->
-                <div class="pt-5 border-t border-[#241E18] space-y-3">
-                    <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider">Favicon del Navegador (.ico, .svg, .png)</label>
+                <!-- Favicon Upload & Live Viewer -->
+                <div class="pt-5 border-t border-[#241E18] space-y-4" x-data="{
+                    activeFaviconUrl: '{{ !empty($settings['favicon_image']) ? $settings['favicon_image'] : asset('favicon.svg') }}',
+                    previewUrl: null,
+                    fileName: '',
+                    handleFile(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            this.fileName = file.name;
+                            this.previewUrl = URL.createObjectURL(file);
+                        }
+                    }
+                }">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider">Favicon del Navegador (.ico, .svg, .png)</label>
+                            <span class="text-[11px] text-[#736B63]">Icono que aparece en la pestaña del navegador y marcadores.</span>
+                        </div>
+                        <a :href="previewUrl || activeFaviconUrl" target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-[#1C1814] hover:bg-[#2A241F] border border-[#332A20] text-primary transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            <span>Ver a tamaño completo</span>
+                        </a>
+                    </div>
+
+                    <!-- Live Browser Tab Mockup Simulation -->
+                    <div class="p-3.5 rounded-xl bg-[#0D0B09] border border-[#241E18] space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-[#736B63]">Previsualización en Pestaña del Navegador</span>
+                            <span class="text-[10px] text-primary font-mono" x-show="fileName" x-text="'Nuevo: ' + fileName"></span>
+                        </div>
+                        <div class="max-w-md bg-[#1C1814] rounded-xl px-3 py-2 border border-[#332A20] shadow-md flex items-center gap-2.5">
+                            <div class="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-black/50 rounded p-0.5 border border-white/10">
+                                <img :src="previewUrl || activeFaviconUrl" alt="Favicon" class="w-4 h-4 object-contain">
+                            </div>
+                            <span class="text-xs font-semibold text-white truncate flex-1 font-sans">
+                                {{ $settings['site_name'] ?? 'HackMac' }}{{ $settings['site_name_highlight'] ?? '.cc' }} - macOS Apps
+                            </span>
+                            <span class="text-[10px] text-[#736B63] px-1 hover:text-white cursor-default select-none">✕</span>
+                        </div>
+                    </div>
 
                     @if(!empty($settings['favicon_image']))
                     <div class="p-3 rounded-xl bg-[#12100E] border border-[#2B241C] flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <img src="{{ $settings['favicon_image'] }}" alt="Favicon" class="w-7 h-7 object-contain">
-                            <span class="text-xs text-white font-medium">Favicon actual</span>
+                            <div class="w-8 h-8 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center p-1">
+                                <img src="{{ $settings['favicon_image'] }}" alt="Favicon" class="w-full h-full object-contain">
+                            </div>
+                            <div>
+                                <span class="text-xs text-white font-medium block">Favicon personalizado activo</span>
+                                <span class="text-[10px] text-[#736B63] font-mono">{{ basename($settings['favicon_image']) }}</span>
+                            </div>
                         </div>
-                        <label class="flex items-center gap-2 text-xs text-danger cursor-pointer">
+                        <label class="flex items-center gap-2 text-xs text-danger hover:text-danger-hover cursor-pointer font-medium">
                             <input type="checkbox" name="remove_favicon_image" value="1" class="rounded text-danger">
-                            <span>Quitar</span>
+                            <span>Quitar personalizado</span>
                         </label>
                     </div>
                     @endif
 
-                    <input type="file" name="favicon_image" accept=".ico,image/svg+xml,image/png"
-                           class="w-full text-xs text-[#8C847A] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#201C18] file:text-white hover:file:bg-[#2A241F] file:cursor-pointer cursor-pointer">
+                    <div class="space-y-1.5">
+                        <input type="file" name="favicon_image" accept=".ico,image/svg+xml,image/png,image/webp"
+                               @change="handleFile($event)"
+                               class="w-full text-xs text-[#8C847A] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#201C18] file:text-white hover:file:bg-[#2A241F] file:cursor-pointer cursor-pointer border border-[#2B241C] rounded-xl bg-[#12100E]">
+                        <p class="text-[11px] text-[#736B63]">Formatos compatibles: <strong>.ico</strong>, <strong>.svg</strong>, <strong>.png</strong> o <strong>.webp</strong> (Resolución recomendada: 32x32 o 64x64 px).</p>
+                    </div>
                 </div>
             </div>
         </div>

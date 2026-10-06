@@ -8,7 +8,15 @@
 
     <title>@yield('title', 'Panel de Administración') - {{ config('app.name') }}</title>
 
+    @if(setting('favicon_image'))
+    <link rel="icon" href="{{ setting('favicon_image') }}">
+    <link rel="shortcut icon" href="{{ setting('favicon_image') }}">
+    <link rel="apple-touch-icon" href="{{ setting('favicon_image') }}">
+    @else
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.svg') }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
