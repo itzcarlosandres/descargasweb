@@ -137,7 +137,7 @@ class HaxmacImporter
      *
      * @return array{total_checked: int, new_imported: int, updated: int, items: array}
      */
-    public function syncLatestUpdates(bool $downloadImages = true): array
+    public function syncLatestUpdates(bool $downloadImages = true, int $limit = 0): array
     {
         $latest = $this->getLatestHaxmacApps(1, false);
         $newImported = 0;
@@ -145,6 +145,10 @@ class HaxmacImporter
         $processedItems = [];
 
         foreach ($latest as $card) {
+            if ($limit > 0 && ($newImported + $updated) >= $limit) {
+                break;
+            }
+
             // Only process if it is NOT yet imported, OR if it has a newer version available
             if (! $card['is_imported'] || $card['has_update']) {
                 try {

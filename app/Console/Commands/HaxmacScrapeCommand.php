@@ -18,6 +18,7 @@ class HaxmacScrapeCommand extends Command
                             {--app= : Importar una aplicación específica por URL o slug}
                             {--category= : Importar aplicaciones de una categoría específica por slug}
                             {--sync-latest : Sincronizar automáticamente novedades y actualizaciones desde la portada}
+                            {--limit=0 : Límite de programas a procesar en la sincronización}
                             {--pages=1 : Número de páginas a recorrer por categoría}
                             {--no-images : No descargar las imágenes de iconos localmente}';
 
@@ -106,8 +107,9 @@ class HaxmacScrapeCommand extends Command
 
         // 5. Smart Sync Latest Updates (Homepage scanner)
         if ($this->option('sync-latest')) {
+            $limit = (int) $this->option('limit');
             $this->info('Consultando portada de HaxMac para detectar novedades y actualizaciones...');
-            $result = $importer->syncLatestUpdates($downloadImages);
+            $result = $importer->syncLatestUpdates($downloadImages, $limit);
 
             $this->info("✓ Revisión completada ({$result['total_checked']} programas analizados):");
             $this->line("  • Nuevos importados: {$result['new_imported']}");

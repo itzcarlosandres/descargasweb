@@ -584,7 +584,7 @@
             <div class="flex items-center gap-2 mt-1">
                 @if($stats['cron_enabled'])
                     <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
-                    <span class="text-xs font-bold text-success">Activo ({{ $stats['cron_time'] }})</span>
+                    <span class="text-xs font-bold text-success">Activo ({{ $stats['cron_limit'] ?? 10 }} apps / cada 2h)</span>
                 @else
                     <span class="w-2.5 h-2.5 rounded-full bg-[#6B645C]"></span>
                     <span class="text-xs font-bold text-[#8C847A]">Inactivo</span>
@@ -1350,23 +1350,30 @@
                     </div>
                 </label>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#262019]">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#262019]">
                     <div>
-                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Hora Diaria de Ejecución</label>
-                        <input type="time" name="cron_time" value="{{ $stats['cron_time'] }}"
-                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
-                        <p class="text-[10px] text-[#736B63] mt-1">Recomendado: Madrugada (ej. 03:00) con menor tráfico.</p>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Frecuencia de Sincronización</label>
+                        <select name="cron_frequency"
+                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
+                            <option value="2hours" {{ ($stats['cron_frequency'] ?? '2hours') === '2hours' ? 'selected' : '' }}>Cada 2 horas (Recomendado)</option>
+                            <option value="hourly" {{ ($stats['cron_frequency'] ?? '') === 'hourly' ? 'selected' : '' }}>Cada 1 hora</option>
+                            <option value="4hours" {{ ($stats['cron_frequency'] ?? '') === '4hours' ? 'selected' : '' }}>Cada 4 horas</option>
+                        </select>
+                        <p class="text-[10px] text-[#736B63] mt-1">Intervalo con el que revisa novedades.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Páginas por Categoría a Revisar</label>
-                        <select name="cron_pages"
-                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
-                            <option value="1" {{ $stats['cron_pages'] === 1 ? 'selected' : '' }}>1 página (Solo últimas novedades)</option>
-                            <option value="2" {{ $stats['cron_pages'] === 2 ? 'selected' : '' }}>2 páginas (Recomendado)</option>
-                            <option value="3" {{ $stats['cron_pages'] === 3 ? 'selected' : '' }}>3 páginas</option>
-                        </select>
-                        <p class="text-[10px] text-[#736B63] mt-1">Revisar 1 o 2 páginas es óptimo para captar lo recién publicado sin sobrecarga.</p>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Límite por Ejecución</label>
+                        <input type="number" name="cron_limit" min="1" max="50" value="{{ $stats['cron_limit'] ?? 10 }}"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
+                        <p class="text-[10px] text-[#736B63] mt-1">Máximo de apps a publicar por tanda (ej. 10).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Hora Barrido Nocturno</label>
+                        <input type="time" name="cron_time" value="{{ $stats['cron_time'] }}"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
+                        <p class="text-[10px] text-[#736B63] mt-1">Hora para el recorrido profundo de categorías.</p>
                     </div>
                 </div>
             </div>

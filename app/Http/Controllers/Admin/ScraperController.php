@@ -37,6 +37,8 @@ class ScraperController extends Controller
             'cron_enabled' => (bool) Setting::get('scraper_cron_enabled', false),
             'cron_time' => Setting::get('scraper_cron_time', '03:00'),
             'cron_pages' => (int) Setting::get('scraper_cron_pages', 2),
+            'cron_limit' => (int) Setting::get('scraper_cron_limit', 10),
+            'cron_frequency' => Setting::get('scraper_cron_frequency', '2hours'),
             'storage_disk' => $this->torrentmacImporter->getStorageDisk(),
             'torrent_storage_target' => $this->torrentmacImporter->getConfiguredStorageTarget(),
             'r2_configured' => app(CloudflareR2Service::class)->isConfigured(),
@@ -314,11 +316,15 @@ class ScraperController extends Controller
             'cron_enabled' => 'nullable|boolean',
             'cron_time' => 'required|string',
             'cron_pages' => 'required|integer|min:1|max:5',
+            'cron_limit' => 'nullable|integer|min:1|max:50',
+            'cron_frequency' => 'nullable|string',
         ]);
 
         Setting::set('scraper_cron_enabled', $request->boolean('cron_enabled'), 'scraper');
         Setting::set('scraper_cron_time', $request->cron_time, 'scraper');
         Setting::set('scraper_cron_pages', $request->integer('cron_pages'), 'scraper');
+        Setting::set('scraper_cron_limit', $request->integer('cron_limit', 10), 'scraper');
+        Setting::set('scraper_cron_frequency', $request->input('cron_frequency', '2hours'), 'scraper');
         Setting::clearCache();
 
         return redirect()->route('admin.scraper')->with('success', 'Configuración de automatización guardada correctamente.');

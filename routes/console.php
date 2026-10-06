@@ -17,9 +17,10 @@ Artisan::command('inspire', function () {
 Schedule::call(function () {
     if (Setting::get('scraper_cron_enabled', false)) {
         $importer = app(HaxmacImporter::class);
-        $result = $importer->syncLatestUpdates(true);
+        $limit = (int) Setting::get('scraper_cron_limit', 10);
+        $result = $importer->syncLatestUpdates(true, $limit);
         Setting::set('scraper_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
-        Log::info("DDL Smart Sync completed: {$result['new_imported']} new, {$result['updated']} updated.");
+        Log::info("DDL Smart Sync completed: {$result['new_imported']} new, {$result['updated']} updated (límite: {$limit}).");
     }
 })->everyTwoHours()->name('haxmac-smart-sync');
 
