@@ -23,8 +23,8 @@
 
     @php
         $siteTitle = setting('site_name', 'HackMac') . setting('site_name_highlight', '.cc');
-        $seoTitle = View::hasSection('title') ? trim(View::getSection('title')) : setting('seo_meta_title', $siteTitle . ' - Descarga Aplicaciones para macOS');
-        $seoDescription = View::hasSection('description') ? trim(View::getSection('description')) : setting('seo_meta_description', 'Descubre y descarga las mejores aplicaciones y utilidades verificadas para macOS.');
+        $seoTitle = View::hasSection('title') ? trim(View::getSection('title')) : setting('seo_meta_title', $siteTitle . ' - Download Apps for macOS');
+        $seoDescription = View::hasSection('description') ? trim(View::getSection('description')) : setting('seo_meta_description', 'Discover and download verified applications and utilities for macOS.');
         $seoImage = View::hasSection('og_image') 
             ? trim(View::getSection('og_image')) 
             : (setting('seo_og_image') ? asset(setting('seo_og_image')) : asset('images/og-share.jpg'));

@@ -61,7 +61,7 @@ Route::post('/login', function (Request $request) {
     }
 
     return back()->withErrors([
-        'email' => 'Las credenciales proporcionadas no son válidas.',
+        'email' => 'The provided credentials do not match our records.',
     ])->onlyInput('email');
 })->middleware('throttle:5,1')->name('login.post');
 

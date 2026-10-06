@@ -224,11 +224,11 @@ class HomeController extends Controller
             $decryptedJson = Crypt::decryptString(base64_decode($base64));
             $data = json_decode($decryptedJson, true);
         } catch (\Throwable $e) {
-            abort(404, 'Enlace de descarga no válido.');
+            abort(404, 'Invalid download link.');
         }
 
         if (empty($data['app_id']) || empty($data['exp']) || $data['exp'] < now()->timestamp) {
-            return redirect()->route('home')->with('error', 'El enlace de descarga ha caducado. Por favor, solicita uno nuevo.');
+            return redirect()->route('home')->with('error', 'The download link has expired. Please request a new one.');
         }
 
         $application = Application::findOrFail($data['app_id']);
@@ -344,7 +344,7 @@ class HomeController extends Controller
 
         session()->put('rated_app_'.$application->id, (int) $validated['rating']);
 
-        return back()->with('review_success', '¡Gracias por tu comentario! Ha sido publicado.');
+        return back()->with('review_success', 'Thank you for your review! It has been published.');
     }
 
     public function voteReview(Request $request, Review $review)
@@ -463,7 +463,7 @@ class HomeController extends Controller
             'message' => 'required|string|max:3000',
         ]);
 
-        return back()->with('contact_success', '¡Gracias por contactarnos! Tu mensaje ha sido enviado correctamente.');
+        return back()->with('contact_success', 'Thank you for contacting us! Your message has been sent successfully.');
     }
 
     public function dmca()

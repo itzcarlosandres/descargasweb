@@ -6,7 +6,7 @@
         <div class="card p-6 mb-8 bg-surface/70 border border-border/80">
             <form action="{{ route('search') }}" method="GET" class="flex flex-col md:flex-row gap-3">
                 <div class="relative flex-1">
-                    <input type="text" name="q" value="{{ $query }}" placeholder="Buscar por nombre, descripción, desarrollador o etiqueta..."
+                    <input type="text" name="q" value="{{ $query }}" placeholder="Search by name, description, developer or tag..."
                            class="input w-full pl-10 text-sm">
                     <svg class="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -16,16 +16,16 @@
                     <input type="hidden" name="category" value="{{ $categoryId }}">
                 @endif
                 <button type="submit" class="btn-primary text-sm whitespace-nowrap px-6 font-semibold cursor-pointer">
-                    Buscar
+                    Search
                 </button>
             </form>
 
             @if(isset($categories) && $categories->count() > 0)
             <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-                <span class="text-xs text-text-muted font-medium">Categoría:</span>
+                <span class="text-xs text-text-muted font-medium">Category:</span>
                 <a href="{{ route('search', array_merge(request()->except('category', 'page'), ['category' => ''])) }}"
                    class="badge {{ empty($categoryId) ? 'bg-primary text-white font-semibold' : 'bg-surface text-text-secondary hover:text-text' }} transition-colors">
-                    Todas
+                    All
                 </a>
                 @foreach($categories as $cat)
                     <a href="{{ route('search', array_merge(request()->except('category', 'page'), ['category' => $cat->id])) }}"
@@ -39,33 +39,33 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-xl font-bold text-text">Resultados de Búsqueda</h1>
+                <h1 class="text-xl font-bold text-text">Search Results</h1>
                 <p class="text-text-secondary text-xs mt-0.5">
                     @if($query)
-                        {{ $results->total() }} resultados para "<span class="text-primary font-medium">{{ $query }}</span>"
+                        {{ $results->total() }} results for "<span class="text-primary font-medium">{{ $query }}</span>"
                     @else
-                        {{ $results->total() }} aplicaciones disponibles
+                        {{ $results->total() }} applications available
                     @endif
                 </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-1.5 text-xs">
-                <span class="text-text-muted mr-1">Ordenar por:</span>
+                <span class="text-text-muted mr-1">Sort by:</span>
                 <a href="{{ route('search', array_merge(request()->except('sort', 'page'), ['sort' => 'relevance'])) }}"
                    class="px-2.5 py-1 rounded-md {{ request('sort', 'relevance') === 'relevance' ? 'bg-primary text-white font-medium' : 'bg-surface text-text-secondary hover:text-text' }} transition-colors">
-                    Relevancia
+                    Relevance
                 </a>
                 <a href="{{ route('search', array_merge(request()->except('sort', 'page'), ['sort' => 'newest'])) }}"
                    class="px-2.5 py-1 rounded-md {{ request('sort') === 'newest' ? 'bg-primary text-white font-medium' : 'bg-surface text-text-secondary hover:text-text' }} transition-colors">
-                    Más nuevos
+                    Newest
                 </a>
                 <a href="{{ route('search', array_merge(request()->except('sort', 'page'), ['sort' => 'downloads'])) }}"
                    class="px-2.5 py-1 rounded-md {{ request('sort') === 'downloads' ? 'bg-primary text-white font-medium' : 'bg-surface text-text-secondary hover:text-text' }} transition-colors">
-                    Más descargados
+                    Most downloaded
                 </a>
                 <a href="{{ route('search', array_merge(request()->except('sort', 'page'), ['sort' => 'rating'])) }}"
                    class="px-2.5 py-1 rounded-md {{ request('sort') === 'rating' ? 'bg-primary text-white font-medium' : 'bg-surface text-text-secondary hover:text-text' }} transition-colors">
-                    Mejor valorados
+                    Top rated
                 </a>
             </div>
         </div>
@@ -80,9 +80,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
-                    <p class="text-text font-medium">No se encontraron resultados para "{{ request('q') }}"</p>
-                    <p class="text-text-muted text-xs mt-1">Prueba con otras palabras clave o revisa nuestras categorías populares.</p>
-                    <a href="{{ route('categories') }}" class="btn-secondary text-xs inline-block mt-4">Ver todas las categorías</a>
+                    <p class="text-text font-medium">No results found for "{{ request('q') }}"</p>
+                    <p class="text-text-muted text-xs mt-1">Try different keywords or browse our popular categories.</p>
+                    <a href="{{ route('categories') }}" class="btn-secondary text-xs inline-block mt-4">Browse all categories</a>
                 </div>
             @endforelse
         </div>

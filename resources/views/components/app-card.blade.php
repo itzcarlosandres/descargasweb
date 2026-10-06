@@ -15,9 +15,9 @@
     <div class="entry-meta relative z-[2]">
       <a class="cat-pill" href="{{ route('category', $app->category?->slug ?? 'system-utilities') }}">{{ $app->category?->name ?? 'System Utilities' }}</a>
       @if($app->has_torrent && $app->download_url_external)
-      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30" title="Descarga Directa + Torrent">DUAL</span>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30" title="Direct Download + Torrent">DUAL</span>
       @elseif($app->has_torrent)
-      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30" title="Descarga Torrent">TORRENT</span>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30" title="Torrent Download">TORRENT</span>
       @endif
       @if($app->version)
       <span class="meta-item meta-ver">{{ $app->version }}</span>

@@ -10,8 +10,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-bold text-text">Iniciar Sesión</h1>
-                    <p class="text-text-secondary text-sm mt-1">Accede al panel de administración</p>
+                    <h1 class="text-2xl font-bold text-text">Sign In</h1>
+                    <p class="text-text-secondary text-sm mt-1">Access the administration panel</p>
                 </div>
 
                 @if($errors->any())
@@ -26,21 +26,21 @@
                 <form method="POST" action="{{ route('login.post') }}" class="space-y-4">
                     @csrf
                     <div>
-                        <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Correo Electrónico</label>
-                        <input type="email" name="email" value="{{ old('email') }}" class="input w-full" placeholder="tu@correo.com" required autofocus>
+                        <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Email Address</label>
+                        <input type="email" name="email" value="{{ old('email') }}" class="input w-full" placeholder="you@example.com" required autofocus>
                     </div>
                     <div>
-                        <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Contraseña</label>
+                        <label class="block text-text-secondary text-xs uppercase tracking-wider mb-1 font-medium">Password</label>
                         <input type="password" name="password" class="input w-full" placeholder="••••••••" required>
                     </div>
                     <div class="flex items-center justify-between text-sm">
                         <label class="flex items-center gap-2 text-text-secondary text-xs cursor-pointer">
                             <input type="checkbox" name="remember" value="1" class="rounded border-border bg-surface text-primary focus:ring-primary/50">
-                            Recordarme
+                            Remember me
                         </label>
                     </div>
                     <button type="submit" class="btn-primary w-full py-2.5 font-semibold text-sm shadow-lg shadow-primary/25 cursor-pointer">
-                        Ingresar al Panel
+                        Sign In to Panel
                     </button>
                 </form>
             </div>

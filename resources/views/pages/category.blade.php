@@ -1,6 +1,6 @@
 <x-app-layout>
-    @section('title', "Descargar {$category->name} para macOS - " . config('app.name'))
-    @section('description', $category->description ?: "Explora y descarga las mejores aplicaciones de {$category->name} para Mac. Enlaces verificados y actualizados.")
+    @section('title', "Download {$category->name} for macOS - " . config('app.name'))
+    @section('description', $category->description ?: "Explore and download the best {$category->name} apps for Mac. Safe, verified and direct downloads.")
     @section('canonical', route('category', $category->slug))
     @section('og_image', asset('images/og-share.jpg'))
 

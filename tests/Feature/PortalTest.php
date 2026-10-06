@@ -86,8 +86,8 @@ class PortalTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('7-Zip');
-        $response->assertSee('Descargar Ahora');
-        $response->assertSee('Sitio Web Oficial');
+        $response->assertSee('Download Now');
+        $response->assertSee('Official Website');
     }
 
     public function test_search_works_with_query_and_filters(): void
@@ -101,7 +101,7 @@ class PortalTest extends TestCase
 
         $emptyResponse = $this->get(route('search', ['q' => 'InexistenteXYZ']));
         $emptyResponse->assertStatus(200);
-        $emptyResponse->assertSee('No se encontraron resultados');
+        $emptyResponse->assertSee('No results found');
     }
 
     public function test_download_increments_counter_and_records_download(): void

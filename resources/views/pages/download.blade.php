@@ -2,10 +2,10 @@
     @php
         $selectedVersion = $targetVersion ? $targetVersion->version : $application->version;
         $selectedSize = $targetVersion && $targetVersion->size ? $targetVersion->size : $application->formatted_size;
-        $downloadFormat = $isTorrent ? 'Archivo .torrent (P2P)' : 'Instalador macOS (.dmg / .pkg)';
+        $downloadFormat = $isTorrent ? '.torrent File (P2P)' : 'macOS Installer (.dmg / .pkg)';
 
-        $pageTitle = "Descargando {$application->name} {$selectedVersion} para Mac - " . config('app.name');
-        $pageDesc = "Tu descarga de {$application->name} {$selectedVersion} está lista. Software seguro, verificado y optimizado para Apple Silicon M1/M2/M3/M4 e Intel.";
+        $pageTitle = "Downloading {$application->name} {$selectedVersion} for Mac - " . config('app.name');
+        $pageDesc = "Your download of {$application->name} {$selectedVersion} is ready. Safe, verified, and optimized software for Apple Silicon M1/M2/M3/M4 and Intel.";
     @endphp
 
     @section('title', $pageTitle)
@@ -20,7 +20,7 @@
                 <svg class="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                <span>Volver a la ficha de {{ $application->name }}</span>
+                <span>Back to {{ $application->name }}</span>
             </a>
 
             <nav class="cp-crumbs cp-crumbs-yoast hidden sm:block" aria-label="Breadcrumb">
@@ -31,7 +31,7 @@
                     <span class="mx-1 text-[#A1A1A6]">»</span>
                     <span><a href="{{ route('app', $application->slug) }}">{{ $application->name }}</a></span>
                     <span class="mx-1 text-[#A1A1A6]">»</span>
-                    <span class="breadcrumb_last text-[#E0D7D0]" aria-current="page">Descargar</span>
+                    <span class="breadcrumb_last text-[#E0D7D0]" aria-current="page">Download</span>
                 </span>
             </nav>
         </div>
@@ -45,12 +45,12 @@
                     <span class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123] inline-block"></span>
                     <span class="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29] inline-block"></span>
                     <span class="ml-3 text-xs font-semibold text-[#8C847A] tracking-wide">
-                        Centro de Descargas Seguras &middot; macOS Universal
+                        Secure Download Center &middot; macOS Universal
                     </span>
                 </div>
                 <div class="flex items-center gap-2 text-[11px] font-mono text-[#8C847A]">
                     <span class="w-2 h-2 rounded-full bg-success animate-pulse inline-block"></span>
-                    <span>Servidor Activo</span>
+                    <span>Server Active</span>
                 </div>
             </div>
 
@@ -74,7 +74,7 @@
                     <div class="text-center sm:text-left flex-1 min-w-0">
                         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $isTorrent ? 'bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30' : 'bg-primary/15 text-primary border border-primary/30' }}">
-                                {{ $isTorrent ? '⚡ Torrent P2P' : '☁️ Descarga Directa' }}
+                                {{ $isTorrent ? '⚡ P2P Torrent' : '☁️ Direct Download' }}
                             </span>
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#262019] text-[#A8A199] border border-[#3D3224]">
                                 {{ strtoupper($application->license ?? 'Free') }}
@@ -85,7 +85,7 @@
                         </div>
 
                         <h1 class="font-heading font-bricolage text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                            Descargando {{ $application->name }}
+                            Downloading {{ $application->name }}
                         </h1>
 
                         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2 text-xs text-[#A8A199]">
@@ -97,7 +97,7 @@
                             @if($targetVersion && ! $targetVersion->is_current)
                                 <span>&middot;</span>
                                 <span class="text-amber-400 font-semibold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                                    Versión Anterior
+                                    Previous Version
                                 </span>
                             @endif
                         </div>
@@ -151,10 +151,10 @@
                         </div>
 
                         <h2 class="font-heading font-bricolage text-xl sm:text-2xl font-bold text-white mb-2">
-                            Preparando enlace seguro de descarga...
+                            Preparing secure download link...
                         </h2>
                         <p class="text-xs sm:text-sm text-[#8C847A] max-w-md mx-auto leading-relaxed">
-                            Verificando servidores de alta velocidad e integridad de paquetes para macOS.
+                            Verifying high-speed servers and package integrity for macOS.
                         </p>
 
                         <!-- Visual Progress Bar -->
@@ -174,10 +174,10 @@
                         </div>
 
                         <h2 class="font-heading font-bricolage text-2xl sm:text-3xl font-bold text-white mb-2">
-                            ¡Tu enlace está listo!
+                            Your link is ready!
                         </h2>
                         <p class="text-xs sm:text-sm text-[#8C847A] max-w-md mx-auto mb-6 leading-relaxed">
-                            Haz clic en el botón de abajo para iniciar la descarga:
+                            Click the button below to start your download:
                         </p>
 
                         <!-- Primary Direct Action Button (Opens in New Tab on Click) -->
@@ -189,7 +189,7 @@
                                 <svg class="w-5 h-5 text-black group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>
-                                <span>Descargar Ahora</span>
+                                <span>Download Now</span>
                             </a>
                         </div>
 
@@ -202,7 +202,7 @@
                         @if(!empty($mirrors) && count($mirrors) > 0)
                             <div class="mt-6 pt-5 border-t border-[#2B231B] max-w-md mx-auto">
                                 <p class="text-xs font-semibold text-[#8C847A] uppercase tracking-wider mb-3">
-                                    Servidores Alternativos / Mirrors
+                                    Alternative Mirrors
                                 </p>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     @foreach($mirrors as $mirror)
@@ -213,7 +213,7 @@
                                                class="px-4 py-2.5 rounded-xl bg-[#14120F] hover:bg-[#1E1914] border border-[#2B231B] hover:border-[#30D158]/50 text-xs font-semibold text-white transition flex items-center justify-between group shadow-sm">
                                                 <span class="flex items-center gap-2 truncate">
                                                     <span class="w-2 h-2 rounded-full bg-[#30D158]"></span>
-                                                    <span class="truncate">{{ !empty($mirror['name']) ? $mirror['name'] : 'Servidor Alternativo' }}</span>
+                                                    <span class="truncate">{{ !empty($mirror['name']) ? $mirror['name'] : 'Alternative Mirror' }}</span>
                                                 </span>
                                                 <svg class="w-3.5 h-3.5 text-[#8C847A] group-hover:text-[#30D158] transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -236,8 +236,8 @@
                             </svg>
                         </div>
                         <div>
-                            <span class="block text-xs font-bold text-white">100% Libre de Malware</span>
-                            <span class="block text-[11px] text-[#8C847A]">Escaneado con VirusTotal y seguro</span>
+                            <span class="block text-xs font-bold text-white">100% Malware-Free</span>
+                            <span class="block text-[11px] text-[#8C847A]">Scanned with VirusTotal and verified safe</span>
                         </div>
                     </div>
 
@@ -248,8 +248,8 @@
                             </svg>
                         </div>
                         <div>
-                            <span class="block text-xs font-bold text-white">Máxima Velocidad</span>
-                            <span class="block text-[11px] text-[#8C847A]">Servidores CDN sin límite de banda</span>
+                            <span class="block text-xs font-bold text-white">Maximum Speed</span>
+                            <span class="block text-[11px] text-[#8C847A]">High-speed CDN servers with unlimited bandwidth</span>
                         </div>
                     </div>
 
@@ -260,7 +260,7 @@
                             </svg>
                         </div>
                         <div>
-                            <span class="block text-xs font-bold text-white">Optimizado macOS</span>
+                            <span class="block text-xs font-bold text-white">macOS Optimized</span>
                             <span class="block text-[11px] text-[#8C847A]">Sequoia, Sonoma & Ventura</span>
                         </div>
                     </div>
@@ -269,10 +269,10 @@
                 <!-- macOS Gatekeeper & Terminal Helper Box -->
                 <div class="p-5 sm:p-6 rounded-2xl bg-[#181410] border border-[#2A2219] text-xs">
                     <div class="flex items-center gap-2 mb-2 font-bold text-white">
-                        <span>💡 ¿macOS te muestra: <em>"La app está dañada y no se puede abrir"</em>?</span>
+                        <span>💡 Does macOS show: <em>"App is damaged and can't be opened"</em>?</span>
                     </div>
                     <p class="text-[#8C847A] leading-relaxed mb-3">
-                        Esto ocurre por la seguridad de Gatekeeper al descargar apps fuera de la Mac App Store. Para solucionarlo en 5 segundos, abre la <strong>Terminal</strong> y pega el siguiente comando:
+                        This happens due to Gatekeeper security when opening apps outside the Mac App Store. To resolve it in 5 seconds, open <strong>Terminal</strong> and run the following command:
                     </p>
                     <div class="p-3 rounded-xl bg-black/60 border border-[#332A20] font-mono text-[12px] text-primary flex items-center justify-between gap-3 select-all">
                         <span class="truncate">sudo xattr -cr /Applications/{{ str_replace(' ', '\ ', $application->name) }}.app</span>
@@ -280,11 +280,11 @@
                     </div>
                     <div class="mt-3 flex flex-wrap items-center gap-4 text-[11px]">
                         <a href="{{ route('guide.fix') }}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-1">
-                            <span>Ver guía detallada para reparar apps dañadas →</span>
+                            <span>View detailed guide to fix damaged apps →</span>
                         </a>
                         <span class="text-[#3D3224]">&middot;</span>
                         <a href="{{ route('guide.sip') }}" target="_blank" class="text-primary hover:underline font-semibold flex items-center gap-1">
-                            <span>Cómo desactivar SIP en macOS →</span>
+                            <span>How to disable SIP on macOS →</span>
                         </a>
                     </div>
                 </div>
@@ -294,10 +294,10 @@
                     <div class="mt-10 pt-8 border-t border-[#262018]">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-heading font-bricolage text-base font-bold text-white">
-                                Otras apps de {{ $application->category->name }} que podrían interesarte
+                                Other {{ $application->category->name }} apps you might like
                             </h3>
                             <a href="{{ route('category', $application->category->slug) }}" class="text-xs text-primary hover:underline font-medium">
-                                Ver todas →
+                                View all →
                             </a>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">

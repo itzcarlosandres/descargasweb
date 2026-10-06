@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
-        $appTitle = "Descargar {$application->name} {$application->version} para Mac - " . config('app.name');
-        $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: "Descarga {$application->name} {$application->version} para macOS. Software verificado y seguro.";
+        $appTitle = "Download {$application->name} {$application->version} for Mac - " . config('app.name');
+        $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: "Download {$application->name} {$application->version} for macOS. Safe and verified software.";
         $shareImage = $application->screenshot_url 
             ?: ($application->images->first()?->image_url 
             ?: ($application->icon_url ?: asset('images/og-share.jpg')));
@@ -170,7 +170,7 @@
                                         <span class="btn-download-sub !text-black/80">
                                             .torrent &middot; {{ strtoupper($application->license ?? 'Free') }}
                                         </span>
-                                        <span class="sr-only">Descargar Torrent</span>
+                                        <span class="sr-only">Download Torrent</span>
                                     </a>
                                 @else
                                     <!-- Direct Download (Primary) -->
@@ -185,16 +185,16 @@
                                                 {{ $application->version }} &middot; {{ strtoupper($application->license ?? 'Free') }}
                                             @endif
                                         </span>
-                                        <span class="sr-only">Descargar Ahora</span>
+                                        <span class="sr-only">Download Now</span>
                                     </a>
 
                                     @if($application->has_torrent)
                                         <!-- Secondary Torrent Download Option (Dual Mode) -->
                                         <a href="{{ route('download', ['application' => $application->slug, 'type' => 'torrent']) }}"
                                            class="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#30D158] bg-[#30D158]/10 hover:bg-[#30D158]/20 border border-[#30D158]/30 transition-all shadow-sm group cursor-pointer"
-                                           title="Descargar archivo Torrent">
+                                           title="Download Torrent file">
                                             <span class="text-sm">🧲</span>
-                                            <span>Descargar Torrent (.torrent)</span>
+                                            <span>Download Torrent (.torrent)</span>
                                         </a>
                                     @endif
                                 @endif
@@ -256,7 +256,7 @@
                                 </div>
                             @else
                                 <p class="text-[#3E3933] dark:text-[#C4BDB5] text-sm sm:text-base leading-relaxed">
-                                    {{ $application->name }} es una solución profesional para macOS diseñada con los más altos estándares de rendimiento y fiabilidad.
+                                    {{ $application->name }} is a professional solution for macOS designed with the highest standards of performance and reliability.
                                 </p>
                             @endif
                         </div>
@@ -288,16 +288,16 @@
                                     @else
                                         <ul class="space-y-2.5 text-xs sm:text-sm text-[#3E3933] dark:text-[#C4BDB5]">
                                             <li>
-                                                <strong class="text-[#1C1814] dark:text-white">Optimización de alto rendimiento:</strong> Diseñado específicamente para aprovechar la arquitectura Apple Silicon y procesadores Intel.
+                                                <strong class="text-[#1C1814] dark:text-white">High-performance optimization:</strong> Specifically engineered to take full advantage of Apple Silicon and Intel architecture.
                                             </li>
                                             <li>
-                                                <strong class="text-[#1C1814] dark:text-white">Interfaz fluida y moderna:</strong> Integración con la estética visual y controles nativos de macOS.
+                                                <strong class="text-[#1C1814] dark:text-white">Fluid and modern interface:</strong> Deeply integrated with macOS visual aesthetics and native controls.
                                             </li>
                                             <li>
-                                                <strong class="text-[#1C1814] dark:text-white">Seguridad y privacidad:</strong> Verificado minuciosamente y optimizado para proteger tus archivos e información del sistema.
+                                                <strong class="text-[#1C1814] dark:text-white">Security & Privacy:</strong> Thoroughly verified and optimized to safeguard your files and system data.
                                             </li>
                                             <li>
-                                                <strong class="text-[#1C1814] dark:text-white">Rendimiento estable:</strong> Cero consumo excesivo de memoria para mantener tu Mac veloz en todo momento.
+                                                <strong class="text-[#1C1814] dark:text-white">Rock-solid stability:</strong> Optimized resource usage to keep your Mac fast and responsive at all times.
                                             </li>
                                         </ul>
                                     @endif
@@ -332,7 +332,7 @@
                                         @else
                                             <div class="p-8 rounded-2xl bg-[#14110E] border border-[#2D251D] text-center space-y-2">
                                                 <div class="w-10 h-10 mx-auto rounded-xl bg-[#1C1814] flex items-center justify-center text-primary font-bold"></div>
-                                                <p class="text-xs text-[#8C847A]">Capturas de pantalla en alta resolución disponibles directamente en el instalador DMG.</p>
+                                                <p class="text-xs text-[#8C847A]">High-resolution screenshots available directly in the DMG installer.</p>
                                             </div>
                                         @endif
                                     </div>
@@ -344,7 +344,7 @@
                                                 <div class="flex items-center gap-2 pb-2 border-b border-[#EBE4DB] dark:border-[#251E18]">
                                                     <span class="w-2 h-2 rounded-full bg-primary"></span>
                                                     <h3 class="text-xs font-bold text-[#1C1814] dark:text-white uppercase tracking-wider">
-                                                        Novedades de la Versión {{ $application->version }}
+                                                        What's New in Version {{ $application->version }}
                                                     </h3>
                                                 </div>
                                                 <div class="prose max-w-none text-[#3E3933] dark:text-[#C4BDB5] text-xs sm:text-sm leading-relaxed [&>ul]:space-y-2 [&>p]:text-[#3E3933] dark:[&>p]:text-[#C4BDB5] [&>strong]:text-[#1C1814] dark:[&>strong]:text-white">
@@ -356,13 +356,13 @@
                                                 <div class="flex items-center gap-2 pb-2 border-b border-[#EBE4DB] dark:border-[#251E18]">
                                                     <span class="w-2 h-2 rounded-full bg-primary"></span>
                                                     <h3 class="text-xs font-bold text-[#1C1814] dark:text-white uppercase tracking-wider">
-                                                        Novedades de la Versión {{ $application->version }}
+                                                        What's New in Version {{ $application->version }}
                                                     </h3>
                                                 </div>
                                                 <ul class="text-xs sm:text-sm text-[#3E3933] dark:text-[#C4BDB5] space-y-2">
-                                                    <li>Motor de seguridad y estabilidad actualizado a la versión {{ $application->version }}.</li>
-                                                    <li>Compatibilidad completa y nativa con macOS Sequoia y Apple Silicon (M1/M2/M3/M4).</li>
-                                                    <li>Optimizaciones en la velocidad de ejecución y corrección de errores menores.</li>
+                                                    <li>Security and stability engine updated to version {{ $application->version }}.</li>
+                                                    <li>Full native compatibility with macOS Sequoia and Apple Silicon (M1/M2/M3/M4).</li>
+                                                    <li>Performance optimizations and minor bug fixes.</li>
                                                 </ul>
                                             </div>
                                         @endif
@@ -383,12 +383,12 @@
                                          @click.away="zoomModal = null">
                                         <button type="button" @click="zoomModal = null"
                                                 class="absolute -top-10 right-0 text-white/80 hover:text-white text-sm font-bold flex items-center gap-1 cursor-pointer bg-white/10 px-3 py-1 rounded-full">
-                                            <span>Cerrar</span>
+                                            <span>Close</span>
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                             </svg>
                                         </button>
-                                        <img :src="zoomModal" alt="Screenshot Ampliada" 
+                                        <img :src="zoomModal" alt="Screenshot" 
                                              class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-white/10 shadow-2xl">
                                     </div>
                                 </div>
@@ -402,7 +402,7 @@
                                         Older versions & Compatibility
                                     </h2>
                                     <p class="text-[12px] text-[#86868B] dark:text-[#A1A1A6] mt-0.5">
-                                        ¿Usas macOS Catalina, Big Sur, Monterey o Ventura? Descarga compilaciones probadas para Intel y Apple Silicon.
+                                        Running macOS Catalina, Big Sur, Monterey, or Ventura? Download tested builds for Intel and Apple Silicon.
                                     </p>
                                 </div>
                                 <span class="text-[11px] font-semibold text-primary/90 bg-primary/10 px-2.5 py-1 rounded-full w-fit">
@@ -434,7 +434,7 @@
                                                         @if($loop->first)
                                                             <span class="text-[10px] font-bold text-success bg-success/15 px-2 py-0.5 rounded-md border border-success/30">Latest</span>
                                                         @else
-                                                            <span class="text-[10px] font-medium text-[#86868B] dark:text-[#A1A1A6] bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">Archivada</span>
+                                                            <span class="text-[10px] font-medium text-[#86868B] dark:text-[#A1A1A6] bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">Archived</span>
                                                         @endif
                                                     </div>
                                                     <div class="flex items-center gap-2 text-[11px] text-[#86868B] dark:text-[#A1A1A6] mt-0.5">
@@ -451,18 +451,18 @@
                                                 @if($ver->download_url || $ver->is_current)
                                                     <a href="{{ route('download', ['application' => $application->slug, 'version' => $ver->id]) }}"
                                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary-hover shadow-sm transition-all cursor-pointer"
-                                                        title="Descargar {{ $application->name }} {{ $ver->version }}">
+                                                        title="Download {{ $application->name }} {{ $ver->version }}">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                                         </svg>
-                                                        <span>Descargar</span>
+                                                        <span>Download</span>
                                                     </a>
                                                 @endif
 
                                                 @if($ver->torrent_url || $ver->torrent_file_path || ($ver->is_current && $application->has_torrent))
                                                     <a href="{{ route('download', ['application' => $application->slug, 'version' => $ver->id, 'type' => 'torrent']) }}"
                                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#30D158] bg-[#30D158]/10 hover:bg-[#30D158]/20 border border-[#30D158]/30 transition-all cursor-pointer"
-                                                        title="Descargar Torrent {{ $application->name }} {{ $ver->version }}">
+                                                        title="Download Torrent {{ $application->name }} {{ $ver->version }}">
                                                         <span>🧲</span>
                                                         <span>Torrent</span>
                                                     </a>
@@ -502,7 +502,7 @@
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
-                                            <span>Descargar</span>
+                                            <span>Download</span>
                                         </a>
                                     </li>
                                 @endif
@@ -513,7 +513,7 @@
                                     <button type="button"
                                             @click="expanded = !expanded"
                                             class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-all cursor-pointer shadow-sm">
-                                        <span x-text="expanded ? 'Mostrar menos versiones' : 'Leer más / Ver {{ $application->versions->count() - 2 }} versiones anteriores más'"></span>
+                                        <span x-text="expanded ? 'Show fewer versions' : 'Show {{ $application->versions->count() - 2 }} more older versions'"></span>
                                         <svg class="w-3.5 h-3.5 transition-transform duration-200"
                                              :class="expanded ? 'rotate-180' : ''"
                                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,10 +531,10 @@
                                 <svg class="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                 </svg>
-                                Servidores seguros verificados
+                                Verified secure servers
                             </span>
                             <a href="{{ $application->download_url_external }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline flex items-center gap-1 font-semibold">
-                                <span>Sitio Web Oficial</span>
+                                <span>Official Website</span>
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                 </svg>
@@ -550,10 +550,10 @@
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2">
-                                        <strong class="text-white text-sm">Opción Torrent Disponible</strong>
+                                        <strong class="text-white text-sm">Torrent Option Available</strong>
                                         <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#30D158]/20 text-[#30D158]">P2P R2</span>
                                     </div>
-                                    <span class="text-[#8C847A] text-[11px] block mt-0.5">Archivo .torrent verificado, sin esperas ni límites de velocidad.</span>
+                                    <span class="text-[#8C847A] text-[11px] block mt-0.5">Verified .torrent file, no waiting and unlimited speed.</span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
@@ -568,7 +568,7 @@
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                     </svg>
-                                    <span>Descargar .torrent</span>
+                                    <span>Download .torrent</span>
                                 </a>
                             </div>
                         </div>
@@ -716,7 +716,7 @@
                                         ★
                                     </button>
                                 </template>
-                                <span class="text-xs text-[#8C847A] ml-1.5" x-text="ratingVal > 0 ? (ratingVal + ' de 5 estrellas') : 'Selecciona una puntuación'"></span>
+                                <span class="text-xs text-[#8C847A] ml-1.5" x-text="ratingVal > 0 ? (ratingVal + ' out of 5 stars') : 'Select a rating'"></span>
                             </div>
                         </div>
                         <p class="form-submit">

@@ -250,7 +250,7 @@
                     onclick="toggleTheme()"
                     class="icon-btn theme-toggle w-9 h-9 rounded-lg text-[#4A433B] dark:text-[#F6F3EC]/80 hover:text-[#0071E3] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
                     aria-label="Toggle dark/light mode"
-                    title="Cambiar Modo Claro / Oscuro">
+                    title="Toggle Light / Dark mode">
                 <!-- Moon icon shown when in light mode (to switch to dark) -->
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-[18px] h-[18px] dark:hidden block" aria-hidden="true">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -266,7 +266,7 @@
                 <!-- Admin quick indicator -->
                 <a href="{{ route('admin.dashboard') }}"
                    class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F5F5F7] dark:bg-[#242426] border border-[#E5E7EB] dark:border-[#333336] text-[#1D1D1F] dark:text-white text-xs hover:border-[#0071E3] transition-colors ml-1"
-                   title="Ir al Panel de Administración">
+                   title="Go to Admin Panel">
                     <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
                     <span class="font-medium text-[11px]">{{ auth()->user()->name }}</span>
                 </a>
@@ -326,7 +326,7 @@
         <div class="container-app relative">
             <form action="{{ route('search') }}" method="GET" class="relative">
             <input type="text" name="q" x-model="query" @input="search()"
-                    placeholder="Buscar programas, juegos y utilidades en tiempo real..."
+                    placeholder="Search apps, games and utilities in real time..."
                     class="w-full bg-white dark:bg-[#10141C] border border-[#E0D8CE] dark:border-[#222938] rounded-xl px-10 py-2.5 text-xs text-[#1C1814] dark:text-white placeholder-[#8C847A] focus:outline-none focus:border-[#0071E3]">
             <svg class="w-4 h-4 text-[#8C847A] absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -371,7 +371,7 @@
          class="lg:hidden border-t border-[#E5DFD7] dark:border-[#222938] bg-[#F5F5F7]/95 dark:bg-[#131822]/95 backdrop-blur-xl">
         <div class="container-app py-4 space-y-3">
             <form action="{{ route('search') }}" method="GET">
-                <input type="text" name="q" placeholder="Buscar aplicaciones y juegos..." value="{{ request('q') }}" class="input w-full text-xs">
+                <input type="text" name="q" placeholder="Search apps & games..." value="{{ request('q') }}" class="input w-full text-xs">
             </form>
             <nav class="flex flex-col gap-1 text-sm text-[#38322B] dark:text-[#F6F3EC]/90">
                 <a href="{{ route('popular') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Editor’s Choice</a>
@@ -381,10 +381,10 @@
                 <a href="{{ route('guide.sip') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938] text-[#0071E3]">Disable SIP</a>
                 <a href="{{ route('guide.fix') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938] text-[#0071E3]">Fix Damaged Apps</a>
                 @auth
-                    <a href="{{ route('admin.dashboard') }}" class="py-2 text-[#0071E3] font-medium">Panel Admin</a>
+                    <a href="{{ route('admin.dashboard') }}" class="py-2 text-[#0071E3] font-medium">Admin Panel</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="py-2 text-xs text-danger text-left">Cerrar Sesión</button>
+                        <button type="submit" class="py-2 text-xs text-danger text-left">Log Out</button>
                     </form>
                 @endauth
             </nav>
