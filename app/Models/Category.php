@@ -28,6 +28,17 @@ class Category extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            cache()->forget('sitemap_xml');
+        });
+
+        static::deleted(function () {
+            cache()->forget('sitemap_xml');
+        });
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);

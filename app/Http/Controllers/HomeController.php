@@ -396,14 +396,24 @@ class HomeController extends Controller
 
     public function sitemap(): Response
     {
-        $categories = Category::active()->ordered()->get();
-        $applications = Application::published()
-            ->with(['category', 'images'])
-            ->latest('updated_at')
-            ->get();
+        $xml = Cache::remember('sitemap_xml', 3600, function () {
+            $categories = Category::active()->ordered()
+                ->select(['id', 'name', 'slug', 'updated_at'])
+                ->get();
 
-        return response()->view('sitemap', compact('categories', 'applications'))
-            ->header('Content-Type', 'application/xml; charset=utf-8');
+            $applications = Application::published()
+                ->select(['id', 'category_id', 'name', 'slug', 'updated_at', 'featured', 'icon', 'screenshot'])
+                ->latest('updated_at')
+                ->get();
+
+            $latestAppDate = $applications->first()?->updated_at?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+
+            return view('sitemap', compact('categories', 'applications', 'latestAppDate'))->render();
+        });
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=utf-8')
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 
     public function robots(): Response

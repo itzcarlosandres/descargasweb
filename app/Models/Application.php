@@ -58,6 +58,17 @@ class Application extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            cache()->forget('sitemap_xml');
+        });
+
+        static::deleted(function () {
+            cache()->forget('sitemap_xml');
+        });
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

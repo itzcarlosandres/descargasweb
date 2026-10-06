@@ -4,6 +4,7 @@
     <!-- Homepage -->
     <url>
         <loc>{{ route('home') }}</loc>
+        <lastmod>{{ $latestAppDate ?? now()->tz('UTC')->toAtomString() }}</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
@@ -11,21 +12,24 @@
     <!-- Main Navigation Hubs -->
     <url>
         <loc>{{ route('categories') }}</loc>
+        <lastmod>{{ $latestAppDate ?? now()->tz('UTC')->toAtomString() }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>{{ route('popular') }}</loc>
+        <lastmod>{{ $latestAppDate ?? now()->tz('UTC')->toAtomString() }}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>{{ route('new') }}</loc>
+        <lastmod>{{ $latestAppDate ?? now()->tz('UTC')->toAtomString() }}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.8</priority>
     </url>
 
-    <!-- Guides -->
+    <!-- macOS Guides -->
     <url>
         <loc>{{ route('guide.sip') }}</loc>
         <changefreq>monthly</changefreq>
@@ -68,6 +72,9 @@
     @foreach($categories as $category)
     <url>
         <loc>{{ route('category', $category->slug) }}</loc>
+        @if($category->updated_at)
+        <lastmod>{{ $category->updated_at->tz('UTC')->toAtomString() }}</lastmod>
+        @endif
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
@@ -83,13 +90,13 @@
         @if($app->icon_url)
         <image:image>
             <image:loc>{{ $app->icon_url }}</image:loc>
-            <image:title>{{ $app->name }} Icon</image:title>
+            <image:title>{{ $app->name }}</image:title>
         </image:image>
         @endif
         @if($app->screenshot_url)
         <image:image>
             <image:loc>{{ $app->screenshot_url }}</image:loc>
-            <image:title>{{ $app->name }} Screenshot</image:title>
+            <image:title>{{ $app->name }}</image:title>
         </image:image>
         @endif
     </url>

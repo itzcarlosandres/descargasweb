@@ -1,0 +1,14 @@
+# ----------------------------------------------------------------------
+# | Root .htaccess for aaPanel & Apache (Redirect to public/ folder)   |
+# ----------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent direct access to sensitive configuration and environment files
+    RewriteRule ^(\.env|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|artisan) - [F,L]
+
+    # Route requests to the public/ directory
+    RewriteRule ^$ public/ [L]
+    RewriteRule ((?s).*) public/$1 [L]
+</IfModule>

@@ -20,6 +20,7 @@ Route::get('/download/{application:slug}/file', [HomeController::class, 'downloa
 Route::get('/dl/{token}', [HomeController::class, 'resolveDownloadToken'])->name('download.token');
 Route::post('/app/{application:slug}/favorite', [HomeController::class, 'toggleFavorite'])->name('app.favorite');
 Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
+Route::get('/sitemap', [HomeController::class, 'sitemap']);
 Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
 // macOS Guides
