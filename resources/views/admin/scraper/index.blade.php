@@ -585,7 +585,7 @@
             async toggleCron() {
                 this.togglingCron = true;
                 try {
-                    const res = await fetch('{{ route('admin.scraper.toggle-cron') }}', {
+                    const res = await fetch('{{ url('/admin/scraper/toggle-cron') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
