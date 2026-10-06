@@ -22,17 +22,27 @@
                 </p>
 
                 <!-- Live stats grid -->
+                @php
+                    $totAboutDl = (int) ($stats['total_downloads'] ?? 0);
+                    if ($totAboutDl >= 1000000) {
+                        $formattedAboutDl = number_format($totAboutDl / 1000000, 1) . 'M';
+                    } elseif ($totAboutDl >= 1000) {
+                        $formattedAboutDl = number_format($totAboutDl / 1000, 1) . 'K';
+                    } else {
+                        $formattedAboutDl = number_format($totAboutDl);
+                    }
+                @endphp
                 <div class="grid grid-cols-3 gap-3 p-4 rounded-xl bg-[#161617] border border-[#333336] text-center my-4">
                     <div>
-                        <p class="text-2xl font-extrabold text-primary">{{ number_format($stats['total_apps'] ?? 1023) }}</p>
+                        <p class="text-2xl font-extrabold text-primary">{{ number_format($stats['total_apps'] ?? 0) }}</p>
                         <p class="text-[10px] uppercase font-bold text-[#A1A1A6] tracking-wider mt-1">Apps &amp; Games</p>
                     </div>
                     <div>
-                        <p class="text-2xl font-extrabold text-white">{{ number_format(($stats['total_downloads'] ?? 530800) / 1000, 1) }}K</p>
+                        <p class="text-2xl font-extrabold text-white">{{ $formattedAboutDl }}</p>
                         <p class="text-[10px] uppercase font-bold text-[#A1A1A6] tracking-wider mt-1">Downloads Served</p>
                     </div>
                     <div>
-                        <p class="text-2xl font-extrabold text-success">{{ $stats['total_categories'] ?? 12 }}</p>
+                        <p class="text-2xl font-extrabold text-success">{{ $stats['total_categories'] ?? 0 }}</p>
                         <p class="text-[10px] uppercase font-bold text-[#A1A1A6] tracking-wider mt-1">Categories</p>
                     </div>
                 </div>

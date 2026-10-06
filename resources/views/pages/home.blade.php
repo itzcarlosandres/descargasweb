@@ -60,15 +60,13 @@
             </div>
 
             @php
-                $totDownloads = $stats['total_downloads'] ?? 0;
-                if ($totDownloads > 0) {
-                    $formattedTotal = $totDownloads >= 1000000 
-                        ? number_format($totDownloads / 1000000, 1) . 'M' 
-                        : ($totDownloads >= 1000 
-                            ? number_format($totDownloads / 1000, 1) . 'K' 
-                            : number_format($totDownloads));
+                $totDownloads = (int) ($stats['total_downloads'] ?? 0);
+                if ($totDownloads >= 1000000) {
+                    $formattedTotal = number_format($totDownloads / 1000000, 1) . 'M';
+                } elseif ($totDownloads >= 1000) {
+                    $formattedTotal = number_format($totDownloads / 1000, 1) . 'K';
                 } else {
-                    $formattedTotal = '533.4K';
+                    $formattedTotal = number_format($totDownloads);
                 }
                 $totalAppsReal = $stats['total_apps'] ?? \App\Models\Application::published()->count();
                 $updatedWeekReal = $stats['updated_this_week'] ?? \App\Models\Application::published()->where('updated_at', '>=', now()->subWeek())->count();
