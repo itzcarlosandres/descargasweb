@@ -56,6 +56,12 @@ class Setting extends Model
         'custom_head_code' => '',
         'custom_body_code' => '',
         'custom_footer_code' => '',
+        'scraper_cron_enabled' => '1',
+        'scraper_cron_time' => '03:00',
+        'scraper_cron_pages' => '2',
+        'scraper_cron_limit' => '10',
+        'scraper_cron_frequency' => '2hours',
+        'torrentmac_cron_enabled' => '1',
     ];
 
     /**

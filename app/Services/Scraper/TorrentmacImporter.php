@@ -525,6 +525,13 @@ class TorrentmacImporter
                 $totalChecked++;
                 try {
                     $existing = $this->resolveExistingApplication($card);
+                    $hasUpdate = $existing && ! empty($card['version']) && ! empty($existing->version) && ($card['version'] !== $existing->version);
+                    $needsImport = ! $existing || ! $existing->has_torrent || $hasUpdate;
+
+                    if (! $needsImport) {
+                        continue;
+                    }
+
                     $app = $this->importAppByUrl($card['url'], $downloadImages);
 
                     if ($app) {
@@ -542,7 +549,7 @@ class TorrentmacImporter
             }
         }
 
-        Setting::set('torrentmac_last_sync', now()->toDateTimeString());
+        Setting::set('torrentmac_last_sync', now()->toDateTimeString(), 'scraper');
 
         return [
             'total_checked' => $totalChecked,
