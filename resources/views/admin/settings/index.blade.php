@@ -141,7 +141,7 @@
     @endif
 
     <!-- Navigation Pills / Tabs -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 bg-[#14110E] border border-[#262019] rounded-2xl">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 p-1.5 bg-[#14110E] border border-[#262019] rounded-2xl">
         <button type="button" @click="tab = 'logo'"
                 :class="tab === 'logo' ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
                 class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
@@ -158,6 +158,15 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <span>SEO & Metadatos</span>
+        </button>
+
+        <button type="button" @click="tab = 'scripts'"
+                :class="tab === 'scripts' ? 'bg-emerald-500/20 text-white border border-emerald-500/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
+                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+            </svg>
+            <span>Scripts & Analytics</span>
         </button>
 
         <button type="button" @click="tab = 'general'"
@@ -987,6 +996,173 @@
                         <li>Haz clic en <strong>Manage R2 API Tokens</strong> &gt; <strong>Create API Token</strong> con permisos <strong>Object Read & Write</strong>. Copia tu <em>Access Key ID</em>, <em>Secret Access Key</em> y el <em>Account ID</em> de tu cuenta.</li>
                         <li>¡Listo! Pégalos aquí arriba y pulsa <strong>Probar Conexión R2</strong>.</li>
                     </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SCRIPTS & ANALYTICS -->
+        <div x-show="tab === 'scripts'" class="space-y-6">
+            <!-- Top Banner Card -->
+            <div class="bg-[#14110E] border border-emerald-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex items-start gap-4 relative z-10">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-lg shadow-inner shrink-0">
+                        &lt;/&gt;
+                    </div>
+                    <div class="space-y-2 flex-1">
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h2 class="text-base font-bold text-white tracking-tight">Inyección de Código Personalizado & Analítica Web</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
+                                Google Analytics / Search Console / Pixel / Ads
+                            </span>
+                        </div>
+                        <p class="text-xs text-[#8C847A] leading-relaxed max-w-4xl">
+                            Inserta tus etiquetas de seguimiento, códigos de verificación y scripts de analítica de forma segura sin tener que tocar archivos PHP. El código se inyecta directamente en las páginas públicas respetando el estándar técnico de Google, Meta y redes de publicidad.
+                        </p>
+                        <div class="pt-2 flex flex-wrap items-center gap-4 text-[11px] text-[#A8A199]">
+                            <span class="inline-flex items-center gap-1.5 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                Sin tocar archivos PHP
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                Seguro: No afecta el panel de administración
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                Compatible con HTML, JavaScript, CSS, &lt;meta&gt; y &lt;noscript&gt;
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block 1: <HEAD> -->
+            <div class="bg-[#14110E] border border-[#2B241C] hover:border-[#382E24] rounded-2xl p-6 shadow-xl space-y-4 transition-colors">
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono text-[10px] font-bold tracking-wider">&lt;HEAD&gt;</span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">CÓDIGO EN LA CABECERA (&lt;HEAD&gt;)</h3>
+                    </div>
+                    <p class="text-xs text-[#8C847A] leading-relaxed">
+                        Se inserta justo antes de <code class="text-blue-400 bg-blue-500/10 px-1 py-0.5 rounded text-[11px]">&lt;/head&gt;</code>. Ideal para verificación de Google Search Console (&lt;meta name="google-site-verification"&gt;), Google Analytics 4 (gtag.js), Google Tag Manager, Meta Pixel (Facebook), verificación de Google AdSense o scripts de tracking principales.
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <label for="custom_head_code" class="font-bold text-[#A8A199] uppercase tracking-wider">
+                            Fragmento HTML / JavaScript para &lt;head&gt;:
+                        </label>
+                        <span class="text-[11px] text-[#736B63] font-mono truncate">
+                            Ejemplo: &lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXX"&gt;&lt;/script&gt;
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <textarea id="custom_head_code" name="custom_head_code" rows="8" spellcheck="false"
+                                  placeholder="<!-- Google tag (gtag.js) -->&#10;<script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-1NC1BF1YF4&quot;></script>&#10;<script>&#10;  window.dataLayer = window.dataLayer || [];&#10;  function gtag(){dataLayer.push(arguments);}&#10;  gtag('js', new Date());&#10;&#10;  gtag('config', 'G-1NC1BF1YF4');&#10;</script>"
+                                  class="w-full bg-[#0A0908] border border-[#2B241C] focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30 rounded-xl p-4 text-xs font-mono text-emerald-400 placeholder-[#4A433B] focus:outline-none transition-all leading-relaxed shadow-inner">{{ old('custom_head_code', $settings['custom_head_code'] ?? '') }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block 2: <BODY> -->
+            <div class="bg-[#14110E] border border-[#2B241C] hover:border-[#382E24] rounded-2xl p-6 shadow-xl space-y-4 transition-colors">
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 font-mono text-[10px] font-bold tracking-wider">&lt;BODY&gt;</span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">CÓDIGO DE APERTURA (&lt;BODY&gt;)</h3>
+                    </div>
+                    <p class="text-xs text-[#8C847A] leading-relaxed">
+                        Se inserta inmediatamente después de la apertura de la etiqueta <code class="text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded text-[11px]">&lt;body&gt;</code>. Utilizado habitualmente por el fragmento <code class="text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded text-[11px]">&lt;noscript&gt;</code> de Google Tag Manager.
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <label for="custom_body_code" class="font-bold text-[#A8A199] uppercase tracking-wider">
+                            Fragmento HTML / Noscript para inicio de &lt;body&gt;:
+                        </label>
+                        <span class="text-[11px] text-[#736B63] font-mono truncate">
+                            Ejemplo: &lt;noscript&gt;&lt;iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXX" ...&gt;
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <textarea id="custom_body_code" name="custom_body_code" rows="5" spellcheck="false"
+                                  placeholder="<!-- Google Tag Manager (noscript) -->&#10;<noscript><iframe src=&quot;https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX&quot;&#10;height=&quot;0&quot; width=&quot;0&quot; style=&quot;display:none;visibility:hidden&quot;></iframe></noscript>"
+                                  class="w-full bg-[#0A0908] border border-[#2B241C] focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/30 rounded-xl p-4 text-xs font-mono text-purple-300 placeholder-[#4A433B] focus:outline-none transition-all leading-relaxed shadow-inner">{{ old('custom_body_code', $settings['custom_body_code'] ?? '') }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block 3: </BODY> -->
+            <div class="bg-[#14110E] border border-[#2B241C] hover:border-[#382E24] rounded-2xl p-6 shadow-xl space-y-4 transition-colors">
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono text-[10px] font-bold tracking-wider">&lt;/BODY&gt;</span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">CÓDIGO DE PIE DE PÁGINA (ANTES DE &lt;/BODY&gt;)</h3>
+                    </div>
+                    <p class="text-xs text-[#8C847A] leading-relaxed">
+                        Se inserta justo antes de cerrar <code class="text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded text-[11px]">&lt;/body&gt;</code>. Ideal para widgets de soporte (Crisp, Tawk.to, WhatsApp), scripts de anuncios diferidos, popunders o JavaScript de analítica secundaria.
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <label for="custom_footer_code" class="font-bold text-[#A8A199] uppercase tracking-wider">
+                            Fragmento HTML / JavaScript para pie de página:
+                        </label>
+                        <span class="text-[11px] text-[#736B63] font-mono truncate">
+                            Ejemplo: Scripts de Chat, Anuncios o Analytics diferido
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <textarea id="custom_footer_code" name="custom_footer_code" rows="5" spellcheck="false"
+                                  placeholder="<!-- Widget de Chat o Scripts diferidos -->&#10;<script>&#10;  // Tu script personalizado&#10;</script>"
+                                  class="w-full bg-[#0A0908] border border-[#2B241C] focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/30 rounded-xl p-4 text-xs font-mono text-amber-300 placeholder-[#4A433B] focus:outline-none transition-all leading-relaxed shadow-inner">{{ old('custom_footer_code', $settings['custom_footer_code'] ?? '') }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Helpful Quick Guide Card -->
+            <div class="p-5 bg-[#110E0C] border border-[#2B221B] rounded-2xl space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold text-white">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Guía de Verificación & Servicios Frecuentes</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                    <div class="p-3 bg-[#171411] border border-[#262019] rounded-xl space-y-1">
+                        <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                            Google Search Console
+                        </p>
+                        <p class="text-[11px] text-[#8C847A] leading-relaxed">
+                            Copia la etiqueta HTML <code class="text-blue-300 font-mono text-[10px]">&lt;meta name="google-site-verification" content="..."&gt;</code> y pégala directamente en <strong>CÓDIGO EN LA CABECERA (&lt;HEAD&gt;)</strong>.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-[#171411] border border-[#262019] rounded-xl space-y-1">
+                        <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            Google Analytics 4 & Ads
+                        </p>
+                        <p class="text-[11px] text-[#8C847A] leading-relaxed">
+                            Pega el bloque completo de <code class="text-emerald-300 font-mono text-[10px]">gtag.js</code> en <strong>&lt;HEAD&gt;</strong> para medir visitas y conversiones en tiempo real.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-[#171411] border border-[#262019] rounded-xl space-y-1">
+                        <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                            Google Tag Manager (GTM)
+                        </p>
+                        <p class="text-[11px] text-[#8C847A] leading-relaxed">
+                            Pega el primer bloque en <strong>&lt;HEAD&gt;</strong> y el bloque secundario <code class="text-purple-300 font-mono text-[10px]">&lt;noscript&gt;</code> en <strong>CÓDIGO DE APERTURA (&lt;BODY&gt;)</strong>.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

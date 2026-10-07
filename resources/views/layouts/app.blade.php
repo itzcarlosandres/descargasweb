@@ -84,8 +84,18 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @stack('styles')
+
+    <!-- Custom Code & Analytics (Head) -->
+    @if(!empty(setting('custom_head_code')))
+        {!! setting('custom_head_code') !!}
+    @endif
 </head>
 <body class="min-h-screen flex flex-col bg-background text-text antialiased selection:bg-primary/30">
+    <!-- Custom Code & Analytics (Body Start) -->
+    @if(!empty(setting('custom_body_code')))
+        {!! setting('custom_body_code') !!}
+    @endif
+
     <x-navbar />
 
     <main class="flex-1">
@@ -120,5 +130,10 @@
 
     @livewireScripts
     @stack('scripts')
+
+    <!-- Custom Code & Analytics (Footer / End of Body) -->
+    @if(!empty(setting('custom_footer_code')))
+        {!! setting('custom_footer_code') !!}
+    @endif
 </body>
 </html>

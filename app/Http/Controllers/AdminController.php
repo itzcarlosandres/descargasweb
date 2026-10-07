@@ -462,6 +462,9 @@ class AdminController extends Controller
             'r2_bucket' => 'nullable|string|max:255',
             'r2_url' => 'nullable|string|max:255',
             'torrentmac_storage_disk' => 'nullable|string|in:local,r2',
+            'custom_head_code' => 'nullable|string',
+            'custom_body_code' => 'nullable|string',
+            'custom_footer_code' => 'nullable|string',
         ]);
 
         // Text & Branding settings
@@ -571,6 +574,17 @@ class AdminController extends Controller
         }
         if ($request->has('torrentmac_storage_disk')) {
             Setting::set('torrentmac_storage_disk', $validated['torrentmac_storage_disk'] ?? 'local', 'storage');
+        }
+
+        // Scripts & Analytics Code Injection
+        if ($request->has('custom_head_code')) {
+            Setting::set('custom_head_code', $request->input('custom_head_code'), 'scripts');
+        }
+        if ($request->has('custom_body_code')) {
+            Setting::set('custom_body_code', $request->input('custom_body_code'), 'scripts');
+        }
+        if ($request->has('custom_footer_code')) {
+            Setting::set('custom_footer_code', $request->input('custom_footer_code'), 'scripts');
         }
 
         Setting::clearCache();

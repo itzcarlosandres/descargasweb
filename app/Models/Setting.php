@@ -53,6 +53,9 @@ class Setting extends Model
         'r2_url' => '',
         'torrentmac_storage_disk' => 'local',
         'logo_size' => '24',
+        'custom_head_code' => '',
+        'custom_body_code' => '',
+        'custom_footer_code' => '',
     ];
 
     /**
