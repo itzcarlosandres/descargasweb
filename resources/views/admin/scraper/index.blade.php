@@ -21,6 +21,7 @@
     hasPrev: {{ ($haxmacPagination['has_prev'] ?? false) ? 'true' : 'false' }},
     loadingPage: false,
     importingSlug: null,
+    importQueue: [],
     importingAllPage: false,
     pageImportProgress: '',
     importMessage: '',
@@ -45,6 +46,7 @@
     torrentHasPrev: false,
     torrentLoading: false,
     torrentImportingUrl: null,
+    torrentQueue: [],
     torrentSyncing: false,
     torrentCategories: @js($torrentmacCategories ?? []),
     torrentStorageTarget: '{{ $stats['torrent_storage_target'] ?? 'local' }}',
@@ -225,7 +227,7 @@
             count++;
             this.pageImportProgress = `${count}/${toImport.length}`;
             try {
-                await this.importSingle(item);
+                await this.executeImport(item);
                 await new Promise(r => setTimeout(r, 200));
             } catch(e) {
                 console.error(e);
@@ -235,9 +237,40 @@
         this.importingAllPage = false;
         this.pageImportProgress = '';
         this.showToast(`✓ Se han importado ${count} programas con éxito`);
+        if (this.importQueue.length > 0) {
+            this.processQueue();
+        }
     },
 
-    async importSingle(item) {
+    importSingle(item) {
+        this.enqueueImport(item);
+    },
+
+    isItemQueued(slug) {
+        return this.importQueue.some(it => it.slug === slug);
+    },
+
+    enqueueImport(item) {
+        if (this.importingSlug === item.slug || this.isItemQueued(item.slug)) {
+            return;
+        }
+        if (!this.importingSlug && !this.importingAllPage) {
+            this.executeImport(item);
+        } else {
+            this.importQueue.push(item);
+            this.showToast(`🕒 "${item.name || item.title || item.slug}" en cola segura (${this.importQueue.length} en espera)`);
+        }
+    },
+
+    async processQueue() {
+        if (this.importQueue.length === 0 || this.importingSlug || this.importingAllPage) return;
+        const nextItem = this.importQueue.shift();
+        if (nextItem) {
+            await this.executeImport(nextItem);
+        }
+    },
+
+    async executeImport(item) {
         this.importingSlug = item.slug;
         try {
             const res = await fetch('{{ route('admin.scraper.import-single') }}', {
@@ -255,12 +288,17 @@
                 item.local_version = item.version;
                 this.showToast('✓ ' + data.message);
             } else {
-                alert(data.message || 'Error al importar');
+                this.showToast('⚠️ ' + (data.message || 'Error al importar'));
             }
         } catch(e) {
-            alert('Error de conexión al importar');
+            this.showToast('❌ Error de conexión al importar');
         } finally {
             this.importingSlug = null;
+            if (!this.importingAllPage && this.importQueue.length > 0) {
+                setTimeout(() => {
+                    this.processQueue();
+                }, 300);
+            }
         }
     },
 
@@ -412,7 +450,35 @@
         }
     },
 
-    async importTorrentApp(app) {
+    importTorrentApp(app) {
+        this.enqueueTorrentImport(app);
+    },
+
+    isTorrentQueued(url) {
+        return this.torrentQueue.some(it => it.url === url);
+    },
+
+    enqueueTorrentImport(app) {
+        if (this.torrentImportingUrl === app.url || this.isTorrentQueued(app.url)) {
+            return;
+        }
+        if (!this.torrentImportingUrl) {
+            this.executeTorrentImport(app);
+        } else {
+            this.torrentQueue.push(app);
+            this.showToast(`🕒 Torrent "${app.title || app.name || 'App'}" en cola segura (${this.torrentQueue.length} en espera)`);
+        }
+    },
+
+    async processTorrentQueue() {
+        if (this.torrentQueue.length === 0 || this.torrentImportingUrl) return;
+        const nextApp = this.torrentQueue.shift();
+        if (nextApp) {
+            await this.executeTorrentImport(nextApp);
+        }
+    },
+
+    async executeTorrentImport(app) {
         this.torrentImportingUrl = app.url;
         try {
             const res = await fetch('{{ route('admin.scraper.torrentmac.import-single') }}', {
@@ -430,12 +496,17 @@
                 app.has_torrent = true;
                 app.is_dual = data.app?.is_dual;
             } else {
-                alert(data.message || 'Error al importar torrent');
+                this.showToast('⚠️ ' + (data.message || 'Error al importar torrent'));
             }
         } catch(e) {
-            alert('Error de conexión al importar torrent');
+            this.showToast('❌ Error de conexión al importar torrent');
         } finally {
             this.torrentImportingUrl = null;
+            if (this.torrentQueue.length > 0) {
+                setTimeout(() => {
+                    this.processTorrentQueue();
+                }, 300);
+            }
         }
     },
 
@@ -795,6 +866,15 @@
                             6 Cols
                         </button>
                     </div>
+ 
+                    <!-- Active Queue Counter Pill -->
+                    <div x-show="importQueue.length > 0" x-cloak class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#881337] to-[#4C0519] border border-amber-500/40 text-white text-xs font-bold shadow-lg shadow-[#881337]/30 animate-pulse flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 2"/>
+                        </svg>
+                        <span>Cola segura: <strong class="text-amber-300 font-mono" x-text="importQueue.length"></strong> en espera</span>
+                    </div>
 
                     <!-- Import Entire Page / Update All Visible button -->
                     <button type="button" @click="importPageApps()" :disabled="importingAllPage || getDisplayedApps().length === 0"
@@ -983,31 +1063,45 @@
                                 <!-- Thin separator line matching image -->
                                 <div class="h-px w-full bg-[#241E18] my-2.5"></div>
 
-                                <!-- CTA Button (Rose/Crimson gradient matching ⚡ 1-Clic Importar) -->
-                                <button type="button" @click="importSingle(item)" :disabled="importingSlug === item.slug"
-                                        class="w-full py-2 px-2.5 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] disabled:opacity-60"
-                                        :class="item.has_update 
-                                            ? 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] hover:to-[#F59E0B] text-black shadow-[#F59E0B]/25' 
-                                            : (item.is_imported 
-                                                ? 'bg-gradient-to-r from-[#1E1914] to-[#2B231C] hover:from-[#2B231C] hover:to-[#382E24] text-[#D8CFBE] border border-[#3E3326] shadow-black/40' 
-                                                : 'bg-gradient-to-r from-[#E11D48] via-[#E11D48] to-[#BE123C] hover:from-[#F43F5E] hover:to-[#E11D48] text-white shadow-[#E11D48]/30 hover:shadow-[#E11D48]/45')">
+                                <!-- CTA Button (Queue Aware: Importing vs Queued vs Normal) -->
+                                <button type="button" 
+                                        @click="importSingle(item)" 
+                                        :disabled="importingSlug === item.slug || isItemQueued(item.slug)"
+                                        class="w-full py-2 px-2.5 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-90"
+                                        :class="importingSlug === item.slug 
+                                            ? 'bg-gradient-to-r from-[#9F1239] via-[#881337] to-[#4C0519] text-white shadow-[#9F1239]/40 cursor-wait animate-pulse' 
+                                            : (isItemQueued(item.slug)
+                                                ? 'bg-gradient-to-r from-[#881337] via-[#701A28] to-[#4C0519] text-[#FCD34D] border border-amber-500/40 shadow-black/50 cursor-wait'
+                                                : (item.has_update 
+                                                    ? 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] hover:to-[#F59E0B] text-black shadow-[#F59E0B]/25 cursor-pointer' 
+                                                    : (item.is_imported 
+                                                        ? 'bg-gradient-to-r from-[#1E1914] to-[#2B231C] hover:from-[#2B231C] hover:to-[#382E24] text-[#D8CFBE] border border-[#3E3326] shadow-black/40 cursor-pointer' 
+                                                        : 'bg-gradient-to-r from-[#E11D48] via-[#E11D48] to-[#BE123C] hover:from-[#F43F5E] hover:to-[#E11D48] text-white shadow-[#E11D48]/30 hover:shadow-[#E11D48]/45 cursor-pointer')))">
                                     
-                                    <!-- Loading Spinner -->
-                                    <svg x-show="importingSlug === item.slug" class="animate-spin w-3.5 h-3.5 text-current" fill="none" viewBox="0 0 24 24">
+                                    <!-- State 1: Active Import Spinner -->
+                                    <svg x-show="importingSlug === item.slug" class="animate-spin w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
 
-                                    <!-- Lightning Bolt Icon (matching image) -->
-                                    <svg x-show="importingSlug !== item.slug" class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <!-- State 2: Queued Clock Icon -->
+                                    <svg x-show="isItemQueued(item.slug)" class="w-3.5 h-3.5 text-amber-400 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 2"/>
+                                    </svg>
+
+                                    <!-- State 3: Normal Lightning Bolt Icon -->
+                                    <svg x-show="importingSlug !== item.slug && !isItemQueued(item.slug)" class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
                                     </svg>
 
                                     <span x-text="importingSlug === item.slug 
-                                        ? 'Descargando...' 
-                                        : (item.has_update 
-                                            ? '1–Clic Update' 
-                                            : (item.is_imported ? '✓ Re-importar' : '1–Clic Importar'))">1–Clic Importar</span>
+                                        ? 'Importando & Redactando IA...' 
+                                        : (isItemQueued(item.slug)
+                                            ? 'En cola segura...'
+                                            : (item.has_update 
+                                                ? '1–Clic Update' 
+                                                : (item.is_imported ? '✓ Re-importar' : '1–Clic Importar')))">1–Clic Importar</span>
                                 </button>
                             </div>
                         </div>
@@ -1158,6 +1252,15 @@
                         <span>Configurar R2</span>
                     </a>
 
+                    <!-- Active Torrent Queue Counter Pill -->
+                    <div x-show="torrentQueue.length > 0" x-cloak class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#881337] to-[#4C0519] border border-amber-500/40 text-white text-xs font-bold shadow-lg shadow-[#881337]/30 animate-pulse flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 2"/>
+                        </svg>
+                        <span>Cola Torrent: <strong class="text-amber-300 font-mono" x-text="torrentQueue.length"></strong> en espera</span>
+                    </div>
+
                     <button type="button" @click="loadTorrentmac(torrentCurrentPage)" :disabled="torrentLoading"
                             class="px-3 py-1.5 rounded-xl bg-[#201C17] hover:bg-[#2A241E] border border-[#3A3025] text-[#D8CFBE] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer">
                         <svg :class="torrentLoading ? 'animate-spin' : ''" class="w-3.5 h-3.5 text-[#30D158]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1274,26 +1377,38 @@
                             </div>
                         </div>
 
-                        <!-- Divider & Action Button -->
+                        <!-- Divider & Action Button (Queue Aware) -->
                         <div class="mt-3 pt-2.5 border-t border-[#262019]">
-                            <button type="button" @click="importTorrentApp(app)" :disabled="torrentImportingUrl === app.url"
-                                    class="w-full py-2 px-2 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-                                    :class="app.has_torrent 
-                                        ? 'bg-[#221C16] hover:bg-[#2B231C] text-[#30D158] border border-[#30D158]/30 shadow-none' 
-                                        : 'bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black shadow-success/20'">
+                            <button type="button" @click="importTorrentApp(app)" :disabled="torrentImportingUrl === app.url || isTorrentQueued(app.url)"
+                                    class="w-full py-2 px-2 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-90"
+                                    :class="torrentImportingUrl === app.url 
+                                        ? 'bg-gradient-to-r from-[#9F1239] via-[#881337] to-[#4C0519] text-white shadow-[#9F1239]/40 cursor-wait animate-pulse' 
+                                        : (isTorrentQueued(app.url)
+                                            ? 'bg-gradient-to-r from-[#881337] via-[#701A28] to-[#4C0519] text-[#FCD34D] border border-amber-500/40 shadow-black/50 cursor-wait'
+                                            : (app.has_torrent 
+                                                ? 'bg-[#221C16] hover:bg-[#2B231C] text-[#30D158] border border-[#30D158]/30 shadow-none cursor-pointer' 
+                                                : 'bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black shadow-success/20 cursor-pointer'))">
                                 
                                 <!-- Loading Spinner -->
-                                <svg x-show="torrentImportingUrl === app.url" class="animate-spin w-3.5 h-3.5 text-current" fill="none" viewBox="0 0 24 24">
+                                <svg x-show="torrentImportingUrl === app.url" class="animate-spin w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
 
+                                <!-- Queued Clock Icon -->
+                                <svg x-show="isTorrentQueued(app.url)" class="w-3.5 h-3.5 text-amber-400 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 2"/>
+                                </svg>
+
                                 <!-- Magnet/Torrent Icon -->
-                                <span x-show="torrentImportingUrl !== app.url" class="text-sm">🧲</span>
+                                <span x-show="torrentImportingUrl !== app.url && !isTorrentQueued(app.url)" class="text-sm">🧲</span>
 
                                 <span x-text="torrentImportingUrl === app.url 
-                                    ? 'Descargando...' 
-                                    : (app.has_torrent ? '✓ Re-importar' : (app.in_database ? '+ Vincular Torrent' : '1–Clic Torrent'))">
+                                    ? 'Importando Torrent...' 
+                                    : (isTorrentQueued(app.url)
+                                        ? 'En cola segura...'
+                                        : (app.has_torrent ? '✓ Re-importar' : (app.in_database ? '+ Vincular Torrent' : '1–Clic Torrent')))">
                                     1–Clic Torrent
                                 </span>
                             </button>
