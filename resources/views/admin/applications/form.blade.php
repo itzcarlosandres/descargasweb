@@ -25,6 +25,21 @@
         removeMirror(idx) {
             this.mirrors.splice(idx, 1);
         },
+        htmlMode: false,
+        toggleHtmlMode() {
+            this.htmlMode = !this.htmlMode;
+            const descEl = document.getElementById('app-description');
+            if (this.htmlMode) {
+                if (window.quillDescEditor && descEl) {
+                    const html = window.quillDescEditor.root.innerHTML;
+                    descEl.value = (html === '<p><br></p>') ? '' : html;
+                }
+            } else {
+                if (window.quillDescEditor && descEl) {
+                    window.quillDescEditor.root.innerHTML = descEl.value;
+                }
+            }
+        },
         generatingAi: false,
         aiNotification: null,
 
@@ -42,7 +57,10 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const descEl = document.getElementById('app-description');
+                    if (descEl) descEl.value = data.description;
                     if (this.$refs.descTextarea) this.$refs.descTextarea.value = data.description;
+                    if (window.quillDescEditor) window.quillDescEditor.root.innerHTML = data.description;
                     if (this.$refs.featuresTextarea) this.$refs.featuresTextarea.value = data.features;
                     this.aiNotification = { success: true, message: data.message };
                 } else {
@@ -302,17 +320,67 @@
                                 </div>
                             @endif
 
-                            <!-- Full Description -->
+                            <!-- Full Description with Rich Text Editor -->
                             <div>
-                                <label class="block text-xs font-semibold text-[#A39B91] mb-1.5 flex items-center justify-between">
-                                    <span>Descripción Concisa (~4 renglones en inglés con SEO interno)</span>
-                                    <span class="text-[10px] text-[#736B63]">Párrafo &lt;p&gt; con enlace &lt;a&gt; a categoría</span>
-                                </label>
+                                <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                                    <label class="text-xs font-semibold text-[#A39B91] flex items-center gap-2">
+                                        <span>Descripción Concisa (~4 renglones en inglés con SEO interno)</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">Editor Visual</span>
+                                    </label>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" 
+                                                @click="toggleHtmlMode()"
+                                                class="text-[11px] px-2.5 py-1 rounded-lg bg-[#181410] hover:bg-[#201B15] text-[#A39B91] hover:text-white border border-[#2D261E] transition-colors flex items-center gap-1.5 cursor-pointer">
+                                            <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                                            </svg>
+                                            <span x-text="htmlMode ? '← Volver al Editor Visual' : 'Ver / Editar Código HTML'"></span>
+                                        </button>
+                                        <span class="text-[10px] text-[#736B63] hidden sm:inline">Párrafo &lt;p&gt; con enlace &lt;a&gt;</span>
+                                    </div>
+                                </div>
+
+                                <!-- Rich Text WYSIWYG Editor Container -->
+                                <div x-show="!htmlMode" class="quill-editor-wrapper">
+                                    <div id="quill-toolbar">
+                                        <span class="ql-formats">
+                                            <select class="ql-header">
+                                                <option value="1">Título 1 (H1)</option>
+                                                <option value="2">Título 2 (H2)</option>
+                                                <option value="3">Título 3 (H3)</option>
+                                                <option selected>Párrafo Normal</option>
+                                            </select>
+                                        </span>
+                                        <span class="ql-formats">
+                                            <button class="ql-bold" title="Negrita (Ctrl+B)"></button>
+                                            <button class="ql-italic" title="Cursiva (Ctrl+I)"></button>
+                                            <button class="ql-underline" title="Subrayado (Ctrl+U)"></button>
+                                            <button class="ql-strike" title="Tachado"></button>
+                                        </span>
+                                        <span class="ql-formats">
+                                            <select class="ql-color" title="Color de texto"></select>
+                                            <select class="ql-background" title="Color de resaltado"></select>
+                                        </span>
+                                        <span class="ql-formats">
+                                            <button class="ql-list" value="ordered" title="Lista numerada"></button>
+                                            <button class="ql-list" value="bullet" title="Lista con viñetas"></button>
+                                        </span>
+                                        <span class="ql-formats">
+                                            <button class="ql-link" title="Insertar Enlace SEO"></button>
+                                            <button class="ql-clean" title="Limpiar Formato"></button>
+                                        </span>
+                                    </div>
+                                    <div id="quill-editor"></div>
+                                </div>
+
+                                <!-- Textarea for Form Submission & Raw HTML Mode -->
                                 <textarea name="description"
+                                          id="app-description"
                                           x-ref="descTextarea"
                                           rows="7"
+                                          :class="htmlMode ? 'block' : 'hidden'"
                                           placeholder="Detalla qué hace el software en inglés con formato editorial para macOS..."
-                                          class="input w-full text-xs resize-y leading-relaxed font-sans">{{ old('description', $app->description ?? '') }}</textarea>
+                                          class="input w-full text-xs resize-y leading-relaxed font-mono">{{ old('description', $app->description ?? '') }}</textarea>
                             </div>
 
                             <!-- Features List -->
@@ -827,4 +895,191 @@
             </div>
         </form>
     </div>
+
+    @push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <style>
+        /* Quill Dark macOS Editor Styling */
+        .quill-editor-wrapper {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid #2D261E;
+            background-color: #12100E;
+        }
+        .ql-toolbar.ql-snow {
+            background-color: #181410 !important;
+            border: none !important;
+            border-bottom: 1px solid #26211B !important;
+            padding: 8px 12px !important;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .ql-container.ql-snow {
+            background-color: #12100E !important;
+            border: none !important;
+            color: #F5EFEB !important;
+            font-family: inherit !important;
+            font-size: 0.8125rem !important;
+        }
+        .ql-editor {
+            min-height: 180px;
+            line-height: 1.65;
+            padding: 14px 16px;
+        }
+        .ql-editor p {
+            margin-bottom: 0.5rem;
+        }
+        .ql-editor h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #FFFFFF;
+        }
+        .ql-editor h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 0.6rem;
+            margin-bottom: 0.4rem;
+            color: #FFFFFF;
+        }
+        .ql-editor h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            margin-bottom: 0.3rem;
+            color: #FFFFFF;
+        }
+        .ql-editor a {
+            color: #38BDF8 !important;
+            text-decoration: underline;
+        }
+        .ql-editor.ql-blank::before {
+            color: #736B63 !important;
+            font-style: normal !important;
+            left: 16px !important;
+            right: 16px !important;
+        }
+        /* Toolbar Icons and Pickers */
+        .ql-snow .ql-stroke {
+            stroke: #A39B91 !important;
+        }
+        .ql-snow .ql-fill {
+            fill: #A39B91 !important;
+        }
+        .ql-snow .ql-picker {
+            color: #A39B91 !important;
+        }
+        .ql-snow .ql-picker-label {
+            border-radius: 6px;
+            padding-left: 6px;
+            padding-right: 2px;
+        }
+        .ql-snow .ql-picker-label:hover {
+            background-color: #221C16;
+            color: #FFFFFF !important;
+        }
+        .ql-snow .ql-picker-label:hover .ql-stroke {
+            stroke: #FFFFFF !important;
+        }
+        .ql-snow .ql-picker-options {
+            background-color: #1A1612 !important;
+            border: 1px solid #2D261E !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+            border-radius: 0.5rem !important;
+            padding: 6px !important;
+            z-index: 50 !important;
+        }
+        .ql-snow .ql-picker-item {
+            color: #A39B91 !important;
+            border-radius: 0.25rem !important;
+            padding: 4px 8px !important;
+        }
+        .ql-snow .ql-picker-item:hover,
+        .ql-snow .ql-picker-item.ql-selected {
+            color: #FFFFFF !important;
+            background-color: #27211A !important;
+        }
+        .ql-snow button {
+            border-radius: 6px !important;
+            padding: 3px 5px !important;
+        }
+        .ql-snow button:hover,
+        .ql-snow button.ql-active {
+            background-color: #221C16 !important;
+        }
+        .ql-snow button:hover .ql-stroke,
+        .ql-snow button.ql-active .ql-stroke {
+            stroke: #0071E3 !important;
+        }
+        .ql-snow button:hover .ql-fill,
+        .ql-snow button.ql-active .ql-fill {
+            fill: #0071E3 !important;
+        }
+        .ql-snow .ql-tooltip {
+            background-color: #1A1612 !important;
+            border: 1px solid #2D261E !important;
+            color: #F5EFEB !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+            border-radius: 0.5rem !important;
+            padding: 8px 12px !important;
+            z-index: 50 !important;
+        }
+        .ql-snow .ql-tooltip input[type=text] {
+            background-color: #12100E !important;
+            border: 1px solid #2D261E !important;
+            color: #FFFFFF !important;
+            border-radius: 0.375rem !important;
+            padding: 4px 8px !important;
+        }
+        .ql-snow .ql-tooltip a.ql-action,
+        .ql-snow .ql-tooltip a.ql-remove {
+            color: #0071E3 !important;
+        }
+    </style>
+    @endpush
+
+    @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const descTextarea = document.getElementById('app-description');
+        const editorContainer = document.getElementById('quill-editor');
+        if (!descTextarea || !editorContainer) return;
+
+        const quill = new Quill('#quill-editor', {
+            modules: {
+                toolbar: '#quill-toolbar'
+            },
+            placeholder: 'Detalla qué hace el software en inglés con formato editorial para macOS (puedes agregar negritas, encabezados H1/H2, colores y enlaces SEO)...',
+            theme: 'snow'
+        });
+        window.quillDescEditor = quill;
+
+        if (descTextarea.value && descTextarea.value.trim() !== '') {
+            quill.root.innerHTML = descTextarea.value;
+        }
+
+        quill.on('text-change', function() {
+            const html = quill.root.innerHTML;
+            descTextarea.value = (html === '<p><br></p>') ? '' : html;
+        });
+
+        const form = descTextarea.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                if (window.quillDescEditor && descTextarea) {
+                    const formContainer = document.querySelector('[x-data]');
+                    const alpineData = window.Alpine ? Alpine.$data(formContainer) : null;
+                    if (!alpineData || !alpineData.htmlMode) {
+                        const html = window.quillDescEditor.root.innerHTML;
+                        descTextarea.value = (html === '<p><br></p>') ? '' : html;
+                    }
+                }
+            });
+        }
+    });
+    </script>
+    @endpush
 </x-admin-layout>
