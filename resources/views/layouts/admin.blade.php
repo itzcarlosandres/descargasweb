@@ -25,17 +25,43 @@
     @livewireStyles
     @stack('styles')
 </head>
-<body class="min-h-screen bg-[#0E0D0B] text-white font-sans antialiased selection:bg-primary/30 selection:text-white">
+<body class="min-h-screen bg-[#0E0D0B] text-white font-sans antialiased selection:bg-primary/30 selection:text-white"
+      x-data="{ sidebarOpen: false }"
+      @keydown.escape.window="sidebarOpen = false">
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <aside class="w-72 bg-[#12100E] border-r border-[#26211B] flex flex-col flex-shrink-0 z-20">
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div x-show="sidebarOpen"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="sidebarOpen = false"
+             class="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden"
+             style="display: none;"></div>
+
+        <!-- Sidebar (Desktop static, Mobile drawer) -->
+        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+               class="fixed inset-y-0 left-0 z-50 w-72 bg-[#12100E] border-r border-[#26211B] flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out lg:static lg:z-20 shadow-2xl lg:shadow-none">
             <!-- macOS Traffic Lights & Brand -->
             <div class="p-5 border-b border-[#26211B]">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="w-3 h-3 rounded-full bg-[#FF5F57] border border-[#FF5F57]/40 inline-block shadow-sm"></span>
-                    <span class="w-3 h-3 rounded-full bg-[#FEBC2E] border border-[#FEBC2E]/40 inline-block shadow-sm"></span>
-                    <span class="w-3 h-3 rounded-full bg-[#28C840] border border-[#28C840]/40 inline-block shadow-sm"></span>
-                    <span class="ml-2 text-[10px] uppercase font-bold tracking-wider text-[#736B63]">macOS Admin Console</span>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-[#FF5F57] border border-[#FF5F57]/40 inline-block shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full bg-[#FEBC2E] border border-[#FEBC2E]/40 inline-block shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full bg-[#28C840] border border-[#28C840]/40 inline-block shadow-sm"></span>
+                        <span class="ml-2 text-[10px] uppercase font-bold tracking-wider text-[#736B63]">macOS Console</span>
+                    </div>
+
+                    <!-- Mobile Close Drawer Button -->
+                    <button type="button" @click="sidebarOpen = false"
+                            class="lg:hidden p-1.5 rounded-lg text-[#8C847A] hover:text-white hover:bg-[#1E1914] transition-colors focus:outline-none cursor-pointer"
+                            aria-label="Cerrar menú">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
@@ -195,36 +221,61 @@
         </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col overflow-hidden bg-[#0E0D0B]">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0E0D0B]">
             <!-- Topbar Header -->
-            <header class="h-16 bg-[#12100E] border-b border-[#26211B] flex items-center justify-between px-8 flex-shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center text-xs text-[#8C847A] gap-2">
+            <header class="h-16 bg-[#12100E] border-b border-[#26211B] flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <!-- Mobile Hamburger Button -->
+                    <button type="button" @click="sidebarOpen = true"
+                            class="lg:hidden p-2 rounded-xl bg-[#181410] border border-[#2B241C] text-white hover:text-primary transition-colors focus:outline-none shrink-0 cursor-pointer"
+                            aria-label="Abrir menú de navegación">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+
+                    <!-- Mobile Mini Brand -->
+                    <a href="{{ route('admin.dashboard') }}" class="flex lg:hidden items-center gap-2 shrink-0">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0071E3] to-[#005FBF] p-0.5 shadow flex items-center justify-center">
+                            <div class="w-full h-full bg-[#161C24] rounded-[6px] flex items-center justify-center p-0.5 overflow-hidden">
+                                @if(setting('logo_type') === 'image' && setting('logo_image'))
+                                    <img src="{{ setting('logo_image') }}" alt="Logo" class="w-full h-full object-contain">
+                                @else
+                                    <x-logo-icon :icon="setting('logo_icon', 'finder')" class="w-4 h-4" />
+                                @endif
+                            </div>
+                        </div>
+                        <span class="text-white font-extrabold text-xs sm:text-sm tracking-tight hidden xs:inline">{{ setting('site_name', 'HackMac') }}<span class="text-primary">{{ setting('site_name_highlight', '.cc') }}</span></span>
+                    </a>
+
+                    <!-- Breadcrumbs -->
+                    <div class="hidden sm:flex items-center text-xs text-[#8C847A] gap-2 min-w-0 truncate">
                         <a href="{{ route('admin.dashboard') }}" class="hover:text-white transition-colors">Admin</a>
                         <span>/</span>
-                        <span class="text-white font-medium">@yield('header', 'Dashboard')</span>
+                        <span class="text-white font-medium truncate">@yield('page-title', View::yieldContent('header', 'Dashboard'))</span>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 sm:gap-4 shrink-0">
                     <!-- Environment / Time Pill -->
-                    <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-[#181410] border border-[#2B241C] text-[11px] text-[#A39B91]">
+                    <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[#181410] border border-[#2B241C] text-[11px] text-[#A39B91]">
                         <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-                        <span>Servidor Local Online</span>
+                        <span>Online</span>
                     </div>
 
                     <a href="{{ route('home') }}" target="_blank"
-                       class="btn-secondary text-xs px-3.5 py-1.5 gap-1.5">
+                       class="btn-secondary text-xs px-3 sm:px-3.5 py-1.5 gap-1.5">
                         <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
-                        <span>Ver Web</span>
+                        <span class="hidden sm:inline">Ver Web</span>
+                        <span class="sm:hidden">Web</span>
                     </a>
                 </div>
             </header>
 
             <!-- Alerts & Main Dynamic Content -->
-            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+            <main class="flex-1 overflow-y-auto p-3.5 sm:p-6 md:p-8">
                 @if(session('success'))
                     <div class="mb-6 p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm flex items-center justify-between shadow-lg shadow-success/5 animate-fade-in"
                          x-data="{ show: true }" x-show="show">

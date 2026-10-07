@@ -531,9 +531,9 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2.5 flex-wrap">
+        <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap w-full sm:w-auto">
             <button type="button" @click="syncTorrentmacNow()" :disabled="torrentSyncing"
-                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black text-xs font-black shadow-lg shadow-success/20 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+                    class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black text-xs font-black shadow-lg shadow-success/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50">
                 <svg :class="torrentSyncing ? 'animate-spin' : ''" class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -541,7 +541,7 @@
             </button>
 
             <button type="button" @click="syncUpdatesNow()" :disabled="syncingUpdates"
-                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#EA580C] hover:from-primary-hover hover:to-[#F97316] text-white text-xs font-bold shadow-lg shadow-primary/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+                    class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#EA580C] hover:from-primary-hover hover:to-[#F97316] text-white text-xs font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50">
                 <svg :class="syncingUpdates ? 'animate-spin' : ''" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -549,7 +549,7 @@
             </button>
 
             <button type="button" @click="syncCats()" :disabled="syncingCategories"
-                    class="px-4 py-2.5 rounded-xl bg-[#201C17] hover:bg-[#2A241E] border border-[#3A3025] text-[#D8CFBE] hover:text-white text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+                    class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#201C17] hover:bg-[#2A241E] border border-[#3A3025] text-[#D8CFBE] hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50">
                 <svg :class="syncingCategories ? 'animate-spin' : ''" class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -559,7 +559,7 @@
     </div>
 
     <!-- Quick Stats Metric Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow">
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Apps en el Portal</span>
             <div class="text-2xl font-black text-white font-mono">{{ number_format($stats['total_apps']) }}</div>
@@ -579,7 +579,7 @@
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Versiones Guardadas</span>
             <div class="text-2xl font-black text-success font-mono">{{ number_format($stats['total_versions']) }}</div>
         </div>
-        <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow" x-data="{
+        <div class="col-span-2 sm:col-span-3 lg:col-span-1 p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow" x-data="{
             cronActive: {{ $stats['cron_enabled'] ? 'true' : 'false' }},
             togglingCron: false,
             async toggleCron() {
