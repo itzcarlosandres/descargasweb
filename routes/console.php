@@ -48,3 +48,6 @@ Schedule::call(function () {
         Setting::set('scraper_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
     }
 })->dailyAt('03:00')->name('haxmac-deep-sync');
+
+// 3. Automated Daily Sitemap Generation
+Schedule::command('sitemap:generate')->dailyAt('04:00')->name('generate-sitemap');

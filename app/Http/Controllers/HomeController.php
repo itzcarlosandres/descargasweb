@@ -411,9 +411,16 @@ class HomeController extends Controller
             return view('sitemap', compact('categories', 'applications', 'latestAppDate'))->render();
         });
 
+        // Ensure static physical sitemap.xml exists on disk for Nginx static serving
+        $staticPath = public_path('sitemap.xml');
+        if (! file_exists($staticPath)) {
+            @file_put_contents($staticPath, $xml);
+        }
+
         return response($xml, 200)
             ->header('Content-Type', 'application/xml; charset=utf-8')
-            ->header('Cache-Control', 'public, max-age=3600');
+            ->header('X-Robots-Tag', 'index, follow')
+            ->header('Cache-Control', 'public, max-age=86400');
     }
 
     public function robots(): Response
@@ -436,7 +443,9 @@ class HomeController extends Controller
         ];
 
         return response(implode("\n", $lines), 200)
-            ->header('Content-Type', 'text/plain; charset=utf-8');
+            ->header('Content-Type', 'text/plain; charset=utf-8')
+            ->header('X-Robots-Tag', 'index, follow')
+            ->header('Cache-Control', 'public, max-age=86400');
     }
 
     public function disableSip()
