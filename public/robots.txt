@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /download/
+Disallow: /login
+Disallow: /logout
+Disallow: /*?*search*
+
+# Search Engine Indexing
+Sitemap: https://hackmac.cc/sitemap.xml
