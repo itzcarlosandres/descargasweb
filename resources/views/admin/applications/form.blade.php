@@ -348,7 +348,7 @@
                                                 <option value="1">Título 1 (H1)</option>
                                                 <option value="2">Título 2 (H2)</option>
                                                 <option value="3">Título 3 (H3)</option>
-                                                <option selected>Párrafo Normal</option>
+                                                <option selected>Párrafo</option>
                                             </select>
                                         </span>
                                         <span class="ql-formats">
@@ -971,10 +971,24 @@
         .ql-snow .ql-picker {
             color: #A39B91 !important;
         }
+        .ql-snow .ql-picker.ql-header {
+            width: 105px !important;
+        }
         .ql-snow .ql-picker-label {
             border-radius: 6px;
-            padding-left: 6px;
-            padding-right: 2px;
+            padding: 2px 6px !important;
+            display: flex !important;
+            align-items: center !important;
+            white-space: nowrap !important;
+            height: auto !important;
+            min-height: 26px !important;
+            line-height: 1.4 !important;
+            font-size: 11.5px !important;
+            font-weight: 500 !important;
+        }
+        .ql-snow .ql-picker-label svg {
+            flex-shrink: 0;
+            margin-left: auto;
         }
         .ql-snow .ql-picker-label:hover {
             background-color: #221C16;
@@ -990,11 +1004,15 @@
             border-radius: 0.5rem !important;
             padding: 6px !important;
             z-index: 50 !important;
+            min-width: 130px !important;
+            white-space: nowrap !important;
         }
         .ql-snow .ql-picker-item {
             color: #A39B91 !important;
             border-radius: 0.25rem !important;
             padding: 4px 8px !important;
+            white-space: nowrap !important;
+            font-size: 12px !important;
         }
         .ql-snow .ql-picker-item:hover,
         .ql-snow .ql-picker-item.ql-selected {
