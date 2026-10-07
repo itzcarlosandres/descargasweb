@@ -21,14 +21,12 @@
     </div>
 
     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#005FBF] p-0.5 shadow-lg shadow-primary/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
-            <div class="w-full h-full bg-[#161C24] rounded-[10px] flex items-center justify-center p-1 overflow-hidden">
-                @if(setting('logo_type') === 'image' && setting('logo_image'))
-                    <img src="{{ setting('logo_image') }}" alt="Logo" class="w-full h-full object-contain">
-                @else
-                    <x-logo-icon :icon="setting('logo_icon', 'finder')" class="w-7 h-7" />
-                @endif
-            </div>
+        <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+            @if(setting('logo_type') === 'image' && setting('logo_image'))
+                <img src="{{ setting('logo_image') }}" alt="Logo" class="w-full h-full object-contain rounded-lg">
+            @else
+                <x-logo-icon :icon="setting('logo_icon', 'finder')" class="w-full h-full" />
+            @endif
         </div>
         <div>
             <div class="flex items-center gap-1.5">

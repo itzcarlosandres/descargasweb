@@ -83,15 +83,13 @@
                     </button>
 
                     <!-- Mobile Mini Brand -->
-                    <a href="{{ route('admin.dashboard') }}" class="flex lg:hidden items-center gap-2 shrink-0">
-                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0071E3] to-[#005FBF] p-0.5 shadow flex items-center justify-center">
-                            <div class="w-full h-full bg-[#161C24] rounded-[6px] flex items-center justify-center p-0.5 overflow-hidden">
-                                @if(setting('logo_type') === 'image' && setting('logo_image'))
-                                    <img src="{{ setting('logo_image') }}" alt="Logo" class="w-full h-full object-contain">
-                                @else
-                                    <x-logo-icon :icon="setting('logo_icon', 'finder')" class="w-4 h-4" />
-                                @endif
-                            </div>
+                    <a href="{{ route('admin.dashboard') }}" class="flex lg:hidden items-center gap-2.5 shrink-0">
+                        <div class="w-7 h-7 flex-shrink-0 flex items-center justify-center">
+                            @if(setting('logo_type') === 'image' && setting('logo_image'))
+                                <img src="{{ setting('logo_image') }}" alt="Logo" class="w-full h-full object-contain rounded-md">
+                            @else
+                                <x-logo-icon :icon="setting('logo_icon', 'finder')" class="w-full h-full" />
+                            @endif
                         </div>
                         <span class="text-white font-extrabold text-xs sm:text-sm tracking-tight hidden xs:inline">{{ setting('site_name', 'HackMac') }}<span class="text-primary">{{ setting('site_name_highlight', '.cc') }}</span></span>
                     </a>
