@@ -4,569 +4,7 @@
 @section('page-title', 'Scraper Automático')
 
 @section('content')
-<div class="space-y-6 max-w-[1720px] mx-auto w-full" x-data="{
-    tab: 'search',
-    gridCols: 6,
-    searchQuery: '',
-    searching: false,
-    searchResults: [],
-    searchTotal: 0,
-    hasSearched: false,
-    activeCategory: 'all',
-    activeCategoryName: 'Todos los Posts',
-    latestApps: @js($haxmacLatest ?? []),
-    currentPage: {{ $haxmacPagination['current_page'] ?? 1 }},
-    totalPages: {{ $haxmacPagination['total_pages'] ?? 1 }},
-    hasNext: {{ ($haxmacPagination['has_next'] ?? false) ? 'true' : 'false' }},
-    hasPrev: {{ ($haxmacPagination['has_prev'] ?? false) ? 'true' : 'false' }},
-    loadingPage: false,
-    importingSlug: null,
-    importQueue: [],
-    importingAllPage: false,
-    pageImportProgress: '',
-    importMessage: '',
-    syncingCategories: false,
-    pendingUpdates: [],
-    loadingUpdates: false,
-    viewingUpdatesOnly: false,
-    updatesCount: (@js($haxmacLatest ?? [])).filter(it => it.has_update).length,
-
-    // TorrentMac State & Methods
-    torrentCategory: 'all',
-    torrentCategoryName: 'Todos los Torrents',
-    torrentApps: [],
-    torrentSearchQuery: '',
-    torrentSearching: false,
-    torrentHasSearched: false,
-    torrentSearchResults: [],
-    torrentSearchTotal: 0,
-    torrentCurrentPage: 1,
-    torrentTotalPages: 1,
-    torrentHasNext: false,
-    torrentHasPrev: false,
-    torrentLoading: false,
-    torrentImportingUrl: null,
-    torrentQueue: [],
-    torrentSyncing: false,
-    torrentCategories: @js($torrentmacCategories ?? []),
-    torrentStorageTarget: '{{ $stats['torrent_storage_target'] ?? 'local' }}',
-    effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
-    r2Configured: {{ ($stats['r2_configured'] ?? false) ? 'true' : 'false' }},
-
-    init() {
-        this.fetchUpdatesCountAsync();
-    },
-
-    async fetchUpdatesCountAsync() {
-        try {
-            const res = await fetch('{{ route('admin.scraper.pending-updates') }}?pages=2');
-            const data = await res.json();
-            if (data.success) {
-                this.updatesCount = data.count;
-                if (this.viewingUpdatesOnly) {
-                    this.pendingUpdates = data.items;
-                }
-            }
-        } catch(e) {
-            console.warn('Could not fetch pending updates count', e);
-        }
-    },
-
-    async togglePendingUpdates() {
-        if (this.viewingUpdatesOnly) {
-            this.viewingUpdatesOnly = false;
-            this.activeCategory = 'all';
-            this.activeCategoryName = 'Todos los Posts';
-            await this.goToPage(1);
-            return;
-        }
-
-        this.loadingUpdates = true;
-        this.hasSearched = false;
-        this.searchQuery = '';
-        this.searchResults = [];
-        this.activeCategory = 'updates';
-        this.activeCategoryName = 'Actualizaciones Pendientes';
-
-        try {
-            const res = await fetch('{{ route('admin.scraper.pending-updates') }}?pages=2');
-            const data = await res.json();
-            if (data.success) {
-                this.pendingUpdates = data.items;
-                this.updatesCount = data.count;
-                this.viewingUpdatesOnly = true;
-                document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                alert(data.message || 'Error al obtener actualizaciones');
-            }
-        } catch(e) {
-            console.error(e);
-            alert('Error al conectar con el servidor para buscar actualizaciones');
-        } finally {
-            this.loadingUpdates = false;
-        }
-    },
-
-    getDisplayedApps() {
-        if (this.viewingUpdatesOnly) return this.pendingUpdates;
-        if (this.hasSearched) return this.searchResults;
-        return this.latestApps;
-    },
-
-    async selectCategory(slug, name) {
-        this.viewingUpdatesOnly = false;
-        if (this.activeCategory === slug && !this.hasSearched) return;
-        this.activeCategory = slug;
-        this.activeCategoryName = name;
-        this.hasSearched = false;
-        this.searchQuery = '';
-        this.searchResults = [];
-        await this.goToPage(1);
-    },
-
-    async doSearch(page = 1) {
-        if (this.searchQuery.trim().length < 2) return;
-        this.searching = true;
-        this.hasSearched = true;
-        try {
-            const res = await fetch('{{ route('admin.scraper.search') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ q: this.searchQuery, page: page })
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.searchResults = data.results;
-                this.searchTotal = data.total;
-                if (data.pagination) {
-                    this.currentPage = data.pagination.current_page;
-                    this.totalPages = data.pagination.total_pages;
-                    this.hasNext = data.pagination.has_next;
-                    this.hasPrev = data.pagination.has_prev;
-                }
-            }
-        } catch(e) {
-            console.error(e);
-        } finally {
-            this.searching = false;
-        }
-    },
-
-    clearSearch() {
-        this.searchQuery = '';
-        this.hasSearched = false;
-        this.searchResults = [];
-        this.searchTotal = 0;
-        this.goToPage(1);
-    },
-
-    async goToPage(page) {
-        if (page < 1 || (this.totalPages > 1 && page > this.totalPages) || this.loadingPage) return;
-        this.loadingPage = true;
-
-        if (this.hasSearched) {
-            await this.doSearch(page);
-            this.loadingPage = false;
-            document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-        }
-
-        try {
-            const res = await fetch('{{ route('admin.scraper.latest') }}?category=' + encodeURIComponent(this.activeCategory) + '&page=' + page);
-            const data = await res.json();
-            if (data.success) {
-                this.latestApps = data.items;
-                this.currentPage = data.pagination.current_page;
-                this.totalPages = data.pagination.total_pages;
-                this.hasNext = data.pagination.has_next;
-                this.hasPrev = data.pagination.has_prev;
-                document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        } catch(e) {
-            console.error(e);
-            alert('Error al cargar la página del catálogo');
-        } finally {
-            this.loadingPage = false;
-        }
-    },
-
-    getPageNumbers() {
-        const current = this.currentPage;
-        const total = this.totalPages;
-        if (total <= 7) {
-            return Array.from({ length: total }, (_, i) => i + 1);
-        }
-        if (current <= 4) {
-            return [1, 2, 3, 4, 5, '...', total];
-        }
-        if (current >= total - 3) {
-            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
-        }
-        return [1, '...', current - 1, current, current + 1, '...', total];
-    },
-
-    async importPageApps() {
-        const items = this.hasSearched ? this.searchResults : this.latestApps;
-        const toImport = items.filter(it => !it.is_imported || it.has_update);
-        if (toImport.length === 0) {
-            this.showToast('✓ Todas las apps de esta página ya están importadas');
-            return;
-        }
-
-        if (!confirm(`¿Deseas importar ${toImport.length} programas pendientes de esta página?`)) {
-            return;
-        }
-
-        this.importingAllPage = true;
-        let count = 0;
-
-        for (const item of toImport) {
-            count++;
-            this.pageImportProgress = `${count}/${toImport.length}`;
-            try {
-                await this.executeImport(item);
-                await new Promise(r => setTimeout(r, 200));
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        this.importingAllPage = false;
-        this.pageImportProgress = '';
-        this.showToast(`✓ Se han importado ${count} programas con éxito`);
-        if (this.importQueue.length > 0) {
-            this.processQueue();
-        }
-    },
-
-    importSingle(item) {
-        this.enqueueImport(item);
-    },
-
-    isItemQueued(slug) {
-        return this.importQueue.some(it => it.slug === slug);
-    },
-
-    enqueueImport(item) {
-        if (this.importingSlug === item.slug || this.isItemQueued(item.slug)) {
-            return;
-        }
-        if (!this.importingSlug && !this.importingAllPage) {
-            this.executeImport(item);
-        } else {
-            this.importQueue.push(item);
-            this.showToast(`🕒 "${item.name || item.title || item.slug}" en cola segura (${this.importQueue.length} en espera)`);
-        }
-    },
-
-    async processQueue() {
-        if (this.importQueue.length === 0 || this.importingSlug || this.importingAllPage) return;
-        const nextItem = this.importQueue.shift();
-        if (nextItem) {
-            await this.executeImport(nextItem);
-        }
-    },
-
-    async executeImport(item) {
-        this.importingSlug = item.slug;
-        try {
-            const res = await fetch('{{ route('admin.scraper.import-single') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ url_or_slug: item.url || item.slug, download_images: true })
-            });
-            const data = await res.json();
-            if (data.success) {
-                item.is_imported = true;
-                item.has_update = false;
-                item.local_version = item.version;
-                this.showToast('✓ ' + data.message);
-            } else {
-                this.showToast('⚠️ ' + (data.message || 'Error al importar'));
-            }
-        } catch(e) {
-            this.showToast('❌ Error de conexión al importar');
-        } finally {
-            this.importingSlug = null;
-            if (!this.importingAllPage && this.importQueue.length > 0) {
-                setTimeout(() => {
-                    this.processQueue();
-                }, 300);
-            }
-        }
-    },
-
-    async syncCats() {
-        this.syncingCategories = true;
-        try {
-            const res = await fetch('{{ route('admin.scraper.sync-categories') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.showToast('✓ ' + data.message);
-                setTimeout(() => location.reload(), 1200);
-            }
-        } catch(e) {
-            alert('Error al sincronizar categorías');
-        } finally {
-            this.syncingCategories = false;
-        }
-    },
-
-    syncingUpdates: false,
-    async syncUpdatesNow() {
-        this.syncingUpdates = true;
-        try {
-            const res = await fetch('{{ route('admin.scraper.sync-updates') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.showToast('✓ ' + data.message);
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                alert(data.message || 'Error al sincronizar novedades');
-            }
-        } catch(e) {
-            alert('Error de conexión al sincronizar novedades');
-        } finally {
-            this.syncingUpdates = false;
-        }
-    },
-
-    getDisplayedTorrentApps() {
-        if (this.torrentHasSearched) return this.torrentSearchResults;
-        return this.torrentApps;
-    },
-
-    async doTorrentSearch(page = 1) {
-        if (this.torrentSearchQuery.trim().length < 2) return;
-        this.torrentSearching = true;
-        this.torrentHasSearched = true;
-        try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.search') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ q: this.torrentSearchQuery, page: page })
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.torrentSearchResults = data.results;
-                this.torrentSearchTotal = data.total;
-                if (data.pagination) {
-                    this.torrentCurrentPage = data.pagination.current_page;
-                    this.torrentTotalPages = data.pagination.total_pages;
-                    this.torrentHasNext = data.pagination.has_next;
-                    this.torrentHasPrev = data.pagination.has_prev;
-                }
-            } else {
-                this.showToast('✗ ' + (data.message || 'Error al buscar en TorrentMac'));
-            }
-        } catch(e) {
-            console.error(e);
-            this.showToast('✗ Error de conexión con TorrentMac');
-        } finally {
-            this.torrentSearching = false;
-        }
-    },
-
-    clearTorrentSearch() {
-        this.torrentSearchQuery = '';
-        this.torrentHasSearched = false;
-        this.torrentSearchResults = [];
-        this.torrentSearchTotal = 0;
-        this.loadTorrentmac(1);
-    },
-
-    async goToTorrentPage(page) {
-        if (page < 1 || (this.torrentTotalPages > 1 && page > this.torrentTotalPages) || this.torrentLoading || this.torrentSearching) return;
-        if (this.torrentHasSearched) {
-            await this.doTorrentSearch(page);
-        } else {
-            await this.loadTorrentmac(page);
-        }
-        document.getElementById('torrentmac-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    },
-
-    getTorrentPageNumbers() {
-        const current = this.torrentCurrentPage;
-        const total = this.torrentTotalPages;
-        if (total <= 7) {
-            return Array.from({ length: total }, (_, i) => i + 1);
-        }
-        if (current <= 4) {
-            return [1, 2, 3, 4, 5, '...', total];
-        }
-        if (current >= total - 3) {
-            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
-        }
-        return [1, '...', current - 1, current, current + 1, '...', total];
-    },
-
-    async loadTorrentmac(page = 1, category = null) {
-        if (category !== null) {
-            this.torrentCategory = category;
-            const found = this.torrentCategories.find(c => c.slug === category);
-            this.torrentCategoryName = found ? found.name : category;
-            this.torrentHasSearched = false;
-            this.torrentSearchQuery = '';
-            this.torrentSearchResults = [];
-        }
-        this.torrentLoading = true;
-        try {
-            const res = await fetch(`{{ route('admin.scraper.torrentmac.latest') }}?page=${page}&category=${this.torrentCategory}`);
-            const data = await res.json();
-            if (data.success) {
-                this.torrentApps = data.items;
-                this.torrentCurrentPage = data.pagination.current_page;
-                this.torrentTotalPages = data.pagination.total_pages;
-                this.torrentHasNext = data.pagination.has_next;
-                this.torrentHasPrev = data.pagination.has_prev;
-            } else {
-                this.showToast('✗ ' + (data.message || 'Error al cargar TorrentMac'));
-            }
-        } catch(e) {
-            this.showToast('✗ Error de conexión con TorrentMac');
-        } finally {
-            this.torrentLoading = false;
-        }
-    },
-
-    importTorrentApp(app) {
-        this.enqueueTorrentImport(app);
-    },
-
-    isTorrentQueued(url) {
-        return this.torrentQueue.some(it => it.url === url);
-    },
-
-    enqueueTorrentImport(app) {
-        if (this.torrentImportingUrl === app.url || this.isTorrentQueued(app.url)) {
-            return;
-        }
-        if (!this.torrentImportingUrl) {
-            this.executeTorrentImport(app);
-        } else {
-            this.torrentQueue.push(app);
-            this.showToast(`🕒 Torrent "${app.title || app.name || 'App'}" en cola segura (${this.torrentQueue.length} en espera)`);
-        }
-    },
-
-    async processTorrentQueue() {
-        if (this.torrentQueue.length === 0 || this.torrentImportingUrl) return;
-        const nextApp = this.torrentQueue.shift();
-        if (nextApp) {
-            await this.executeTorrentImport(nextApp);
-        }
-    },
-
-    async executeTorrentImport(app) {
-        this.torrentImportingUrl = app.url;
-        try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.import-single') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ url: app.url, download_images: true })
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.showToast('✓ ' + data.message);
-                app.in_database = true;
-                app.has_torrent = true;
-                app.is_dual = data.app?.is_dual;
-            } else {
-                this.showToast('⚠️ ' + (data.message || 'Error al importar torrent'));
-            }
-        } catch(e) {
-            this.showToast('❌ Error de conexión al importar torrent');
-        } finally {
-            this.torrentImportingUrl = null;
-            if (this.torrentQueue.length > 0) {
-                setTimeout(() => {
-                    this.processTorrentQueue();
-                }, 300);
-            }
-        }
-    },
-
-    async syncTorrentmacNow() {
-        this.torrentSyncing = true;
-        try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.sync-latest') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ pages: 1, download_images: true })
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.showToast('✓ ' + data.message);
-                await this.loadTorrentmac(this.torrentCurrentPage);
-            } else {
-                alert(data.message || 'Error en sincronización');
-            }
-        } catch(e) {
-            alert('Error al sincronizar TorrentMac');
-        } finally {
-            this.torrentSyncing = false;
-        }
-    },
-
-    async setTorrentStorageDisk(disk) {
-        if (this.torrentStorageTarget === disk) return;
-        try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.storage-settings') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ storage_disk: disk })
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.torrentStorageTarget = data.storage_disk;
-                this.effectiveStorageDisk = data.effective_disk;
-                this.showToast('✓ ' + data.message);
-            } else {
-                alert(data.message || 'Error al cambiar destino de almacenamiento');
-            }
-        } catch(e) {
-            alert('Error al conectar con el servidor');
-        }
-    },
-
-    toastText: '',
-    toastVisible: false,
-    showToast(msg) {
-        this.toastText = msg;
-        this.toastVisible = true;
-        setTimeout(() => this.toastVisible = false, 4000);
-    }
-}">
+<div class="space-y-6 max-w-[1720px] mx-auto w-full" x-data="scraperApp()">
 
     <!-- Floating Success Toast -->
     <div x-show="toastVisible" x-cloak
@@ -1647,4 +1085,574 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function scraperApp() {
+    return {
+    tab: 'search',
+    gridCols: 6,
+    searchQuery: '',
+    searching: false,
+    searchResults: [],
+    searchTotal: 0,
+    hasSearched: false,
+    activeCategory: 'all',
+    activeCategoryName: 'Todos los Posts',
+    latestApps: @js($haxmacLatest ?? []),
+    currentPage: {{ $haxmacPagination['current_page'] ?? 1 }},
+    totalPages: {{ $haxmacPagination['total_pages'] ?? 1 }},
+    hasNext: {{ ($haxmacPagination['has_next'] ?? false) ? 'true' : 'false' }},
+    hasPrev: {{ ($haxmacPagination['has_prev'] ?? false) ? 'true' : 'false' }},
+    loadingPage: false,
+    importingSlug: null,
+    importQueue: [],
+    importingAllPage: false,
+    pageImportProgress: '',
+    importMessage: '',
+    syncingCategories: false,
+    pendingUpdates: [],
+    loadingUpdates: false,
+    viewingUpdatesOnly: false,
+    updatesCount: (@js($haxmacLatest ?? [])).filter(it => it.has_update).length,
+
+    // TorrentMac State & Methods
+    torrentCategory: 'all',
+    torrentCategoryName: 'Todos los Torrents',
+    torrentApps: [],
+    torrentSearchQuery: '',
+    torrentSearching: false,
+    torrentHasSearched: false,
+    torrentSearchResults: [],
+    torrentSearchTotal: 0,
+    torrentCurrentPage: 1,
+    torrentTotalPages: 1,
+    torrentHasNext: false,
+    torrentHasPrev: false,
+    torrentLoading: false,
+    torrentImportingUrl: null,
+    torrentQueue: [],
+    torrentSyncing: false,
+    torrentCategories: @js($torrentmacCategories ?? []),
+    torrentStorageTarget: '{{ $stats['torrent_storage_target'] ?? 'local' }}',
+    effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
+    r2Configured: {{ ($stats['r2_configured'] ?? false) ? 'true' : 'false' }},
+
+    init() {
+        this.fetchUpdatesCountAsync();
+    },
+
+    async fetchUpdatesCountAsync() {
+        try {
+            const res = await fetch('{{ route('admin.scraper.pending-updates') }}?pages=2');
+            const data = await res.json();
+            if (data.success) {
+                this.updatesCount = data.count;
+                if (this.viewingUpdatesOnly) {
+                    this.pendingUpdates = data.items;
+                }
+            }
+        } catch(e) {
+            console.warn('Could not fetch pending updates count', e);
+        }
+    },
+
+    async togglePendingUpdates() {
+        if (this.viewingUpdatesOnly) {
+            this.viewingUpdatesOnly = false;
+            this.activeCategory = 'all';
+            this.activeCategoryName = 'Todos los Posts';
+            await this.goToPage(1);
+            return;
+        }
+
+        this.loadingUpdates = true;
+        this.hasSearched = false;
+        this.searchQuery = '';
+        this.searchResults = [];
+        this.activeCategory = 'updates';
+        this.activeCategoryName = 'Actualizaciones Pendientes';
+
+        try {
+            const res = await fetch('{{ route('admin.scraper.pending-updates') }}?pages=2');
+            const data = await res.json();
+            if (data.success) {
+                this.pendingUpdates = data.items;
+                this.updatesCount = data.count;
+                this.viewingUpdatesOnly = true;
+                document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                alert(data.message || 'Error al obtener actualizaciones');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Error al conectar con el servidor para buscar actualizaciones');
+        } finally {
+            this.loadingUpdates = false;
+        }
+    },
+
+    getDisplayedApps() {
+        if (this.viewingUpdatesOnly) return this.pendingUpdates;
+        if (this.hasSearched) return this.searchResults;
+        return this.latestApps;
+    },
+
+    async selectCategory(slug, name) {
+        this.viewingUpdatesOnly = false;
+        if (this.activeCategory === slug && !this.hasSearched) return;
+        this.activeCategory = slug;
+        this.activeCategoryName = name;
+        this.hasSearched = false;
+        this.searchQuery = '';
+        this.searchResults = [];
+        await this.goToPage(1);
+    },
+
+    async doSearch(page = 1) {
+        if (this.searchQuery.trim().length < 2) return;
+        this.searching = true;
+        this.hasSearched = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.search') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ q: this.searchQuery, page: page })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.searchResults = data.results;
+                this.searchTotal = data.total;
+                if (data.pagination) {
+                    this.currentPage = data.pagination.current_page;
+                    this.totalPages = data.pagination.total_pages;
+                    this.hasNext = data.pagination.has_next;
+                    this.hasPrev = data.pagination.has_prev;
+                }
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            this.searching = false;
+        }
+    },
+
+    clearSearch() {
+        this.searchQuery = '';
+        this.hasSearched = false;
+        this.searchResults = [];
+        this.searchTotal = 0;
+        this.goToPage(1);
+    },
+
+    async goToPage(page) {
+        if (page < 1 || (this.totalPages > 1 && page > this.totalPages) || this.loadingPage) return;
+        this.loadingPage = true;
+
+        if (this.hasSearched) {
+            await this.doSearch(page);
+            this.loadingPage = false;
+            document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+
+        try {
+            const res = await fetch('{{ route('admin.scraper.latest') }}?category=' + encodeURIComponent(this.activeCategory) + '&page=' + page);
+            const data = await res.json();
+            if (data.success) {
+                this.latestApps = data.items;
+                this.currentPage = data.pagination.current_page;
+                this.totalPages = data.pagination.total_pages;
+                this.hasNext = data.pagination.has_next;
+                this.hasPrev = data.pagination.has_prev;
+                document.getElementById('catalog-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Error al cargar la página del catálogo');
+        } finally {
+            this.loadingPage = false;
+        }
+    },
+
+    getPageNumbers() {
+        const current = this.currentPage;
+        const total = this.totalPages;
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+        if (current <= 4) {
+            return [1, 2, 3, 4, 5, '...', total];
+        }
+        if (current >= total - 3) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+        }
+        return [1, '...', current - 1, current, current + 1, '...', total];
+    },
+
+    async importPageApps() {
+        const items = this.hasSearched ? this.searchResults : this.latestApps;
+        const toImport = items.filter(it => !it.is_imported || it.has_update);
+        if (toImport.length === 0) {
+            this.showToast('✓ Todas las apps de esta página ya están importadas');
+            return;
+        }
+
+        if (!confirm(`¿Deseas importar ${toImport.length} programas pendientes de esta página?`)) {
+            return;
+        }
+
+        this.importingAllPage = true;
+        let count = 0;
+
+        for (const item of toImport) {
+            count++;
+            this.pageImportProgress = `${count}/${toImport.length}`;
+            try {
+                await this.executeImport(item);
+                await new Promise(r => setTimeout(r, 200));
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        this.importingAllPage = false;
+        this.pageImportProgress = '';
+        this.showToast(`✓ Se han importado ${count} programas con éxito`);
+        if (this.importQueue.length > 0) {
+            this.processQueue();
+        }
+    },
+
+    importSingle(item) {
+        this.enqueueImport(item);
+    },
+
+    isItemQueued(slug) {
+        return this.importQueue.some(it => it.slug === slug);
+    },
+
+    enqueueImport(item) {
+        if (this.importingSlug === item.slug || this.isItemQueued(item.slug)) {
+            return;
+        }
+        if (!this.importingSlug && !this.importingAllPage) {
+            this.executeImport(item);
+        } else {
+            this.importQueue.push(item);
+            this.showToast(`🕒 "${item.name || item.title || item.slug}" en cola segura (${this.importQueue.length} en espera)`);
+        }
+    },
+
+    async processQueue() {
+        if (this.importQueue.length === 0 || this.importingSlug || this.importingAllPage) return;
+        const nextItem = this.importQueue.shift();
+        if (nextItem) {
+            await this.executeImport(nextItem);
+        }
+    },
+
+    async executeImport(item) {
+        this.importingSlug = item.slug;
+        try {
+            const res = await fetch('{{ route('admin.scraper.import-single') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ url_or_slug: item.url || item.slug, download_images: true })
+            });
+            const data = await res.json();
+            if (data.success) {
+                item.is_imported = true;
+                item.has_update = false;
+                item.local_version = item.version;
+                this.showToast('✓ ' + data.message);
+            } else {
+                this.showToast('⚠️ ' + (data.message || 'Error al importar'));
+            }
+        } catch(e) {
+            this.showToast('❌ Error de conexión al importar');
+        } finally {
+            this.importingSlug = null;
+            if (!this.importingAllPage && this.importQueue.length > 0) {
+                setTimeout(() => {
+                    this.processQueue();
+                }, 300);
+            }
+        }
+    },
+
+    async syncCats() {
+        this.syncingCategories = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.sync-categories') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast('✓ ' + data.message);
+                setTimeout(() => location.reload(), 1200);
+            }
+        } catch(e) {
+            alert('Error al sincronizar categorías');
+        } finally {
+            this.syncingCategories = false;
+        }
+    },
+
+    syncingUpdates: false,
+    async syncUpdatesNow() {
+        this.syncingUpdates = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.sync-updates') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast('✓ ' + data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                alert(data.message || 'Error al sincronizar novedades');
+            }
+        } catch(e) {
+            alert('Error de conexión al sincronizar novedades');
+        } finally {
+            this.syncingUpdates = false;
+        }
+    },
+
+    getDisplayedTorrentApps() {
+        if (this.torrentHasSearched) return this.torrentSearchResults;
+        return this.torrentApps;
+    },
+
+    async doTorrentSearch(page = 1) {
+        if (this.torrentSearchQuery.trim().length < 2) return;
+        this.torrentSearching = true;
+        this.torrentHasSearched = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.search') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ q: this.torrentSearchQuery, page: page })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.torrentSearchResults = data.results;
+                this.torrentSearchTotal = data.total;
+                if (data.pagination) {
+                    this.torrentCurrentPage = data.pagination.current_page;
+                    this.torrentTotalPages = data.pagination.total_pages;
+                    this.torrentHasNext = data.pagination.has_next;
+                    this.torrentHasPrev = data.pagination.has_prev;
+                }
+            } else {
+                this.showToast('✗ ' + (data.message || 'Error al buscar en TorrentMac'));
+            }
+        } catch(e) {
+            console.error(e);
+            this.showToast('✗ Error de conexión con TorrentMac');
+        } finally {
+            this.torrentSearching = false;
+        }
+    },
+
+    clearTorrentSearch() {
+        this.torrentSearchQuery = '';
+        this.torrentHasSearched = false;
+        this.torrentSearchResults = [];
+        this.torrentSearchTotal = 0;
+        this.loadTorrentmac(1);
+    },
+
+    async goToTorrentPage(page) {
+        if (page < 1 || (this.torrentTotalPages > 1 && page > this.torrentTotalPages) || this.torrentLoading || this.torrentSearching) return;
+        if (this.torrentHasSearched) {
+            await this.doTorrentSearch(page);
+        } else {
+            await this.loadTorrentmac(page);
+        }
+        document.getElementById('torrentmac-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    getTorrentPageNumbers() {
+        const current = this.torrentCurrentPage;
+        const total = this.torrentTotalPages;
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+        if (current <= 4) {
+            return [1, 2, 3, 4, 5, '...', total];
+        }
+        if (current >= total - 3) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+        }
+        return [1, '...', current - 1, current, current + 1, '...', total];
+    },
+
+    async loadTorrentmac(page = 1, category = null) {
+        if (category !== null) {
+            this.torrentCategory = category;
+            const found = this.torrentCategories.find(c => c.slug === category);
+            this.torrentCategoryName = found ? found.name : category;
+            this.torrentHasSearched = false;
+            this.torrentSearchQuery = '';
+            this.torrentSearchResults = [];
+        }
+        this.torrentLoading = true;
+        try {
+            const res = await fetch(`{{ route('admin.scraper.torrentmac.latest') }}?page=${page}&category=${this.torrentCategory}`);
+            const data = await res.json();
+            if (data.success) {
+                this.torrentApps = data.items;
+                this.torrentCurrentPage = data.pagination.current_page;
+                this.torrentTotalPages = data.pagination.total_pages;
+                this.torrentHasNext = data.pagination.has_next;
+                this.torrentHasPrev = data.pagination.has_prev;
+            } else {
+                this.showToast('✗ ' + (data.message || 'Error al cargar TorrentMac'));
+            }
+        } catch(e) {
+            this.showToast('✗ Error de conexión con TorrentMac');
+        } finally {
+            this.torrentLoading = false;
+        }
+    },
+
+    importTorrentApp(app) {
+        this.enqueueTorrentImport(app);
+    },
+
+    isTorrentQueued(url) {
+        return this.torrentQueue.some(it => it.url === url);
+    },
+
+    enqueueTorrentImport(app) {
+        if (this.torrentImportingUrl === app.url || this.isTorrentQueued(app.url)) {
+            return;
+        }
+        if (!this.torrentImportingUrl) {
+            this.executeTorrentImport(app);
+        } else {
+            this.torrentQueue.push(app);
+            this.showToast(`🕒 Torrent "${app.title || app.name || 'App'}" en cola segura (${this.torrentQueue.length} en espera)`);
+        }
+    },
+
+    async processTorrentQueue() {
+        if (this.torrentQueue.length === 0 || this.torrentImportingUrl) return;
+        const nextApp = this.torrentQueue.shift();
+        if (nextApp) {
+            await this.executeTorrentImport(nextApp);
+        }
+    },
+
+    async executeTorrentImport(app) {
+        this.torrentImportingUrl = app.url;
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.import-single') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ url: app.url, download_images: true })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast('✓ ' + data.message);
+                app.in_database = true;
+                app.has_torrent = true;
+                app.is_dual = data.app?.is_dual;
+            } else {
+                this.showToast('⚠️ ' + (data.message || 'Error al importar torrent'));
+            }
+        } catch(e) {
+            this.showToast('❌ Error de conexión al importar torrent');
+        } finally {
+            this.torrentImportingUrl = null;
+            if (this.torrentQueue.length > 0) {
+                setTimeout(() => {
+                    this.processTorrentQueue();
+                }, 300);
+            }
+        }
+    },
+
+    async syncTorrentmacNow() {
+        this.torrentSyncing = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.sync-latest') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ pages: 1, download_images: true })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast('✓ ' + data.message);
+                await this.loadTorrentmac(this.torrentCurrentPage);
+            } else {
+                alert(data.message || 'Error en sincronización');
+            }
+        } catch(e) {
+            alert('Error al sincronizar TorrentMac');
+        } finally {
+            this.torrentSyncing = false;
+        }
+    },
+
+    async setTorrentStorageDisk(disk) {
+        if (this.torrentStorageTarget === disk) return;
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.storage-settings') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ storage_disk: disk })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.torrentStorageTarget = data.storage_disk;
+                this.effectiveStorageDisk = data.effective_disk;
+                this.showToast('✓ ' + data.message);
+            } else {
+                alert(data.message || 'Error al cambiar destino de almacenamiento');
+            }
+        } catch(e) {
+            alert('Error al conectar con el servidor');
+        }
+    },
+
+    toastText: '',
+    toastVisible: false,
+    showToast(msg) {
+        this.toastText = msg;
+        this.toastVisible = true;
+        setTimeout(() => this.toastVisible = false, 4000);
+    }
+    };
+}
+</script>
+@endpush
 @endsection
