@@ -227,6 +227,25 @@ class Application extends Model
         return $this->changelog ?? $this->currentVersion?->changelog;
     }
 
+    /**
+     * Determine if this application has been updated to a newer version
+     */
+    public function getIsUpdatedAttribute(): bool
+    {
+        if ($this->relationLoaded('versions')) {
+            if ($this->versions->where('is_current', false)->isNotEmpty() || $this->versions->count() > 1) {
+                return true;
+            }
+        }
+
+        if ($this->updated_at && $this->created_at) {
+            return $this->updated_at->gt($this->created_at->addMinutes(5))
+                && $this->updated_at->gte(now()->subDays(30));
+        }
+
+        return false;
+    }
+
     public function incrementDownloads(): void
     {
         $this->increment('downloads');

@@ -354,4 +354,22 @@ class PortalTest extends TestCase
         $detail->assertSee('name="twitter:card"', false);
         $detail->assertSee('SoftwareApplication', false);
     }
+
+    public function test_application_is_updated_badge_renders_on_card(): void
+    {
+        [$category, $app] = $this->createCategoryAndApp([
+            'published' => true,
+        ]);
+
+        Application::where('id', $app->id)->update([
+            'created_at' => now()->subDays(5),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $this->assertTrue($app->fresh()->is_updated);
+
+        $response = $this->get(route('home'));
+        $response->assertStatus(200);
+        $response->assertSee('Programa actualizado');
+    }
 }

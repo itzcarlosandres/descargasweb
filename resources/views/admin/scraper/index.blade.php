@@ -466,8 +466,13 @@
                                     <!-- Top Left: Status Chip -->
                                     <div class="absolute top-2 left-2 flex flex-col gap-1">
                                         <template x-if="item.has_update">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-warning/95 backdrop-blur-md text-black font-extrabold text-[8px] uppercase tracking-wider shadow">
-                                                ⚡ Update
+                                            <span class="relative flex h-5 w-5" title="Actualización Disponible">
+                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
+                                                <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-gradient-to-tr from-warning to-amber-300 text-black shadow-lg shadow-warning/50 ring-2 ring-[#1E1914]">
+                                                    <svg class="w-3 h-3 animate-spin [animation-duration:4s]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                    </svg>
+                                                </span>
                                             </span>
                                         </template>
                                         <template x-if="item.is_imported && !item.has_update">
@@ -831,10 +836,15 @@
                                     <span x-text="app.clean_name ? app.clean_name.charAt(0) : 'T'"></span>
                                 </div>
 
-                                <!-- Status Pill (Top Left: Update indicator) -->
-                                <div class="absolute -top-1 left-0 flex flex-col gap-1" x-show="app.has_update">
-                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-warning/95 backdrop-blur-md text-black font-mono shadow">
-                                        ⚡ UPDATE
+                                <!-- Status Pill (Top Left: Update indicator - Icon only, animated, no text) -->
+                                <div class="absolute -top-1 left-0 flex items-center justify-center z-10" x-show="app.has_update" title="Actualización Disponible">
+                                    <span class="relative flex h-5 w-5">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
+                                        <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-gradient-to-tr from-warning to-amber-300 text-black shadow-lg shadow-warning/50 ring-2 ring-[#181410]">
+                                            <svg class="w-3 h-3 animate-spin [animation-duration:4s]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        </span>
                                     </span>
                                 </div>
 
@@ -1443,6 +1453,12 @@ function scraperApp() {
                 item.has_update = false;
                 item.local_version = item.version;
                 this.showToast('✓ ' + data.message);
+                if (this.viewingUpdatesOnly) {
+                    this.pendingUpdates = this.pendingUpdates.filter(it => it.slug !== item.slug);
+                    this.updatesCount = this.pendingUpdates.length;
+                } else {
+                    this.fetchUpdatesCountAsync();
+                }
             } else {
                 this.showToast('⚠️ ' + (data.message || 'Error al importar'));
             }
@@ -1511,9 +1527,10 @@ function scraperApp() {
         return this.torrentApps;
     },
 
-    async fetchTorrentUpdatesCountAsync() {
+    async fetchTorrentUpdatesCountAsync(refresh = false) {
         try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2');
+            const url = '{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2' + (refresh ? '&refresh=1' : '');
+            const res = await fetch(url);
             const data = await res.json();
             if (data.success) {
                 this.torrentUpdatesCount = data.count;
@@ -1542,7 +1559,7 @@ function scraperApp() {
         this.viewingTorrentUpdatesOnly = true;
 
         try {
-            const res = await fetch('{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2');
+            const res = await fetch('{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2&refresh=1');
             const data = await res.json();
             if (data.success) {
                 this.torrentPendingUpdates = data.items;
@@ -1573,7 +1590,7 @@ function scraperApp() {
             const data = await res.json();
             if (data.success) {
                 this.showToast('✓ ' + data.message);
-                await this.fetchTorrentUpdatesCountAsync();
+                await this.fetchTorrentUpdatesCountAsync(true);
                 if (this.viewingTorrentUpdatesOnly) {
                     await this.toggleTorrentPendingUpdates();
                 } else {
@@ -1735,7 +1752,13 @@ function scraperApp() {
                 app.is_dual = data.app?.is_dual;
                 app.has_update = false;
                 app.local_version = data.app?.version || app.version;
-                this.fetchTorrentUpdatesCountAsync();
+                
+                if (this.viewingTorrentUpdatesOnly) {
+                    this.torrentPendingUpdates = this.torrentPendingUpdates.filter(it => (it.url !== app.url && it.slug !== app.slug));
+                    this.torrentUpdatesCount = this.torrentPendingUpdates.length;
+                } else {
+                    this.fetchTorrentUpdatesCountAsync(true);
+                }
             } else {
                 this.showToast('⚠️ ' + (data.message || 'Error al importar torrent'));
             }

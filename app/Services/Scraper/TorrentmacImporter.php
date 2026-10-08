@@ -133,7 +133,26 @@ class TorrentmacImporter
     }
 
     /**
-     * Compare two version strings cleanly, returning true if incoming is higher than current
+     * Clean and normalize a version string (strips 'v', 'fix', tags, architecture notes, etc.)
+     */
+    public function normalizeVersion(?string $version): ?string
+    {
+        if (empty($version)) {
+            return null;
+        }
+
+        $v = trim($version);
+        // Remove leading 'v', 'V', 'ver', 'version'
+        $v = preg_replace('/^(?:v|ver\.?|version)\s*/i', '', $v);
+        // Remove trailing tags like 'fix', 'FIX', 'tnt', 'crack', 'macos', 'mac', 'universal', etc.
+        $v = preg_replace('/\s+(?:fix|hotfix|tnt|crack|macos|mac|universal|final|full|u2b|arm|intel).*$/i', '', $v);
+        $v = trim($v, " \t\n\r\0\x0B-_.");
+
+        return $v ?: trim($version);
+    }
+
+    /**
+     * Compare two version strings cleanly, returning true ONLY if incoming is genuinely higher than current
      */
     public function isHigherVersion(?string $incoming, ?string $current): bool
     {
@@ -141,29 +160,31 @@ class TorrentmacImporter
             return false;
         }
 
-        if (trim($incoming) === trim($current)) {
+        $cleanIncoming = $this->normalizeVersion($incoming);
+        $cleanCurrent = $this->normalizeVersion($current);
+
+        if (empty($cleanIncoming) || empty($cleanCurrent)) {
             return false;
         }
 
-        $cleanIncoming = trim(preg_replace('/^[vV]/', '', $incoming));
-        $cleanCurrent = trim(preg_replace('/^[vV]/', '', $current));
-
+        // If normalized versions are identical, there is NO upgrade
         if ($cleanIncoming === $cleanCurrent) {
             return false;
         }
 
-        // Compare primary semantic digits (e.g., 3.4.1 vs 3.3)
-        if (preg_match('/^\d+(\.\d+)*/', $cleanIncoming, $m1) && preg_match('/^\d+(\.\d+)*/', $cleanCurrent, $m2)) {
-            $cmp = version_compare($m1[0], $m2[0]);
-            if ($cmp > 0) {
-                return true;
-            }
-            if ($cmp < 0) {
-                return false;
-            }
+        // Extract primary semantic digits (e.g. 2026.2.4 or 7.7.2)
+        preg_match('/^\d+(?:\.\d+)*/', $cleanIncoming, $m1);
+        preg_match('/^\d+(?:\.\d+)*/', $cleanCurrent, $m2);
+
+        $num1 = $m1[0] ?? $cleanIncoming;
+        $num2 = $m2[0] ?? $cleanCurrent;
+
+        // If the numeric parts are identical (e.g., 7.7.2 vs 7.7.2 fix), it is NOT higher!
+        if ($num1 === $num2) {
+            return false;
         }
 
-        return version_compare($cleanIncoming, $cleanCurrent, '>');
+        return version_compare($num1, $num2, '>');
     }
 
     /**
