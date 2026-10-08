@@ -16,6 +16,8 @@ class TorrentmacScrapeCommand extends Command
                             {--app= : Importar un torrent específico por URL o slug}
                             {--category=all : Importar aplicaciones de una categoría específica (apps, games, etc.)}
                             {--sync-latest : Sincronizar automáticamente novedades desde la portada}
+                            {--pending-updates : Listar únicamente las aplicaciones locales que tienen nueva versión en TorrentMac}
+                            {--only-updates : Sincronizar y actualizar únicamente los programas con versión superior}
                             {--pages=1 : Número de páginas a recorrer}
                             {--disk= : Destino de almacenamiento específico: local o r2}
                             {--no-images : No descargar las imágenes ni capturas}';
@@ -38,7 +40,65 @@ class TorrentmacScrapeCommand extends Command
             $importer->setExplicitDisk($disk);
         }
 
-        // 1. Import Single App
+        // 1. Pending updates audit
+        if ($this->option('pending-updates')) {
+            $pages = max(1, (int) $this->option('pages'));
+            $this->info("Buscando aplicaciones con actualizaciones pendientes en TorrentMac ({$pages} páginas)...");
+            $pending = $importer->getPendingUpdates($pages);
+
+            if (empty($pending)) {
+                $this->info('✓ Todos tus programas de TorrentMac están al día. No hay actualizaciones pendientes.');
+
+                return Command::SUCCESS;
+            }
+
+            $this->warn('Se encontraron '.count($pending).' aplicaciones que requieren actualización:');
+            foreach ($pending as $item) {
+                $localVer = $item['local_version'] ? "v{$item['local_version']}" : 'desconocida';
+                $newVer = $item['version'] ? "v{$item['version']}" : 'N/A';
+                $this->line("  • <info>{$item['clean_name']}</info> (Local: <comment>{$localVer}</comment> → Torrent: <fg=green>{$newVer}</>)");
+                $this->line("    URL: {$item['url']}");
+            }
+
+            return Command::SUCCESS;
+        }
+
+        // 2. Only updates sync
+        if ($this->option('only-updates')) {
+            $pages = max(1, (int) $this->option('pages'));
+            $this->info("Buscando y actualizando aplicaciones existentes en TorrentMac ({$pages} páginas)...");
+            $pending = $importer->getPendingUpdates($pages);
+
+            if (empty($pending)) {
+                $this->info('✓ Todos tus programas de TorrentMac están al día. Nada que actualizar.');
+
+                return Command::SUCCESS;
+            }
+
+            $this->info('Actualizando '.count($pending).' programas...');
+            $updated = 0;
+
+            foreach ($pending as $item) {
+                $this->line("  Actualizando {$item['clean_name']} a v{$item['version']}...");
+                try {
+                    $app = $importer->importAppByUrl($item['url'], $downloadImages);
+                    if ($app) {
+                        $updated++;
+                        $this->info("  ✓ Actualizada: {$app->name} (v{$app->version})");
+                    } else {
+                        $this->warn("  ⚠ Error al actualizar: {$item['name']}");
+                    }
+                } catch (\Throwable $e) {
+                    $this->error("  ✗ Error: {$e->getMessage()}");
+                }
+            }
+
+            $this->info("\n✓ Actualizaciones completadas: {$updated}/".count($pending));
+
+            return Command::SUCCESS;
+        }
+
+        // 3. Import Single App
         if ($appTarget = $this->option('app')) {
             $url = str_starts_with($appTarget, 'http')
                 ? $appTarget
@@ -62,7 +122,7 @@ class TorrentmacScrapeCommand extends Command
             return Command::FAILURE;
         }
 
-        // 2. Sync Latest from Home / Category
+        // 4. Sync Latest from Home / Category
         $pages = max(1, (int) $this->option('pages'));
         $category = (string) $this->option('category');
 

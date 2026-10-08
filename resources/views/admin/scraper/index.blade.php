@@ -150,9 +150,12 @@
 
         <button type="button" @click="tab = 'torrentmac'; if (torrentApps.length === 0) loadTorrentmac(1)"
                 :class="tab === 'torrentmac' ? 'bg-[#221C16] text-[#30D158] border border-[#30D158]/40 shadow font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="flex-1 py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+                class="flex-1 py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer relative">
             <span class="text-base leading-none">🧲</span>
             <span>TorrentMac (R2 P2P)</span>
+            <span x-show="torrentUpdatesCount > 0" x-cloak
+                  class="px-1.5 py-0.2 rounded-full font-mono text-[10px] font-extrabold bg-warning text-black"
+                  x-text="torrentUpdatesCount"></span>
         </button>
 
         <button type="button" @click="tab = 'cron'"
@@ -732,24 +735,66 @@
                     <template x-if="torrentHasSearched">
                         <span>Búsqueda TorrentMac: "<strong class="text-[#30D158]" x-text="torrentSearchQuery"></strong>"</span>
                     </template>
-                    <template x-if="!torrentHasSearched">
+                    <template x-if="viewingTorrentUpdatesOnly">
+                        <span class="text-warning">⚡ Actualizaciones Pendientes TorrentMac</span>
+                    </template>
+                    <template x-if="!torrentHasSearched && !viewingTorrentUpdatesOnly">
                         <span>Resultados: <strong class="text-[#30D158]" x-text="torrentCategoryName"></strong></span>
                     </template>
-                    <span x-show="torrentLoading || torrentSearching" class="text-xs text-[#30D158] animate-pulse ml-2 font-normal">Cargando desde TorrentMac...</span>
+                    <span x-show="torrentLoading || torrentSearching || loadingTorrentUpdates" class="text-xs text-[#30D158] animate-pulse ml-2 font-normal">Cargando desde TorrentMac...</span>
                 </h3>
-                <div class="flex items-center gap-3">
-                    <button type="button" x-show="torrentHasSearched" @click="clearTorrentSearch()"
-                            class="px-2.5 py-1 rounded-lg bg-[#221C16] text-xs text-[#D8CFBE] hover:text-white border border-[#3A3025] hover:border-[#30D158]/40 transition-all flex items-center gap-1 cursor-pointer">
-                        ✕ <span>Volver al Catálogo</span>
-                    </button>
-                    <span class="text-xs text-[#8C847A] font-mono" x-show="getDisplayedTorrentApps().length > 0">
+                <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                    <!-- Back to Catalog button if searched or viewing updates -->
+                    <div x-show="torrentHasSearched || viewingTorrentUpdatesOnly" class="flex-shrink-0">
+                        <button type="button" @click="clearTorrentSearch()"
+                                class="px-3 py-1.5 rounded-xl bg-[#201C18] hover:bg-[#2A241F] text-[#D4C9BC] hover:text-white border border-[#382E23] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-[#8C847A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                            <span>Volver a Catálogo</span>
+                        </button>
+                    </div>
+
+                    <!-- Option: Requieren Actualización (TorrentMac) -->
+                    <div x-show="!torrentHasSearched" class="flex-shrink-0">
+                        <button type="button" @click="toggleTorrentPendingUpdates()" :disabled="loadingTorrentUpdates"
+                                class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                                :class="viewingTorrentUpdatesOnly 
+                                    ? 'bg-warning text-black border-warning shadow-warning/30 font-black ring-2 ring-warning/30' 
+                                    : 'bg-[#221C16] hover:bg-[#2C241D] text-warning border-warning/40 shadow-black/40 hover:border-warning/80'">
+                            <svg x-show="!loadingTorrentUpdates" class="w-3.5 h-3.5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <svg x-show="loadingTorrentUpdates" class="animate-spin w-3.5 h-3.5 text-current" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="loadingTorrentUpdates ? 'Buscando...' : (viewingTorrentUpdatesOnly ? '✓ Viendo Updates' : 'Requieren Actualización')"></span>
+                            <span x-show="torrentUpdatesCount > 0" class="px-1.5 py-0.2 rounded-full font-mono text-[10px] font-extrabold"
+                                  :class="viewingTorrentUpdatesOnly ? 'bg-black text-warning' : 'bg-warning text-black'" 
+                                  x-text="torrentUpdatesCount"></span>
+                        </button>
+                    </div>
+
+                    <!-- Auto-Sync Torrent Updates button -->
+                    <div x-show="!torrentHasSearched" class="flex-shrink-0">
+                        <button type="button" @click="syncTorrentUpdatesNow()" :disabled="torrentSyncing"
+                                class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-warning to-[#D97706] hover:from-[#FBBF24] hover:to-warning text-black text-xs font-bold shadow-md shadow-warning/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                            <svg :class="torrentSyncing ? 'animate-spin' : ''" class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span x-text="torrentSyncing ? 'Actualizando...' : (viewingTorrentUpdatesOnly ? '⚡ Actualizar Todas' : '⚡ Actualizar Todo')"></span>
+                        </button>
+                    </div>
+
+                    <span class="text-xs text-[#8C847A] font-mono hidden sm:inline" x-show="getDisplayedTorrentApps().length > 0">
                         Mostrando <strong class="text-white" x-text="getDisplayedTorrentApps().length"></strong> programas
                     </span>
                 </div>
             </div>
 
             <!-- Loading State Skeleton -->
-            <div x-show="(torrentLoading || torrentSearching) && getDisplayedTorrentApps().length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 py-8">
+            <div x-show="(torrentLoading || torrentSearching || loadingTorrentUpdates) && getDisplayedTorrentApps().length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 py-8">
                 <template x-for="i in 12" :key="i">
                     <div class="bg-[#1A1612] border border-[#262019] rounded-2xl p-4 animate-pulse space-y-3">
                         <div class="w-16 h-16 bg-[#262019] rounded-2xl mx-auto"></div>
@@ -761,18 +806,19 @@
             </div>
 
             <!-- Empty State -->
-            <div x-show="!torrentLoading && !torrentSearching && getDisplayedTorrentApps().length === 0" class="text-center py-12 space-y-3">
-                <span class="text-4xl">🧲</span>
-                <p class="text-sm text-[#8C847A]" x-text="torrentHasSearched ? 'No se encontraron programas en TorrentMac que coincidan con tu búsqueda.' : 'No hay programas cargados o la categoría está vacía.'"></p>
-                <button type="button" @click="torrentHasSearched ? clearTorrentSearch() : loadTorrentmac(1)" class="px-4 py-2 rounded-xl bg-[#30D158] text-black text-xs font-bold hover:bg-[#28C840] transition-colors cursor-pointer">
-                    <span x-text="torrentHasSearched ? 'Restablecer Búsqueda' : 'Cargar Catálogo Inicial'"></span>
+            <div x-show="!torrentLoading && !torrentSearching && !loadingTorrentUpdates && getDisplayedTorrentApps().length === 0" class="text-center py-12 space-y-3">
+                <span class="text-4xl" x-text="viewingTorrentUpdatesOnly ? '🎉' : '🧲'"></span>
+                <p class="text-sm text-[#8C847A]" x-text="viewingTorrentUpdatesOnly ? '¡Todos tus programas Torrent están al día! No hay nuevas versiones pendientes en este momento.' : (torrentHasSearched ? 'No se encontraron programas en TorrentMac que coincidan con tu búsqueda.' : 'No hay programas cargados o la categoría está vacía.')"></p>
+                <button type="button" @click="torrentHasSearched || viewingTorrentUpdatesOnly ? clearTorrentSearch() : loadTorrentmac(1)" class="px-4 py-2 rounded-xl bg-[#30D158] text-black text-xs font-bold hover:bg-[#28C840] transition-colors cursor-pointer">
+                    <span x-text="torrentHasSearched || viewingTorrentUpdatesOnly ? 'Volver al Catálogo Principal' : 'Cargar Catálogo Inicial'"></span>
                 </button>
             </div>
 
             <!-- Cards Grid -->
-            <div x-show="getDisplayedTorrentApps().length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" :class="(torrentLoading || torrentSearching) ? 'opacity-50 pointer-events-none' : ''">
+            <div x-show="getDisplayedTorrentApps().length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" :class="(torrentLoading || torrentSearching || loadingTorrentUpdates) ? 'opacity-50 pointer-events-none' : ''">
                 <template x-for="app in getDisplayedTorrentApps()" :key="app.url">
-                    <div class="bg-[#181410] border border-[#2B231B] hover:border-[#30D158]/50 rounded-2xl p-3.5 flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-xl group relative">
+                    <div class="bg-[#181410] border rounded-2xl p-3.5 flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-xl group relative"
+                         :class="app.has_update ? 'border-warning/50 hover:border-warning' : 'border-[#2B231B] hover:border-[#30D158]/50'">
                         <!-- Top Badges -->
                         <div>
                             <div class="relative flex items-center justify-center pt-2 pb-1">
@@ -785,8 +831,15 @@
                                     <span x-text="app.clean_name ? app.clean_name.charAt(0) : 'T'"></span>
                                 </div>
 
-                                <!-- Status Pill -->
-                                <div class="absolute -top-1 right-0">
+                                <!-- Status Pill (Top Left: Update indicator) -->
+                                <div class="absolute -top-1 left-0 flex flex-col gap-1" x-show="app.has_update">
+                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-warning/95 backdrop-blur-md text-black font-mono shadow">
+                                        ⚡ UPDATE
+                                    </span>
+                                </div>
+
+                                <!-- Status Pill (Top Right: Dual / Torrent / En Portal) -->
+                                <div class="absolute -top-1 right-0 flex flex-col items-end gap-1">
                                     <template x-if="app.is_dual">
                                         <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-[#2997FF]/20 text-[#2997FF] border border-[#2997FF]/30 font-mono" title="Cuenta con Descarga Directa y Torrent">
                                             ⚡ DUAL
@@ -810,12 +863,21 @@
                                 :title="app.name" x-text="app.clean_name || app.name"></h4>
 
                             <div class="mt-1 flex items-center justify-between text-[10px] font-mono text-[#8C847A]">
-                                <span class="text-[#30D158] font-bold" x-text="app.version ? 'v' + app.version : 'Torrent'"></span>
+                                <template x-if="app.has_update && app.local_version">
+                                    <span class="px-1.5 py-0.5 rounded bg-warning/20 border border-warning/40 text-warning font-bold flex items-center gap-1" title="Versión en portal vs nueva versión torrent">
+                                        <span class="line-through opacity-70" x-text="'v' + app.local_version"></span>
+                                        <span>→</span>
+                                        <span class="font-black text-warning" x-text="'v' + app.version"></span>
+                                    </span>
+                                </template>
+                                <template x-if="!app.has_update || !app.local_version">
+                                    <span class="text-[#30D158] font-bold" x-text="app.version ? 'v' + app.version : 'Torrent'"></span>
+                                </template>
                                 <span x-text="app.category || 'macOS'"></span>
                             </div>
                         </div>
 
-                        <!-- Divider & Action Button (Queue Aware) -->
+                        <!-- Divider & Action Button (Queue Aware & Update Aware) -->
                         <div class="mt-3 pt-2.5 border-t border-[#262019]">
                             <button type="button" @click="importTorrentApp(app)" :disabled="torrentImportingUrl === app.url || isTorrentQueued(app.url)"
                                     class="w-full py-2 px-2 rounded-xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-90"
@@ -823,9 +885,11 @@
                                         ? 'bg-gradient-to-r from-[#9F1239] via-[#881337] to-[#4C0519] text-white shadow-[#9F1239]/40 cursor-wait animate-pulse' 
                                         : (isTorrentQueued(app.url)
                                             ? 'bg-gradient-to-r from-[#881337] via-[#701A28] to-[#4C0519] text-[#FCD34D] border border-amber-500/40 shadow-black/50 cursor-wait'
-                                            : (app.has_torrent 
-                                                ? 'bg-[#221C16] hover:bg-[#2B231C] text-[#30D158] border border-[#30D158]/30 shadow-none cursor-pointer' 
-                                                : 'bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black shadow-success/20 cursor-pointer'))">
+                                            : (app.has_update
+                                                ? 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] hover:to-[#F59E0B] text-black shadow-[#F59E0B]/25 cursor-pointer ring-1 ring-amber-400/50'
+                                                : (app.has_torrent 
+                                                    ? 'bg-[#221C16] hover:bg-[#2B231C] text-[#30D158] border border-[#30D158]/30 shadow-none cursor-pointer' 
+                                                    : 'bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black shadow-success/20 cursor-pointer')))">
                                 
                                 <!-- Loading Spinner -->
                                 <svg x-show="torrentImportingUrl === app.url" class="animate-spin w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24">
@@ -839,14 +903,16 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 2"/>
                                 </svg>
 
-                                <!-- Magnet/Torrent Icon -->
-                                <span x-show="torrentImportingUrl !== app.url && !isTorrentQueued(app.url)" class="text-sm">🧲</span>
+                                <!-- Magnet/Torrent Icon or Update lightning -->
+                                <span x-show="torrentImportingUrl !== app.url && !isTorrentQueued(app.url)" class="text-sm" x-text="app.has_update ? '⚡' : '🧲'"></span>
 
                                 <span x-text="torrentImportingUrl === app.url 
                                     ? 'Importando Torrent...' 
                                     : (isTorrentQueued(app.url)
                                         ? 'En cola segura...'
-                                        : (app.has_torrent ? '✓ Re-importar' : (app.in_database ? '+ Vincular Torrent' : '1–Clic Torrent')))">
+                                        : (app.has_update
+                                            ? ('⚡ Actualizar a v' + app.version)
+                                            : (app.has_torrent ? '✓ Re-importar' : (app.in_database ? '+ Vincular Torrent' : '1–Clic Torrent'))))">
                                     1–Clic Torrent
                                 </span>
                             </button>
@@ -856,7 +922,7 @@
             </div>
 
             <!-- Dynamic Pagination Bar for TorrentMac -->
-            <div x-show="torrentTotalPages > 1" class="pt-6 border-t border-[#241E18] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div x-show="!viewingTorrentUpdatesOnly && torrentTotalPages > 1" class="pt-6 border-t border-[#241E18] flex flex-col sm:flex-row items-center justify-between gap-4">
                 <!-- Page Info / Counter -->
                 <div class="flex items-center gap-2 text-xs text-[#8C847A]">
                     <span class="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#30D158]" :class="(torrentLoading || torrentSearching) ? 'animate-ping' : ''"></span>
@@ -1133,6 +1199,10 @@ function scraperApp() {
     torrentImportingUrl: null,
     torrentQueue: [],
     torrentSyncing: false,
+    torrentUpdatesCount: 0,
+    torrentPendingUpdates: [],
+    viewingTorrentUpdatesOnly: false,
+    loadingTorrentUpdates: false,
     torrentCategories: @js($torrentmacCategories ?? []),
     torrentStorageTarget: '{{ $stats['torrent_storage_target'] ?? 'local' }}',
     effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
@@ -1140,6 +1210,7 @@ function scraperApp() {
 
     init() {
         this.fetchUpdatesCountAsync();
+        this.fetchTorrentUpdatesCountAsync();
     },
 
     async fetchUpdatesCountAsync() {
@@ -1435,14 +1506,94 @@ function scraperApp() {
     },
 
     getDisplayedTorrentApps() {
+        if (this.viewingTorrentUpdatesOnly) return this.torrentPendingUpdates;
         if (this.torrentHasSearched) return this.torrentSearchResults;
         return this.torrentApps;
+    },
+
+    async fetchTorrentUpdatesCountAsync() {
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2');
+            const data = await res.json();
+            if (data.success) {
+                this.torrentUpdatesCount = data.count;
+                if (this.viewingTorrentUpdatesOnly) {
+                    this.torrentPendingUpdates = data.items;
+                }
+            }
+        } catch(e) {
+            console.warn('Could not fetch torrent pending updates count', e);
+        }
+    },
+
+    async toggleTorrentPendingUpdates() {
+        if (this.viewingTorrentUpdatesOnly) {
+            this.viewingTorrentUpdatesOnly = false;
+            this.torrentCategory = 'all';
+            this.torrentCategoryName = 'Todos los Torrents';
+            await this.loadTorrentmac(1);
+            return;
+        }
+
+        this.loadingTorrentUpdates = true;
+        this.torrentHasSearched = false;
+        this.torrentSearchQuery = '';
+        this.torrentSearchResults = [];
+        this.viewingTorrentUpdatesOnly = true;
+
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.pending-updates') }}?pages=2');
+            const data = await res.json();
+            if (data.success) {
+                this.torrentPendingUpdates = data.items;
+                this.torrentUpdatesCount = data.count;
+                document.getElementById('torrentmac-results-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                alert(data.message || 'Error al obtener actualizaciones de TorrentMac');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Error al conectar para buscar actualizaciones de TorrentMac');
+        } finally {
+            this.loadingTorrentUpdates = false;
+        }
+    },
+
+    async syncTorrentUpdatesNow() {
+        this.torrentSyncing = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.torrentmac.sync-latest') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ pages: 2, download_images: true })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast('✓ ' + data.message);
+                await this.fetchTorrentUpdatesCountAsync();
+                if (this.viewingTorrentUpdatesOnly) {
+                    await this.toggleTorrentPendingUpdates();
+                } else {
+                    await this.loadTorrentmac(this.torrentCurrentPage);
+                }
+            } else {
+                alert(data.message || 'Error en sincronización');
+            }
+        } catch(e) {
+            alert('Error al sincronizar TorrentMac');
+        } finally {
+            this.torrentSyncing = false;
+        }
     },
 
     async doTorrentSearch(page = 1) {
         if (this.torrentSearchQuery.trim().length < 2) return;
         this.torrentSearching = true;
         this.torrentHasSearched = true;
+        this.viewingTorrentUpdatesOnly = false;
         try {
             const res = await fetch('{{ route('admin.scraper.torrentmac.search') }}', {
                 method: 'POST',
@@ -1478,6 +1629,7 @@ function scraperApp() {
         this.torrentHasSearched = false;
         this.torrentSearchResults = [];
         this.torrentSearchTotal = 0;
+        this.viewingTorrentUpdatesOnly = false;
         this.loadTorrentmac(1);
     },
 
@@ -1507,6 +1659,7 @@ function scraperApp() {
     },
 
     async loadTorrentmac(page = 1, category = null) {
+        this.viewingTorrentUpdatesOnly = false;
         if (category !== null) {
             this.torrentCategory = category;
             const found = this.torrentCategories.find(c => c.slug === category);
@@ -1580,6 +1733,9 @@ function scraperApp() {
                 app.in_database = true;
                 app.has_torrent = true;
                 app.is_dual = data.app?.is_dual;
+                app.has_update = false;
+                app.local_version = data.app?.version || app.version;
+                this.fetchTorrentUpdatesCountAsync();
             } else {
                 this.showToast('⚠️ ' + (data.message || 'Error al importar torrent'));
             }
@@ -1609,6 +1765,7 @@ function scraperApp() {
             const data = await res.json();
             if (data.success) {
                 this.showToast('✓ ' + data.message);
+                await this.fetchTorrentUpdatesCountAsync();
                 await this.loadTorrentmac(this.torrentCurrentPage);
             } else {
                 alert(data.message || 'Error en sincronización');

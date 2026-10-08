@@ -133,6 +133,40 @@ class TorrentmacImporter
     }
 
     /**
+     * Compare two version strings cleanly, returning true if incoming is higher than current
+     */
+    public function isHigherVersion(?string $incoming, ?string $current): bool
+    {
+        if (empty($incoming) || empty($current)) {
+            return false;
+        }
+
+        if (trim($incoming) === trim($current)) {
+            return false;
+        }
+
+        $cleanIncoming = trim(preg_replace('/^[vV]/', '', $incoming));
+        $cleanCurrent = trim(preg_replace('/^[vV]/', '', $current));
+
+        if ($cleanIncoming === $cleanCurrent) {
+            return false;
+        }
+
+        // Compare primary semantic digits (e.g., 3.4.1 vs 3.3)
+        if (preg_match('/^\d+(\.\d+)*/', $cleanIncoming, $m1) && preg_match('/^\d+(\.\d+)*/', $cleanCurrent, $m2)) {
+            $cmp = version_compare($m1[0], $m2[0]);
+            if ($cmp > 0) {
+                return true;
+            }
+            if ($cmp < 0) {
+                return false;
+            }
+        }
+
+        return version_compare($cleanIncoming, $cleanCurrent, '>');
+    }
+
+    /**
      * Annotate parsed TorrentMac cards with local database status (already imported, dual download, etc.)
      *
      * @param  array<int, array>  $cards
@@ -155,7 +189,7 @@ class TorrentmacImporter
             $card['is_dual'] = $existing ? ($existing->has_torrent && ! empty($existing->download_url_external)) : false;
             $card['local_app_id'] = $existing ? $existing->id : null;
             $card['local_version'] = $existing ? $existing->version : null;
-            $card['has_update'] = $existing && ! empty($card['version']) && ! empty($existing->version) && ($card['version'] !== $existing->version);
+            $card['has_update'] = $existing && $this->isHigherVersion($card['version'] ?? null, $existing->version ?? null);
 
             return $card;
         }, $cards);
@@ -274,10 +308,24 @@ class TorrentmacImporter
 
         // Check if this is a new version upgrade
         $incomingVersion = $appData['version'] ?? null;
-        $isVersionUpgrade = $existing && $incomingVersion && ! empty($existing->version) && ($incomingVersion !== $existing->version);
+        $isVersionUpgrade = $existing && $incomingVersion && ! empty($existing->version) && ($this->isHigherVersion($incomingVersion, $existing->version) || ($incomingVersion !== $existing->version));
 
         if ($isVersionUpgrade) {
-            // Archive all previous versions of this application
+            // Archive prior version in application_versions if not already recorded
+            if (! empty($existing->version)) {
+                $hasPriorVersionRecord = $existing->versions()->where('version', $existing->version)->exists();
+                if (! $hasPriorVersionRecord) {
+                    $existing->versions()->create([
+                        'version' => $existing->version,
+                        'download_url' => $existing->download_url_external ?: $existing->download_url,
+                        'torrent_url' => $existing->torrent_url,
+                        'torrent_file_path' => $existing->torrent_file_path,
+                        'size' => $existing->size,
+                        'is_current' => false,
+                        'released_at' => $existing->released_at ?? $existing->created_at ?? now(),
+                    ]);
+                }
+            }
             $existing->versions()->update(['is_current' => false]);
             $payload['version'] = $incomingVersion;
             $payload['size'] = $appData['size'] ?? $existing->size;
@@ -508,6 +556,30 @@ class TorrentmacImporter
     }
 
     /**
+     * Scan recent TorrentMac pages and return only applications that exist locally with a newer version available
+     *
+     * @return array<int, array>
+     */
+    public function getPendingUpdates(int $maxPages = 2): array
+    {
+        $pending = [];
+        $seenSlugs = [];
+
+        for ($p = 1; $p <= $maxPages; $p++) {
+            $cards = $this->getTorrentmacApps($p, false, 'all');
+
+            foreach ($cards as $card) {
+                if (! empty($card['has_update']) && ! in_array($card['slug'], $seenSlugs)) {
+                    $seenSlugs[] = $card['slug'];
+                    $pending[] = $card;
+                }
+            }
+        }
+
+        return $pending;
+    }
+
+    /**
      * Sync latest programs from TorrentMac homepage
      *
      * @return array{total_checked: int, new_imported: int, updated: int, items: array}
@@ -525,7 +597,7 @@ class TorrentmacImporter
                 $totalChecked++;
                 try {
                     $existing = $this->resolveExistingApplication($card);
-                    $hasUpdate = $existing && ! empty($card['version']) && ! empty($existing->version) && ($card['version'] !== $existing->version);
+                    $hasUpdate = $existing && $this->isHigherVersion($card['version'] ?? null, $existing->version ?? null);
                     $needsImport = ! $existing || ! $existing->has_torrent || $hasUpdate;
 
                     if (! $needsImport) {
@@ -537,10 +609,21 @@ class TorrentmacImporter
                     if ($app) {
                         if ($existing) {
                             $updated++;
-                            $items[] = ['name' => $app->name, 'status' => 'updated', 'slug' => $app->slug];
+                            $items[] = [
+                                'name' => $app->name,
+                                'version' => $app->version,
+                                'previous_version' => $existing->version,
+                                'status' => $hasUpdate ? 'updated' : 'linked',
+                                'slug' => $app->slug,
+                            ];
                         } else {
                             $newImported++;
-                            $items[] = ['name' => $app->name, 'status' => 'imported', 'slug' => $app->slug];
+                            $items[] = [
+                                'name' => $app->name,
+                                'version' => $app->version,
+                                'status' => 'imported',
+                                'slug' => $app->slug,
+                            ];
                         }
                     }
                 } catch (\Throwable $e) {

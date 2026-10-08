@@ -382,6 +382,51 @@ class ScraperController extends Controller
     }
 
     /**
+     * Clear cached TorrentMac pending updates
+     */
+    protected function clearTorrentmacPendingUpdatesCache(): void
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            Cache::forget("scraper_torrentmac_pending_updates_{$i}");
+        }
+    }
+
+    /**
+     * Get list of applications that exist locally and have newer versions available on TorrentMac
+     */
+    public function getTorrentmacPendingUpdates(Request $request): JsonResponse
+    {
+        $pages = max(1, min(5, (int) $request->input('pages', 2)));
+        $forceRefresh = $request->boolean('refresh', false);
+        $cacheKey = "scraper_torrentmac_pending_updates_{$pages}";
+
+        try {
+            if ($forceRefresh) {
+                Cache::forget($cacheKey);
+            }
+
+            $updates = Cache::remember($cacheKey, 90, function () use ($pages) {
+                return $this->torrentmacImporter->getPendingUpdates($pages);
+            });
+
+            return response()->json([
+                'success' => true,
+                'count' => count($updates),
+                'items' => $updates,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("ScraperController getTorrentmacPendingUpdates error: {$e->getMessage()}");
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al escanear actualizaciones de TorrentMac: '.$e->getMessage(),
+                'count' => 0,
+                'items' => [],
+            ], 500);
+        }
+    }
+
+    /**
      * Search TorrentMac in real-time with pagination
      */
     public function searchTorrentmac(Request $request): JsonResponse
@@ -434,6 +479,8 @@ class ScraperController extends Controller
         $app = $this->torrentmacImporter->importAppByUrl($request->url, $downloadImages);
 
         if ($app) {
+            $this->clearTorrentmacPendingUpdatesCache();
+
             return response()->json([
                 'success' => true,
                 'message' => "Aplicación {$app->name} importada con torrent con éxito.",
@@ -466,6 +513,7 @@ class ScraperController extends Controller
         $downloadImages = $request->boolean('download_images', true);
 
         $result = $this->torrentmacImporter->syncLatestUpdates($pages, $downloadImages);
+        $this->clearTorrentmacPendingUpdatesCache();
 
         return response()->json([
             'success' => true,

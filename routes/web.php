@@ -111,6 +111,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // TorrentMac Scraper & Cloud Sync
     Route::get('/scraper/torrentmac/latest', [ScraperController::class, 'getTorrentmacLatest'])->name('scraper.torrentmac.latest');
+    Route::get('/scraper/torrentmac/pending-updates', [ScraperController::class, 'getTorrentmacPendingUpdates'])->name('scraper.torrentmac.pending-updates');
     Route::post('/scraper/torrentmac/search', [ScraperController::class, 'searchTorrentmac'])->name('scraper.torrentmac.search');
     Route::post('/scraper/torrentmac/import-single', [ScraperController::class, 'importTorrentmacSingle'])->name('scraper.torrentmac.import-single');
     Route::post('/scraper/torrentmac/sync-latest', [ScraperController::class, 'syncTorrentmacLatest'])->name('scraper.torrentmac.sync-latest');

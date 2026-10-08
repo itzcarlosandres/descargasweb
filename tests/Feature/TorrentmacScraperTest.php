@@ -287,4 +287,83 @@ HTML
         $this->assertTrue($response->json('success'));
         $this->assertEquals('Logic Pro', $response->json('query'));
     }
+
+    public function test_admin_can_access_torrentmac_pending_updates_endpoint(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)->getJson(route('admin.scraper.torrentmac.pending-updates', ['pages' => 1]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'count',
+            'items',
+        ]);
+        $this->assertTrue($response->json('success'));
+        $this->assertIsInt($response->json('count'));
+        $this->assertIsArray($response->json('items'));
+    }
+
+    public function test_torrentmac_version_comparison_and_upgrade_history(): void
+    {
+        $mockClient = $this->createMock(TorrentmacClient::class);
+        $mockGemini = $this->createMock(GeminiService::class);
+        $parser = new TorrentmacParser;
+        $importer = new TorrentmacImporter($mockClient, $parser, $mockGemini);
+
+        $this->assertTrue($importer->isHigherVersion('4.2.1', '4.2.0'));
+        $this->assertTrue($importer->isHigherVersion('v5.0', '4.9'));
+        $this->assertTrue($importer->isHigherVersion('2026.1', '2025.4'));
+        $this->assertFalse($importer->isHigherVersion('3.0', '3.0'));
+        $this->assertFalse($importer->isHigherVersion('2.1', '2.2'));
+
+        $category = Category::create([
+            'name' => 'Diseño',
+            'slug' => 'media-design',
+            'is_active' => true,
+        ]);
+
+        // Create an application with v3.0 that was not registered in application_versions yet
+        $app = Application::create([
+            'category_id' => $category->id,
+            'name' => 'Pixelmator Pro',
+            'slug' => 'pixelmator-pro',
+            'version' => '3.0',
+            'size' => '200 MB',
+            'download_url_external' => 'https://mega.nz/file/v3',
+            'has_torrent' => false,
+            'published' => true,
+        ]);
+
+        $sampleDetailHtml = <<<'HTML'
+        <h1 class="entry-title">Pixelmator Pro 4.2 for Mac</h1>
+        <div class="entry-content">
+            <p>New version with advanced AI editing.</p>
+            <a href="https://www.torrentmac.net/wp-content/uploads/Pixelmator_4.2.dmg.torrent" class="btn download-btn">Download</a>
+        </div>
+HTML;
+
+        $mockClient->method('fetchHtml')->willReturn($sampleDetailHtml);
+        $mockClient->method('downloadBinary')->willReturn('dummy-torrent-bytes');
+
+        $updatedApp = $importer->importAppByUrl('https://www.torrentmac.net/pixelmator-pro-4-2/', false);
+
+        $this->assertNotNull($updatedApp);
+        $this->assertEquals($app->id, $updatedApp->id);
+        $this->assertEquals('4.2', $updatedApp->version);
+        $this->assertTrue($updatedApp->has_torrent);
+
+        // Verify history: v3.0 archived, v4.2 current
+        $versions = $updatedApp->versions()->orderBy('version', 'asc')->get();
+        $this->assertCount(2, $versions);
+
+        $v3 = $versions->where('version', '3.0')->first();
+        $this->assertNotNull($v3);
+        $this->assertFalse((bool) $v3->is_current);
+
+        $v42 = $versions->where('version', '4.2')->first();
+        $this->assertNotNull($v42);
+        $this->assertTrue((bool) $v42->is_current);
+    }
 }
