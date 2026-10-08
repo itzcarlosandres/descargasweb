@@ -465,16 +465,6 @@
 
                                     <!-- Top Left: Status Chip -->
                                     <div class="absolute top-2 left-2 flex flex-col gap-1">
-                                        <template x-if="item.has_update">
-                                            <span class="relative flex h-5 w-5" title="Actualización Disponible">
-                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
-                                                <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-gradient-to-tr from-warning to-amber-300 text-black shadow-lg shadow-warning/50 ring-2 ring-[#1E1914]">
-                                                    <svg class="w-3 h-3 animate-spin [animation-duration:4s]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                    </svg>
-                                                </span>
-                                            </span>
-                                        </template>
                                         <template x-if="item.is_imported && !item.has_update">
                                             <span class="px-1.5 py-0.5 rounded-md bg-success/95 backdrop-blur-md text-black font-extrabold text-[8px] uppercase tracking-wider shadow">
                                                 ✓ Importado
@@ -484,9 +474,20 @@
                                 </div>
 
                                 <!-- Title -->
-                                <h3 class="text-[13px] sm:text-[13.5px] font-bold text-white leading-snug line-clamp-2 mt-2.5 group-hover:text-primary transition-colors min-h-[2.35rem]" 
-                                    :title="item.name" 
-                                    x-text="item.name"></h3>
+                                <h3 class="text-[13px] sm:text-[13.5px] font-bold text-white leading-snug line-clamp-2 mt-2.5 group-hover:text-primary transition-colors min-h-[2.35rem] flex items-center gap-1.5" 
+                                    :title="item.name">
+                                    <span class="truncate" x-text="item.name"></span>
+                                    <template x-if="item.has_update">
+                                        <span class="relative flex h-4 w-4 shrink-0 inline-flex items-center justify-center" title="Actualización Disponible">
+                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-60"></span>
+                                            <span class="relative inline-flex items-center justify-center rounded-full h-4 w-4 bg-gradient-to-tr from-[#0071E3] to-[#2997FF] text-white shadow-md shadow-[#0071E3]/50 ring-1 ring-sky-300/40">
+                                                <svg class="w-2.5 h-2.5 animate-spin [animation-duration:3.5s] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                            </span>
+                                        </span>
+                                    </template>
+                                </h3>
 
                                 <!-- Category Pill & Downloads -->
                                 <div class="mt-2 flex items-center justify-between gap-1.5">
@@ -836,18 +837,6 @@
                                     <span x-text="app.clean_name ? app.clean_name.charAt(0) : 'T'"></span>
                                 </div>
 
-                                <!-- Status Pill (Top Left: Update indicator - Icon only, animated, no text) -->
-                                <div class="absolute -top-1 left-0 flex items-center justify-center z-10" x-show="app.has_update" title="Actualización Disponible">
-                                    <span class="relative flex h-5 w-5">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
-                                        <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-gradient-to-tr from-warning to-amber-300 text-black shadow-lg shadow-warning/50 ring-2 ring-[#181410]">
-                                            <svg class="w-3 h-3 animate-spin [animation-duration:4s]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                            </svg>
-                                        </span>
-                                    </span>
-                                </div>
-
                                 <!-- Status Pill (Top Right: Dual / Torrent / En Portal) -->
                                 <div class="absolute -top-1 right-0 flex flex-col items-end gap-1">
                                     <template x-if="app.is_dual">
@@ -869,8 +858,18 @@
                             </div>
 
                             <!-- Title & Version -->
-                            <h4 class="text-[13px] font-bold text-white leading-snug line-clamp-2 mt-2.5 group-hover:text-[#30D158] transition-colors min-h-[2.35rem]"
-                                :title="app.name" x-text="app.clean_name || app.name"></h4>
+                            <h4 class="text-[13px] font-bold text-white leading-snug line-clamp-2 mt-2.5 group-hover:text-[#30D158] transition-colors min-h-[2.35rem] flex items-center gap-1.5"
+                                :title="app.name">
+                                    <span class="truncate" x-text="app.clean_name || app.name"></span>
+                                    <span class="relative flex h-4 w-4 shrink-0 inline-flex items-center justify-center" x-show="app.has_update" title="Actualización Disponible">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-60"></span>
+                                        <span class="relative inline-flex items-center justify-center rounded-full h-4 w-4 bg-gradient-to-tr from-[#0071E3] to-[#2997FF] text-white shadow-md shadow-[#0071E3]/50 ring-1 ring-sky-300/40">
+                                            <svg class="w-2.5 h-2.5 animate-spin [animation-duration:3.5s] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        </span>
+                                    </span>
+                                </h4>
 
                             <div class="mt-1 flex items-center justify-between text-[10px] font-mono text-[#8C847A]">
                                 <template x-if="app.has_update && app.local_version">

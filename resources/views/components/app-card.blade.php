@@ -1,30 +1,27 @@
 @props(['app'])
 
 <article id="post-{{ $app->id }}" class="post-card post-{{ $app->id }} post type-post status-publish format-standard has-post-thumbnail hentry category-application category-{{ $app->category?->slug ?? 'system-utilities' }} group">
-  <a href="{{ route('app', $app->slug) }}" aria-hidden="true" tabindex="-1" class="shrink-0 flex items-center justify-center relative">
+  <a href="{{ route('app', $app->slug) }}" aria-hidden="true" tabindex="-1" class="shrink-0 flex items-center justify-center">
     <img width="168" height="168" src="{{ $app->icon_url }}" class="card-icon wp-post-image" alt="{{ $app->name }} Logo" loading="lazy" decoding="async"
          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
     <div class="card-icon bg-[#0071E3]/20 flex items-center justify-center text-[#0071E3] font-bold text-2xl" style="display: none;">
         {{ strtoupper(substr($app->name, 0, 1)) }}
     </div>
-
-    @if($app->is_updated)
-    <!-- Animated Update Badge (Icon-only, animated, no text) -->
-    <div class="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center pointer-events-none" title="Programa actualizado">
-      <span class="relative flex h-5 w-5">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-        <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-gradient-to-tr from-amber-500 to-amber-300 text-black shadow-lg shadow-amber-500/50 ring-2 ring-[#121214]">
-          <svg class="w-3 h-3 animate-spin [animation-duration:4s]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+  </a>
+  <div class="card-body">
+    <h2 class="entry-title flex items-center gap-1.5 min-w-0">
+      <a href="{{ route('app', $app->slug) }}" class="truncate after:absolute after:inset-0 after:z-[1]">{{ $app->name }}</a>
+      @if($app->is_updated)
+      <!-- Animated Update Badge (Blue, High-contrast White Icon, No text) -->
+      <span class="relative flex h-4 w-4 shrink-0 z-[2]" title="Programa actualizado">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-60"></span>
+        <span class="relative inline-flex items-center justify-center rounded-full h-4 w-4 bg-gradient-to-tr from-[#0071E3] to-[#2997FF] text-white shadow-md shadow-[#0071E3]/50 ring-1 ring-sky-300/40">
+          <svg class="w-2.5 h-2.5 animate-spin [animation-duration:3.5s] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
         </span>
       </span>
-    </div>
-    @endif
-  </a>
-  <div class="card-body">
-    <h2 class="entry-title">
-      <a href="{{ route('app', $app->slug) }}" class="after:absolute after:inset-0 after:z-[1]">{{ $app->name }}</a>
+      @endif
     </h2>
     <div class="entry-meta relative z-[2]">
       <a class="cat-pill" href="{{ route('category', $app->category?->slug ?? 'system-utilities') }}">{{ $app->category?->name ?? 'System Utilities' }}</a>
