@@ -358,21 +358,10 @@ class ScraperController extends Controller
     {
         $limit = max(1, min(50, (int) $request->input('limit', Setting::get('scraper_cron_limit', 10))));
 
-        $drafts = Application::where('published', false)
-            ->orderBy('id', 'asc')
-            ->limit($limit)
-            ->get();
-
-        $count = $drafts->count();
-        if ($count > 0) {
-            foreach ($drafts as $app) {
-                $app->update([
-                    'published' => true,
-                    'released_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
+        $result = Application::releaseDripBatch($limit);
+        $count = $result['published_count'];
+        $torrentCount = $result['torrent_count'];
+        $ddlCount = $result['ddl_count'];
 
         $remaining = Application::where('published', false)->count();
         $totalPublished = Application::where('published', true)->count();
@@ -380,10 +369,12 @@ class ScraperController extends Controller
         return response()->json([
             'success' => true,
             'published_count' => $count,
+            'torrent_count' => $torrentCount,
+            'ddl_count' => $ddlCount,
             'remaining_drafts' => $remaining,
             'total_published' => $totalPublished,
             'message' => $count > 0
-                ? "Se han publicado {$count} programas con éxito. Quedan {$remaining} en Cola Draft."
+                ? "Goteo exitoso: {$count} programas publicados ({$torrentCount} Torrent, {$ddlCount} DDL). Quedan {$remaining} en Cola Draft."
                 : 'No hay programas en Cola Draft para publicar.',
         ]);
     }

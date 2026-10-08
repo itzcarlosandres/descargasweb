@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -260,5 +261,67 @@ class Application extends Model
             'rating' => $avg ? round($avg, 2) : 0,
             'reviews_count' => $count,
         ]);
+    }
+
+    /**
+     * Release a balanced batch of draft applications (e.g. 5 Torrent and 5 DDL)
+     * If one source lacks enough drafts, fills remainder with the oldest available drafts.
+     *
+     * @return array{published_count: int, torrent_count: int, ddl_count: int, apps: Collection}
+     */
+    public static function releaseDripBatch(int $limit = 10): array
+    {
+        $limit = max(1, min(100, $limit));
+        $targetHalf = (int) ceil($limit / 2);
+
+        // 1. Up to half torrent drafts (oldest first)
+        $torrentDrafts = static::where('published', false)
+            ->where('has_torrent', true)
+            ->orderBy('id', 'asc')
+            ->limit($targetHalf)
+            ->get();
+
+        $selectedIds = $torrentDrafts->pluck('id')->all();
+
+        // 2. Up to half DDL drafts (oldest first)
+        $ddlDrafts = static::where('published', false)
+            ->where('has_torrent', false)
+            ->whereNotIn('id', $selectedIds)
+            ->orderBy('id', 'asc')
+            ->limit($targetHalf)
+            ->get();
+
+        $selectedIds = array_merge($selectedIds, $ddlDrafts->pluck('id')->all());
+
+        // 3. Fallback: If not reached $limit, fill with oldest available drafts regardless of source
+        $remainderNeeded = $limit - count($selectedIds);
+        $fillDrafts = collect();
+        if ($remainderNeeded > 0) {
+            $fillDrafts = static::where('published', false)
+                ->whereNotIn('id', $selectedIds)
+                ->orderBy('id', 'asc')
+                ->limit($remainderNeeded)
+                ->get();
+        }
+
+        $allDrafts = $torrentDrafts->concat($ddlDrafts)->concat($fillDrafts);
+
+        if ($allDrafts->isNotEmpty()) {
+            $now = now();
+            foreach ($allDrafts as $draftApp) {
+                $draftApp->update([
+                    'published' => true,
+                    'released_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
+        return [
+            'published_count' => $allDrafts->count(),
+            'torrent_count' => $allDrafts->where('has_torrent', true)->count(),
+            'ddl_count' => $allDrafts->where('has_torrent', false)->count(),
+            'apps' => $allDrafts,
+        ];
     }
 }

@@ -23,35 +23,26 @@ Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desa
         return 1;
     }
 
-    $this->info('Iniciando sincronización DDL (HaxMac)...');
     $limit = (int) Setting::get('scraper_cron_limit', 10);
-    $ddlResult = $haxmac->syncLatestUpdates(true, $limit);
+    $halfLimit = (int) ceil($limit / 2);
+
+    $this->info("Iniciando sincronización DDL (HaxMac, hasta {$halfLimit} apps)...");
+    $ddlResult = $haxmac->syncLatestUpdates(true, $halfLimit, 3);
     Setting::set('scraper_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
     $this->info("✓ DDL completado: {$ddlResult['new_imported']} nuevos, {$ddlResult['updated']} actualizados.");
 
     if (filter_var(Setting::get('torrentmac_cron_enabled', true), FILTER_VALIDATE_BOOLEAN)) {
-        $this->info('Iniciando sincronización Torrent (TorrentMac)...');
-        $torrentResult = $torrentmac->syncLatestUpdates(1, true);
+        $this->info("Iniciando sincronización Torrent (TorrentMac, hasta {$halfLimit} apps)...");
+        $torrentResult = $torrentmac->syncLatestUpdates(1, true, $halfLimit, 3);
         Setting::set('torrentmac_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
         $this->info("✓ Torrent completado: {$torrentResult['new_imported']} nuevos, {$torrentResult['updated']} actualizados.");
     }
 
-    // Goteo de drafts (publicación escalonada de la Cola Draft)
-    $drafts = Application::where('published', false)
-        ->orderBy('id', 'asc')
-        ->limit($limit)
-        ->get();
-
-    if ($drafts->isNotEmpty()) {
-        foreach ($drafts as $draftApp) {
-            $draftApp->update([
-                'published' => true,
-                'released_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+    // Goteo de drafts (publicación escalonada equilibrada 50% Torrent y 50% DDL)
+    $dripResult = Application::releaseDripBatch($limit);
+    if ($dripResult['published_count'] > 0) {
         $remaining = Application::where('published', false)->count();
-        $this->info("✓ Goteo Draft: {$drafts->count()} apps publicadas en el portal. Quedan {$remaining} en cola draft.");
+        $this->info("✓ Goteo Draft: {$dripResult['published_count']} apps publicadas ({$dripResult['torrent_count']} Torrent, {$dripResult['ddl_count']} DDL). Quedan {$remaining} en cola draft.");
     }
 
     $this->info('Sincronización finalizada correctamente.');
@@ -98,25 +89,14 @@ $torrentmacEvent = Schedule::call(function () {
 
 $applyFrequency($torrentmacEvent, $frequency);
 
-// 3. Automated Drip Publishing (Publicación gradual de la Cola Draft)
+// 3. Automated Drip Publishing (Publicación gradual equilibrada de la Cola Draft)
 $dripEvent = Schedule::call(function () {
     if (filter_var(Setting::get('scraper_cron_enabled', false), FILTER_VALIDATE_BOOLEAN)) {
         $limit = (int) Setting::get('scraper_cron_limit', 10);
-        $drafts = Application::where('published', false)
-            ->orderBy('id', 'asc')
-            ->limit($limit)
-            ->get();
-
-        if ($drafts->isNotEmpty()) {
-            foreach ($drafts as $app) {
-                $app->update([
-                    'published' => true,
-                    'released_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+        $dripResult = Application::releaseDripBatch($limit);
+        if ($dripResult['published_count'] > 0) {
             $remaining = Application::where('published', false)->count();
-            Log::info("Drip Publishing (Goteo): Se publicaron {$drafts->count()} apps. Quedan {$remaining} en Cola Draft.");
+            Log::info("Drip Publishing (Goteo): Se publicaron {$dripResult['published_count']} apps ({$dripResult['torrent_count']} Torrent, {$dripResult['ddl_count']} DDL). Quedan {$remaining} en Cola Draft.");
         }
     }
 })->name('drip-publish-cron')->withoutOverlapping(60);

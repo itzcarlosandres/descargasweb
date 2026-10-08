@@ -217,4 +217,45 @@ HTML;
         $this->assertEquals(1, Application::where('published', false)->count());
         $this->assertEquals(2, Application::where('published', true)->count());
     }
+
+    public function test_release_drip_batch_balances_torrent_and_ddl_and_fills_with_available_apps(): void
+    {
+        $category = Category::create([
+            'name' => 'Utilidades Test',
+            'slug' => 'utilities-test',
+            'is_active' => true,
+        ]);
+
+        // Create 2 torrent drafts and 8 DDL drafts (total 10)
+        for ($i = 1; $i <= 2; $i++) {
+            Application::create([
+                'category_id' => $category->id,
+                'name' => "Torrent Draft {$i}",
+                'slug' => "torrent-draft-{$i}",
+                'version' => "1.{$i}",
+                'has_torrent' => true,
+                'published' => false,
+            ]);
+        }
+
+        for ($i = 1; $i <= 8; $i++) {
+            Application::create([
+                'category_id' => $category->id,
+                'name' => "DDL Draft {$i}",
+                'slug' => "ddl-draft-{$i}",
+                'version' => "1.{$i}",
+                'has_torrent' => false,
+                'published' => false,
+            ]);
+        }
+
+        // Release batch of 6: target is 3 Torrent + 3 DDL.
+        // Since only 2 Torrent drafts exist, it takes 2 Torrent + 4 DDL = 6 total!
+        $result = Application::releaseDripBatch(6);
+
+        $this->assertEquals(6, $result['published_count']);
+        $this->assertEquals(2, $result['torrent_count']);
+        $this->assertEquals(4, $result['ddl_count']);
+        $this->assertEquals(4, Application::where('published', false)->count());
+    }
 }

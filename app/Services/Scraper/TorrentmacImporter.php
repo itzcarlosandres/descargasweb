@@ -610,20 +610,30 @@ class TorrentmacImporter
     }
 
     /**
-     * Sync latest programs from TorrentMac homepage
+     * Sync latest programs from TorrentMac homepage.
+     * If page 1 has no new apps, it automatically scans subsequent older pages to bring backlog apps.
      *
      * @return array{total_checked: int, new_imported: int, updated: int, items: array}
      */
-    public function syncLatestUpdates(int $pages = 1, bool $downloadImages = true): array
+    public function syncLatestUpdates(int $pages = 1, bool $downloadImages = true, int $limit = 0, int $maxPages = 3): array
     {
         $totalChecked = 0;
         $newImported = 0;
         $updated = 0;
         $items = [];
+        $effectiveMaxPages = max($pages, $maxPages);
 
-        for ($p = 1; $p <= $pages; $p++) {
+        for ($p = 1; $p <= $effectiveMaxPages; $p++) {
             $cards = $this->getTorrentmacApps($p, false, 'all');
+            if (empty($cards)) {
+                break;
+            }
+
             foreach ($cards as $card) {
+                if ($limit > 0 && ($newImported + $updated) >= $limit) {
+                    break 2;
+                }
+
                 $totalChecked++;
                 try {
                     $existing = $this->resolveExistingApplication($card);
@@ -656,9 +666,18 @@ class TorrentmacImporter
                             ];
                         }
                     }
+
+                    usleep(250000);
                 } catch (\Throwable $e) {
                     Log::error("TorrentmacImporter sync error on {$card['slug']}: {$e->getMessage()}");
+                } finally {
+                    gc_collect_cycles();
                 }
+            }
+
+            // If we found any new apps on this page or satisfied the limit, no need to keep digging
+            if (($limit > 0 && ($newImported + $updated) >= $limit) || ($limit === 0 && ($newImported + $updated) > 0)) {
+                break;
             }
         }
 

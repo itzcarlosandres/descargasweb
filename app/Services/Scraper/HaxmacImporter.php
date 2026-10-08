@@ -138,51 +138,71 @@ class HaxmacImporter
      *
      * @return array{total_checked: int, new_imported: int, updated: int, items: array}
      */
-    public function syncLatestUpdates(bool $downloadImages = true, int $limit = 0): array
+    /**
+     * Sync latest programs from HaxMac homepage.
+     * If page 1 has no new apps, it automatically scans subsequent older pages to bring backlog apps.
+     *
+     * @return array{total_checked: int, new_imported: int, updated: int, items: array}
+     */
+    public function syncLatestUpdates(bool $downloadImages = true, int $limit = 0, int $maxPages = 3): array
     {
-        $latest = $this->getLatestHaxmacApps(1, false);
         $newImported = 0;
         $updated = 0;
+        $totalChecked = 0;
         $processedItems = [];
 
-        foreach ($latest as $card) {
-            if ($limit > 0 && ($newImported + $updated) >= $limit) {
+        for ($p = 1; $p <= $maxPages; $p++) {
+            $latest = $this->getLatestHaxmacApps($p, false);
+            if (empty($latest)) {
                 break;
             }
 
-            // Only process if it is NOT yet imported, OR if it has a newer version available
-            if (! $card['is_imported'] || $card['has_update']) {
-                try {
-                    $url = $card['url'] ?? $card['slug'];
-                    $wasExisting = $card['is_imported'];
-                    $app = $this->importApp($url, $downloadImages);
+            foreach ($latest as $card) {
+                if ($limit > 0 && ($newImported + $updated) >= $limit) {
+                    break 2;
+                }
 
-                    if ($app) {
-                        if ($wasExisting) {
-                            $updated++;
-                        } else {
-                            $newImported++;
+                $totalChecked++;
+
+                // Only process if it is NOT yet imported, OR if it has a newer version available
+                if (! $card['is_imported'] || $card['has_update']) {
+                    try {
+                        $url = $card['url'] ?? $card['slug'];
+                        $wasExisting = $card['is_imported'];
+                        $app = $this->importApp($url, $downloadImages);
+
+                        if ($app) {
+                            if ($wasExisting) {
+                                $updated++;
+                            } else {
+                                $newImported++;
+                            }
+
+                            $processedItems[] = [
+                                'name' => $app->name,
+                                'version' => $app->version,
+                                'type' => $wasExisting ? 'updated' : 'new',
+                            ];
                         }
 
-                        $processedItems[] = [
-                            'name' => $app->name,
-                            'version' => $app->version,
-                            'type' => $wasExisting ? 'updated' : 'new',
-                        ];
+                        // Respectful pause to avoid server rate-limiting (250ms)
+                        usleep(250000);
+                    } catch (\Throwable $e) {
+                        Log::error("HaxmacImporter sync error on {$card['slug']}: {$e->getMessage()}");
+                    } finally {
+                        gc_collect_cycles();
                     }
-
-                    // Respectful pause to avoid server rate-limiting (250ms)
-                    usleep(250000);
-                } catch (\Throwable $e) {
-                    Log::error("HaxmacImporter sync error on {$card['slug']}: {$e->getMessage()}");
-                } finally {
-                    gc_collect_cycles();
                 }
+            }
+
+            // If we found any new apps on this page or satisfied the limit, no need to keep digging
+            if (($limit > 0 && ($newImported + $updated) >= $limit) || ($limit === 0 && ($newImported + $updated) > 0)) {
+                break;
             }
         }
 
         return [
-            'total_checked' => count($latest),
+            'total_checked' => $totalChecked,
             'new_imported' => $newImported,
             'updated' => $updated,
             'items' => $processedItems,
