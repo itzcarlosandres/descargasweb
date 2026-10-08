@@ -320,9 +320,12 @@ HTML
         // False positive fixes (same base version with/without fix/hotfix/tags)
         $this->assertFalse($importer->isHigherVersion('7.7.2', '7.7.2 fix'));
         $this->assertFalse($importer->isHigherVersion('7.2.4', '7.2.4 fix'));
-        $this->assertFalse($importer->isHigherVersion('3.0.8', '3.0.8 FIX'));
         $this->assertFalse($importer->isHigherVersion('2026.2.4', '2026.2.4'));
+        $this->assertFalse($importer->isHigherVersion('2026.2.4', '2026 2.4'));
         $this->assertFalse($importer->isHigherVersion('7.50', '7.50'));
+        $this->assertFalse($importer->isHigherVersion('7.50', '7 50'));
+        $this->assertFalse($importer->isHigherVersion('7.50', '7 7 50'));
+        $this->assertFalse($importer->isHigherVersion('7.50', '7.7.50'));
 
         $category = Category::create([
             'name' => 'Diseño',

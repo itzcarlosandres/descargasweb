@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Application;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Services\Scraper\HaxmacImporter;
@@ -33,6 +34,24 @@ Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desa
         $torrentResult = $torrentmac->syncLatestUpdates(1, true);
         Setting::set('torrentmac_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
         $this->info("✓ Torrent completado: {$torrentResult['new_imported']} nuevos, {$torrentResult['updated']} actualizados.");
+    }
+
+    // Goteo de drafts (publicación escalonada de la Cola Draft)
+    $drafts = Application::where('published', false)
+        ->orderBy('id', 'asc')
+        ->limit($limit)
+        ->get();
+
+    if ($drafts->isNotEmpty()) {
+        foreach ($drafts as $draftApp) {
+            $draftApp->update([
+                'published' => true,
+                'released_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        $remaining = Application::where('published', false)->count();
+        $this->info("✓ Goteo Draft: {$drafts->count()} apps publicadas en el portal. Quedan {$remaining} en cola draft.");
     }
 
     $this->info('Sincronización finalizada correctamente.');
@@ -78,6 +97,31 @@ $torrentmacEvent = Schedule::call(function () {
 })->name('torrentmac-smart-sync')->withoutOverlapping(60);
 
 $applyFrequency($torrentmacEvent, $frequency);
+
+// 3. Automated Drip Publishing (Publicación gradual de la Cola Draft)
+$dripEvent = Schedule::call(function () {
+    if (filter_var(Setting::get('scraper_cron_enabled', false), FILTER_VALIDATE_BOOLEAN)) {
+        $limit = (int) Setting::get('scraper_cron_limit', 10);
+        $drafts = Application::where('published', false)
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->get();
+
+        if ($drafts->isNotEmpty()) {
+            foreach ($drafts as $app) {
+                $app->update([
+                    'published' => true,
+                    'released_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            $remaining = Application::where('published', false)->count();
+            Log::info("Drip Publishing (Goteo): Se publicaron {$drafts->count()} apps. Quedan {$remaining} en Cola Draft.");
+        }
+    }
+})->name('drip-publish-cron')->withoutOverlapping(60);
+
+$applyFrequency($dripEvent, $frequency);
 
 // 3. Automated Deep Category Sync (Comprehensive crawl at configured time)
 Schedule::call(function () {

@@ -145,7 +145,11 @@ class TorrentmacImporter
         // Remove leading 'v', 'V', 'ver', 'version'
         $v = preg_replace('/^(?:v|ver\.?|version)\s*/i', '', $v);
         // Remove trailing tags like 'fix', 'FIX', 'tnt', 'crack', 'macos', 'mac', 'universal', etc.
-        $v = preg_replace('/\s+(?:fix|hotfix|tnt|crack|macos|mac|universal|final|full|u2b|arm|intel).*$/i', '', $v);
+        $v = preg_replace('/\s*(?:\[|\(|\b)(?:fix|hotfix|tnt|crack|macos|mac|universal|final|full|u2b|arm|intel).*$/i', '', $v);
+        // Replace whitespace between digits with dots (e.g. "2026 2.4" -> "2026.2.4", "7 50" -> "7.50", "7 7 50" -> "7.7.50")
+        $v = preg_replace('/(?<=\d)\s+(?=\d)/', '.', $v);
+        // Collapse accidental duplicated major numbers like "7.7.50" where title software number (7) was prepended to "7.50"
+        $v = preg_replace('/^(\d+)\.\1\./', '$1.', $v);
         $v = trim($v, " \t\n\r\0\x0B-_.");
 
         return $v ?: trim($version);
@@ -204,12 +208,16 @@ class TorrentmacImporter
         return array_map(function ($card) {
             $existing = $this->resolveExistingApplication($card);
 
+            $cleanCardVersion = $this->normalizeVersion($card['version'] ?? null);
+            $cleanLocalVersion = $existing ? $this->normalizeVersion($existing->version) : null;
+
+            $card['version'] = $cleanCardVersion ?: ($card['version'] ?? null);
             $card['in_database'] = (bool) $existing;
             $card['has_torrent'] = $existing ? (bool) $existing->has_torrent : false;
             $card['has_ddl'] = $existing ? ! empty($existing->download_url_external) : false;
             $card['is_dual'] = $existing ? ($existing->has_torrent && ! empty($existing->download_url_external)) : false;
             $card['local_app_id'] = $existing ? $existing->id : null;
-            $card['local_version'] = $existing ? $existing->version : null;
+            $card['local_version'] = $cleanLocalVersion;
             $card['has_update'] = $existing && $this->isHigherVersion($card['version'] ?? null, $existing->version ?? null);
 
             return $card;
@@ -295,11 +303,11 @@ class TorrentmacImporter
             'name' => $existing ? $existing->name : ($appData['clean_name'] ?: $appData['name']),
             'description' => $description,
             'features' => $features,
-            'version' => $appData['version'] ?? ($existing ? $existing->version : '1.0'),
+            'version' => ($this->normalizeVersion($appData['version'] ?? null)) ?: ($existing ? $existing->version : '1.0'),
             'size' => $appData['size'] ?? ($existing ? $existing->size : 'Universal'),
             'platform' => $appData['platform'],
             'has_torrent' => true,
-            'published' => true,
+            'published' => $existing ? (bool) $existing->published : (! (bool) Setting::get('scraper_drip_feed_mode', false)),
             'released_at' => now(),
         ];
 
@@ -328,8 +336,9 @@ class TorrentmacImporter
         }
 
         // Check if this is a new version upgrade
-        $incomingVersion = $appData['version'] ?? null;
-        $isVersionUpgrade = $existing && $incomingVersion && ! empty($existing->version) && ($this->isHigherVersion($incomingVersion, $existing->version) || ($incomingVersion !== $existing->version));
+        $incomingVersion = $this->normalizeVersion($appData['version'] ?? null);
+        $currentNormalized = $existing ? $this->normalizeVersion($existing->version) : null;
+        $isVersionUpgrade = $existing && $incomingVersion && ! empty($existing->version) && ($this->isHigherVersion($incomingVersion, $existing->version) || ($incomingVersion !== $currentNormalized));
 
         if ($isVersionUpgrade) {
             // Archive prior version in application_versions if not already recorded

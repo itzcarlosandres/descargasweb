@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Application;
+use App\Models\Category;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Scraper\HaxmacParser;
@@ -175,5 +177,44 @@ HTML;
             'items',
         ]);
         $this->assertTrue($response->json('success'));
+    }
+
+    public function test_admin_can_release_drip_batch_from_draft_queue(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $category = Category::create([
+            'name' => 'Utilidades',
+            'slug' => 'utilities',
+            'is_active' => true,
+        ]);
+
+        // Create 3 draft applications
+        for ($i = 1; $i <= 3; $i++) {
+            Application::create([
+                'category_id' => $category->id,
+                'name' => "Draft App {$i}",
+                'slug' => "draft-app-{$i}",
+                'version' => "1.{$i}",
+                'published' => false,
+            ]);
+        }
+
+        $this->assertEquals(3, Application::where('published', false)->count());
+
+        // Release batch with limit 2
+        $response = $this->actingAs($admin)->postJson(route('admin.scraper.drip.release-now'), [
+            'limit' => 2,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'published_count' => 2,
+            'remaining_drafts' => 1,
+        ]);
+
+        $this->assertEquals(1, Application::where('published', false)->count());
+        $this->assertEquals(2, Application::where('published', true)->count());
     }
 }

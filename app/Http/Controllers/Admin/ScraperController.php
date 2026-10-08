@@ -39,6 +39,8 @@ class ScraperController extends Controller
             'cron_pages' => (int) Setting::get('scraper_cron_pages', 2),
             'cron_limit' => (int) Setting::get('scraper_cron_limit', 10),
             'cron_frequency' => Setting::get('scraper_cron_frequency', '2hours'),
+            'draft_apps' => Application::where('published', false)->count(),
+            'drip_mode' => (bool) Setting::get('scraper_drip_feed_mode', false),
             'storage_disk' => $this->torrentmacImporter->getStorageDisk(),
             'torrent_storage_target' => $this->torrentmacImporter->getConfiguredStorageTarget(),
             'r2_configured' => app(CloudflareR2Service::class)->isConfigured(),
@@ -318,6 +320,7 @@ class ScraperController extends Controller
             'cron_pages' => 'required|integer|min:1|max:5',
             'cron_limit' => 'nullable|integer|min:1|max:50',
             'cron_frequency' => 'nullable|string',
+            'drip_mode' => 'nullable|boolean',
         ]);
 
         Setting::set('scraper_cron_enabled', $request->boolean('cron_enabled'), 'scraper');
@@ -325,6 +328,7 @@ class ScraperController extends Controller
         Setting::set('scraper_cron_pages', $request->integer('cron_pages'), 'scraper');
         Setting::set('scraper_cron_limit', $request->integer('cron_limit', 10), 'scraper');
         Setting::set('scraper_cron_frequency', $request->input('cron_frequency', '2hours'), 'scraper');
+        Setting::set('scraper_drip_feed_mode', $request->boolean('drip_mode'), 'scraper');
         Setting::clearCache();
 
         return redirect()->route('admin.scraper')->with('success', 'Configuración de automatización guardada correctamente.');
@@ -344,6 +348,43 @@ class ScraperController extends Controller
             'success' => true,
             'cron_enabled' => $new,
             'message' => $new ? 'Cron activado exitosamente.' : 'Cron pausado.',
+        ]);
+    }
+
+    /**
+     * Release a batch of draft applications to published status (Drip Feed / Goteo)
+     */
+    public function releaseDripBatch(Request $request): JsonResponse
+    {
+        $limit = max(1, min(50, (int) $request->input('limit', Setting::get('scraper_cron_limit', 10))));
+
+        $drafts = Application::where('published', false)
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->get();
+
+        $count = $drafts->count();
+        if ($count > 0) {
+            foreach ($drafts as $app) {
+                $app->update([
+                    'published' => true,
+                    'released_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        $remaining = Application::where('published', false)->count();
+        $totalPublished = Application::where('published', true)->count();
+
+        return response()->json([
+            'success' => true,
+            'published_count' => $count,
+            'remaining_drafts' => $remaining,
+            'total_published' => $totalPublished,
+            'message' => $count > 0
+                ? "Se han publicado {$count} programas con éxito. Quedan {$remaining} en Cola Draft."
+                : 'No hay programas en Cola Draft para publicar.',
         ]);
     }
 

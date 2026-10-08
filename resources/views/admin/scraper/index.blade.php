@@ -68,10 +68,10 @@
     </div>
 
     <!-- Quick Stats Metric Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow">
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Apps en el Portal</span>
-            <div class="text-2xl font-black text-white font-mono">{{ number_format($stats['total_apps']) }}</div>
+            <div class="text-2xl font-black text-white font-mono" x-text="totalPortalApps">{{ number_format($stats['total_apps']) }}</div>
         </div>
         <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow">
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Torrents en R2 / Local</span>
@@ -88,6 +88,31 @@
             <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block mb-1">Versiones Guardadas</span>
             <div class="text-2xl font-black text-success font-mono">{{ number_format($stats['total_versions']) }}</div>
         </div>
+
+        <!-- EN COLA DRAFT (Idéntico a la imagen) -->
+        <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow group relative hover:border-[#F59E0B]/40 transition-colors">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block font-mono">EN COLA DRAFT</span>
+                <button type="button" 
+                        x-show="draftCount > 0" 
+                        @click="releaseDripNow()"
+                        :disabled="releasingDrip"
+                        class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning hover:bg-warning/25 transition-all cursor-pointer disabled:opacity-50"
+                        title="Publicar tanda ahora">
+                    <span x-text="releasingDrip ? '...' : '⚡ Gotear'"></span>
+                </button>
+            </div>
+            <div class="text-2xl font-black text-[#F59E0B] font-mono" x-text="draftCount">
+                {{ number_format($stats['draft_apps'] ?? 0) }}
+            </div>
+            <div class="flex items-center justify-between mt-1 text-[10px] text-[#736B63] font-mono">
+                <span>Listos para goteo</span>
+                <template x-if="draftCount > 0">
+                    <a href="{{ route('admin.applications', ['status' => 'draft']) }}" class="text-[#8C847A] hover:text-warning transition-colors" title="Ver borradores en catálogo">Ver →</a>
+                </template>
+            </div>
+        </div>
+
         <div class="col-span-2 sm:col-span-3 lg:col-span-1 p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow" x-data="{
             cronActive: {{ $stats['cron_enabled'] ? 'true' : 'false' }},
             togglingCron: false,
@@ -1035,9 +1060,23 @@
                     <div>
                         <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Hora Barrido Nocturno</label>
                         <input type="time" name="cron_time" value="{{ $stats['cron_time'] }}"
-                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
+                               class="w-full bg-[#12100E] border border-[#262019] focus:border-primary rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors">
                         <p class="text-[10px] text-[#736B63] mt-1">Hora para el recorrido profundo de categorías.</p>
                     </div>
+                </div>
+
+                <div class="pt-3 border-t border-[#262019]">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="drip_mode" value="1" {{ ($stats['drip_mode'] ?? false) ? 'checked' : '' }}
+                               class="w-4 h-4 rounded text-warning focus:ring-warning bg-[#12100E] border-[#382E24]">
+                        <div>
+                            <span class="text-xs font-bold text-white block flex items-center gap-1.5">
+                                <span>Modo Goteo (Drip Feed en Cola Draft)</span>
+                                <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-warning/20 text-warning">RECOMENDADO</span>
+                            </span>
+                            <span class="text-[11px] text-[#8C847A]">Las nuevas apps importadas o sincronizadas se guardan como borrador (EN COLA DRAFT) y el Cron las va liberando y descontando gradualmente ({{ $stats['cron_limit'] ?? 10 }} apps cada 2h).</span>
+                        </div>
+                    </label>
                 </div>
             </div>
 
@@ -1216,6 +1255,36 @@ function scraperApp() {
     torrentStorageTarget: '{{ $stats['torrent_storage_target'] ?? 'local' }}',
     effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
     r2Configured: {{ ($stats['r2_configured'] ?? false) ? 'true' : 'false' }},
+    draftCount: {{ $stats['draft_apps'] ?? 0 }},
+    totalPortalApps: '{{ number_format($stats['total_apps']) }}',
+    releasingDrip: false,
+
+    async releaseDripNow() {
+        if (this.releasingDrip || this.draftCount <= 0) return;
+        this.releasingDrip = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.drip.release-now') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ limit: {{ $stats['cron_limit'] ?? 10 }} })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.draftCount = data.remaining_drafts;
+                this.totalPortalApps = new Intl.NumberFormat().format(data.total_published);
+                this.showToast('✓ ' + data.message);
+            } else {
+                alert(data.message || 'Error al liberar goteo');
+            }
+        } catch(e) {
+            alert('Error de conexión al liberar goteo');
+        } finally {
+            this.releasingDrip = false;
+        }
+    },
 
     init() {
         this.fetchUpdatesCountAsync();

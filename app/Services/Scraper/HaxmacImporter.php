@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\ApplicationImage;
 use App\Models\ApplicationVersion;
 use App\Models\Category;
+use App\Models\Setting;
 use App\Services\AI\GeminiService;
 use App\Services\Scraper\Traits\AppResolverTrait;
 use Illuminate\Support\Facades\Log;
@@ -383,7 +384,7 @@ class HaxmacImporter
             'size' => $appData['size'],
             'platform' => $appData['platform'] ?? 'Universal',
             'download_url_external' => $primaryDownloadUrl,
-            'published' => true,
+            'published' => $existing ? (bool) $existing->published : (! (bool) Setting::get('scraper_drip_feed_mode', false)),
             'released_at' => now(),
         ];
 
