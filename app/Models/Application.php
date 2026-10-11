@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Scraper\TorrentmacImporter;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -61,13 +62,15 @@ class Application extends Model
 
     protected static function booted(): void
     {
-        static::saved(function () {
+        $clearHomeCaches = function () {
             cache()->forget('sitemap_xml');
-        });
+            cache()->forget('home_stats');
+            cache()->forget('home_featured_apps');
+            cache()->forget('home_top_categories');
+        };
 
-        static::deleted(function () {
-            cache()->forget('sitemap_xml');
-        });
+        static::saved($clearHomeCaches);
+        static::deleted($clearHomeCaches);
     }
 
     public function category(): BelongsTo
@@ -323,5 +326,44 @@ class Application extends Model
             'ddl_count' => $allDrafts->where('has_torrent', false)->count(),
             'apps' => $allDrafts,
         ];
+    }
+
+    /**
+     * Retrieve or dynamically extract the magnet link from torrent file if missing.
+     */
+    public function getMagnetLinkAttribute(?string $value): ?string
+    {
+        if (! empty($value)) {
+            return $value;
+        }
+
+        if (! empty($this->torrent_url)) {
+            $parsedPath = parse_url($this->torrent_url, PHP_URL_PATH);
+            $filename = basename($parsedPath ?? '');
+            if (! empty($filename)) {
+                $paths = [
+                    public_path('storage/torrents/'.$filename),
+                    storage_path('app/public/torrents/'.$filename),
+                ];
+
+                foreach ($paths as $path) {
+                    if (file_exists($path)) {
+                        $content = @file_get_contents($path);
+                        if ($content) {
+                            $importer = app(TorrentmacImporter::class);
+                            $extracted = $importer->extractMagnetFromTorrent($content, $this->name);
+                            if ($extracted) {
+                                $this->attributes['magnet_link'] = $extracted;
+                                @$this->updateQuietly(['magnet_link' => $extracted]);
+
+                                return $extracted;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }

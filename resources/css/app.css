@@ -64,6 +64,7 @@
 }
 
 .dark, html.dark {
+    color-scheme: dark;
     /* Dark Mode Tokens (HaxMac Official New Theme from Screenshot) */
     --color-background: #161617;
     --color-header: #161617;
@@ -112,6 +113,15 @@
 
     [x-cloak] {
         display: none !important;
+    }
+
+    select {
+        color-scheme: dark;
+    }
+
+    option {
+        background-color: #18181B;
+        color: #FFFFFF;
     }
 }
 

@@ -19,6 +19,7 @@ Route::get('/download/{application:slug}', [HomeController::class, 'downloadPage
 Route::get('/download/{application:slug}/file', [HomeController::class, 'downloadFile'])->name('download.file');
 Route::get('/dl/{token}', [HomeController::class, 'resolveDownloadToken'])->name('download.token');
 Route::post('/app/{application:slug}/favorite', [HomeController::class, 'toggleFavorite'])->name('app.favorite');
+Route::post('/app/{application:slug}/report', [HomeController::class, 'reportBrokenLink'])->name('app.report');
 Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
 Route::get('/sitemap', [HomeController::class, 'sitemap']);
 Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
@@ -83,6 +84,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::delete('/applications/{application}', [AdminController::class, 'destroyApplication'])->name('applications.destroy');
     Route::post('/applications/{application}/toggle-featured', [AdminController::class, 'toggleFeatured'])->name('applications.toggle-featured');
     Route::post('/applications/reset-downloads', [AdminController::class, 'resetDownloads'])->name('applications.reset-downloads');
+    Route::post('/applications/bulk-action', [AdminController::class, 'bulkAction'])->name('applications.bulk-action');
+
+    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+    Route::post('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
+    Route::delete('/reports/{report}', [AdminController::class, 'destroyReport'])->name('reports.destroy');
 
     Route::get('/categories', [AdminController::class, 'categories'])->name('categories');
     Route::get('/categories/create', [AdminController::class, 'createCategory'])->name('categories.create');
@@ -97,6 +103,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     Route::post('/settings/test-gemini', [AdminController::class, 'testGemini'])->name('settings.test-gemini');
     Route::post('/settings/test-r2', [AdminController::class, 'testR2'])->name('settings.test-r2');
+    Route::post('/settings/test-telegram', [AdminController::class, 'testTelegram'])->name('settings.test-telegram');
+    Route::post('/settings/test-discord', [AdminController::class, 'testDiscord'])->name('settings.test-discord');
 
     // DDL Scraper & Auto-Sync
     Route::get('/scraper', [ScraperController::class, 'index'])->name('scraper');
@@ -108,6 +116,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/scraper/sync-updates', [ScraperController::class, 'syncUpdates'])->name('scraper.sync-updates');
     Route::post('/scraper/cron-settings', [ScraperController::class, 'updateCronSettings'])->name('scraper.cron-settings');
     Route::post('/scraper/toggle-cron', [ScraperController::class, 'toggleCron'])->name('scraper.toggle-cron');
+    Route::post('/scraper/toggle-drip', [ScraperController::class, 'toggleDrip'])->name('scraper.toggle-drip');
     Route::post('/scraper/drip/release-now', [ScraperController::class, 'releaseDripBatch'])->name('scraper.drip.release-now');
 
     // TorrentMac Scraper & Cloud Sync

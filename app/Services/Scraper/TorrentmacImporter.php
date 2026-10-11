@@ -324,6 +324,8 @@ class TorrentmacImporter
 
         if (! empty($appData['magnet_link'])) {
             $payload['magnet_link'] = $appData['magnet_link'];
+        } elseif (! empty($torrentStorageData['magnet_link'])) {
+            $payload['magnet_link'] = $torrentStorageData['magnet_link'];
         }
 
         if ($iconLocalPath) {
@@ -457,12 +459,15 @@ class TorrentmacImporter
         $safeVersion = $version ? '-'.Str::slug($version) : '';
         $relativePath = "torrents/{$slug}{$safeVersion}.torrent";
 
+        $extractedMagnet = $this->extractMagnetFromTorrent($binary, $slug);
+
         if ($disk === 'r2') {
             $r2PublicUrl = $this->r2Service->putObject($relativePath, $binary, 'application/x-bittorrent');
             if ($r2PublicUrl) {
                 return [
                     'path' => $relativePath,
                     'public_url' => $r2PublicUrl,
+                    'magnet_link' => $extractedMagnet,
                 ];
             }
             Log::warning("TorrentmacImporter: Cloudflare R2 upload failed, falling back to local public disk for {$relativePath}");
@@ -477,12 +482,88 @@ class TorrentmacImporter
             return [
                 'path' => $relativePath,
                 'public_url' => $publicUrl,
+                'magnet_link' => $extractedMagnet,
             ];
         } catch (\Throwable $e) {
             Log::error("TorrentmacImporter: Failed to store torrent on disk 'public': {$e->getMessage()}");
 
-            return ['path' => null, 'public_url' => $torrentUrl];
+            return [
+                'path' => null,
+                'public_url' => $torrentUrl,
+                'magnet_link' => $extractedMagnet,
+            ];
         }
+    }
+
+    /**
+     * Extract or calculate BitTorrent Magnet Link from raw .torrent Bencoded binary
+     */
+    public function extractMagnetFromTorrent(string $torrentContent, ?string $displayName = null): ?string
+    {
+        $infoPos = strpos($torrentContent, '4:info');
+        if ($infoPos === false) {
+            return null;
+        }
+
+        $dictStart = $infoPos + 6;
+        if (! isset($torrentContent[$dictStart]) || $torrentContent[$dictStart] !== 'd') {
+            return null;
+        }
+
+        $len = strlen($torrentContent);
+        $pos = $dictStart;
+        $depth = 0;
+
+        while ($pos < $len) {
+            $char = $torrentContent[$pos];
+
+            if ($char === 'd' || $char === 'l') {
+                $depth++;
+                $pos++;
+            } elseif ($char === 'e') {
+                $depth--;
+                $pos++;
+                if ($depth === 0) {
+                    $infoDict = substr($torrentContent, $dictStart, $pos - $dictStart);
+                    $infoHash = sha1($infoDict);
+
+                    $trackers = [
+                        'udp://tracker.opentrackr.org:1337/announce',
+                        'udp://open.stealth.si:80/announce',
+                        'udp://tracker.torrent.eu.org:451/announce',
+                        'udp://tracker.bittor.pw:1337/announce',
+                    ];
+
+                    $magnet = "magnet:?xt=urn:btih:{$infoHash}";
+                    if ($displayName) {
+                        $magnet .= '&dn='.rawurlencode($displayName);
+                    }
+                    foreach ($trackers as $tr) {
+                        $magnet .= '&tr='.rawurlencode($tr);
+                    }
+
+                    return $magnet;
+                }
+            } elseif ($char === 'i') {
+                $pos++;
+                $ePos = strpos($torrentContent, 'e', $pos);
+                if ($ePos === false) {
+                    return null;
+                }
+                $pos = $ePos + 1;
+            } elseif (ctype_digit($char)) {
+                $colonPos = strpos($torrentContent, ':', $pos);
+                if ($colonPos === false) {
+                    return null;
+                }
+                $strLen = (int) substr($torrentContent, $pos, $colonPos - $pos);
+                $pos = $colonPos + 1 + $strLen;
+            } else {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     /**

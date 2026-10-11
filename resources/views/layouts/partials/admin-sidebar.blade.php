@@ -116,6 +116,29 @@
             </span>
         </a>
 
+        <!-- Broken Links Reports -->
+        @php
+            $pendingReportsCount = \Illuminate\Support\Facades\Schema::hasTable('broken_link_reports') 
+                ? \App\Models\BrokenLinkReport::where('status', 'pending')->count() 
+                : 0;
+        @endphp
+        <a href="{{ route('admin.reports') }}"
+           class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all mb-1 {{ request()->routeIs('admin.reports*') ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-semibold' : 'text-[#A39B91] hover:text-white hover:bg-[#1A1612]' }}">
+            <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center {{ request()->routeIs('admin.reports*') ? 'bg-danger text-white' : 'bg-[#1C1814] text-[#A39B91]' }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <span>Enlaces Caídos</span>
+            </div>
+            @if($pendingReportsCount > 0)
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-danger/20 text-danger border border-danger/30 animate-pulse">
+                    {{ $pendingReportsCount }}
+                </span>
+            @endif
+        </a>
+
         <!-- Settings -->
         <a href="{{ route('admin.settings') }}"
            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all {{ request()->routeIs('admin.settings*') ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-semibold' : 'text-[#A39B91] hover:text-white hover:bg-[#1A1612]' }}">

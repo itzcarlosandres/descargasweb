@@ -3,18 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\BrokenLinkReport;
 use App\Models\Category;
 use App\Models\Review;
+use App\Models\SearchLog;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AI\GeminiService;
+use App\Services\Notification\NotificationDispatcher;
 use App\Services\Storage\CloudflareR2Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class AdminController extends Controller
 {
@@ -57,6 +63,19 @@ class AdminController extends Controller
             'cache_driver' => config('cache.default'),
         ];
 
+        $recentBrokenReports = Schema::hasTable('broken_link_reports')
+            ? BrokenLinkReport::with('application')->latest()->limit(5)->get()
+            : collect();
+        $unresolvedReportsCount = Schema::hasTable('broken_link_reports')
+            ? BrokenLinkReport::where('status', 'pending')->count()
+            : 0;
+
+        $topMissingSearches = Schema::hasTable('search_logs')
+            ? SearchLog::where('results_count', 0)->selectRaw('query, count(*) as total')->groupBy('query')->orderByDesc('total')->limit(6)->get()
+            : collect();
+
+        $stats['broken_reports'] = $unresolvedReportsCount;
+
         return view('admin.dashboard', compact(
             'stats',
             'recentApps',
@@ -64,7 +83,10 @@ class AdminController extends Controller
             'categoriesStats',
             'recentReviews',
             'featuredApps',
-            'systemInfo'
+            'systemInfo',
+            'recentBrokenReports',
+            'unresolvedReportsCount',
+            'topMissingSearches'
         ));
     }
 
@@ -127,6 +149,9 @@ class AdminController extends Controller
             'download_mirrors' => 'nullable|array',
             'download_mirrors.*.name' => 'nullable|string|max:100',
             'download_mirrors.*.url' => 'nullable|string|max:1000',
+            'has_torrent' => 'nullable|boolean',
+            'torrent_url' => 'nullable|string|max:1000',
+            'magnet_link' => 'nullable|string|max:2000',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp|max:4096',
             'screenshot' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:6144',
             'changelog' => 'nullable|string',
@@ -136,6 +161,9 @@ class AdminController extends Controller
         $validated['featured'] = $request->boolean('featured');
         $validated['popular'] = $request->boolean('popular');
         $validated['published'] = $request->boolean('published', true);
+        $validated['has_torrent'] = $request->boolean('has_torrent') || ! empty($request->input('torrent_url')) || ! empty($request->input('magnet_link'));
+        $validated['torrent_url'] = $request->input('torrent_url') ?: null;
+        $validated['magnet_link'] = $request->input('magnet_link') ?: null;
 
         // Parse custom download mirrors
         $mirrors = [];
@@ -206,6 +234,9 @@ class AdminController extends Controller
             'download_mirrors' => 'nullable|array',
             'download_mirrors.*.name' => 'nullable|string|max:100',
             'download_mirrors.*.url' => 'nullable|string|max:1000',
+            'has_torrent' => 'nullable|boolean',
+            'torrent_url' => 'nullable|string|max:1000',
+            'magnet_link' => 'nullable|string|max:2000',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp|max:4096',
             'screenshot' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:6144',
             'changelog' => 'nullable|string',
@@ -215,6 +246,9 @@ class AdminController extends Controller
         $validated['featured'] = $request->boolean('featured');
         $validated['popular'] = $request->boolean('popular');
         $validated['published'] = $request->boolean('published');
+        $validated['has_torrent'] = $request->boolean('has_torrent') || ! empty($request->input('torrent_url')) || ! empty($request->input('magnet_link'));
+        $validated['torrent_url'] = $request->input('torrent_url') ?: null;
+        $validated['magnet_link'] = $request->input('magnet_link') ?: null;
 
         // Parse custom download mirrors
         $mirrors = [];
@@ -451,6 +485,8 @@ class AdminController extends Controller
             'contact_email' => 'nullable|email|max:255',
             'telegram_channel' => 'nullable|string|max:255',
             'twitter_url' => 'nullable|string|max:255',
+            'facebook_url' => 'nullable|string|max:255',
+            'instagram_url' => 'nullable|string|max:255',
             'gemini_api_key' => 'nullable|string|max:255',
             'gemini_model' => 'nullable|string|in:gemini-2.5-flash,gemini-2.5-pro,gemini-2.0-flash',
             'gemini_auto_generate' => 'nullable|string|in:0,1',
@@ -538,6 +574,12 @@ class AdminController extends Controller
         if ($request->has('twitter_url')) {
             Setting::set('twitter_url', $validated['twitter_url'] ?? null, 'general');
         }
+        if ($request->has('facebook_url')) {
+            Setting::set('facebook_url', $validated['facebook_url'] ?? null, 'general');
+        }
+        if ($request->has('instagram_url')) {
+            Setting::set('instagram_url', $validated['instagram_url'] ?? null, 'general');
+        }
 
         // Gemini AI Settings
         if ($request->has('gemini_api_key')) {
@@ -585,6 +627,18 @@ class AdminController extends Controller
         }
         if ($request->has('custom_footer_code')) {
             Setting::set('custom_footer_code', $request->input('custom_footer_code'), 'scripts');
+        }
+
+        // Automation & Real-Time Notifications (Telegram & Discord)
+        if ($request->has('notifications_settings') || $request->input('active_tab') === 'notifications') {
+            Setting::set('telegram_enabled', $request->boolean('telegram_enabled') ? '1' : '0', 'notifications');
+            Setting::set('telegram_bot_token', trim((string) $request->input('telegram_bot_token', '')), 'notifications');
+            Setting::set('telegram_channel_id', trim((string) $request->input('telegram_channel_id', '')), 'notifications');
+            Setting::set('discord_enabled', $request->boolean('discord_enabled') ? '1' : '0', 'notifications');
+            Setting::set('discord_webhook_url', trim((string) $request->input('discord_webhook_url', '')), 'notifications');
+            Setting::set('notify_on_new_app', $request->boolean('notify_on_new_app') ? '1' : '0', 'notifications');
+            Setting::set('notify_on_update', $request->boolean('notify_on_update') ? '1' : '0', 'notifications');
+            Setting::set('notify_on_broken_link', $request->boolean('notify_on_broken_link') ? '1' : '0', 'notifications');
         }
 
         Setting::clearCache();
@@ -656,5 +710,111 @@ class AdminController extends Controller
             'description' => $content['description'],
             'features' => $content['features'],
         ]);
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:publish,unpublish,feature,unfeature,delete',
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'exists:applications,id',
+        ]);
+
+        $ids = $validated['selected_ids'];
+        $count = count($ids);
+
+        match ($validated['action']) {
+            'publish' => Application::whereIn('id', $ids)->update(['published' => true]),
+            'unpublish' => Application::whereIn('id', $ids)->update(['published' => false]),
+            'feature' => Application::whereIn('id', $ids)->update(['featured' => true]),
+            'unfeature' => Application::whereIn('id', $ids)->update(['featured' => false]),
+            'delete' => Application::whereIn('id', $ids)->delete(),
+        };
+
+        cache()->forget('home_stats');
+        cache()->forget('home_featured_apps');
+
+        return back()->with('success', "Acción ejecutada correctamente en {$count} aplicaciones.");
+    }
+
+    public function reports(Request $request): View
+    {
+        $status = $request->input('status', 'all');
+
+        if (! Schema::hasTable('broken_link_reports')) {
+            $reports = new LengthAwarePaginator([], 0, 20);
+
+            return view('admin.reports.index', [
+                'reports' => $reports,
+                'status' => $status,
+                'totalPending' => 0,
+                'totalResolved' => 0,
+                'totalReports' => 0,
+            ]);
+        }
+
+        $query = BrokenLinkReport::with('application')->latest();
+
+        if ($status === 'pending') {
+            $query->where('status', 'pending');
+        } elseif ($status === 'resolved') {
+            $query->where('status', 'resolved');
+        }
+
+        $reports = $query->paginate(20)->withQueryString();
+        $totalPending = BrokenLinkReport::where('status', 'pending')->count();
+        $totalResolved = BrokenLinkReport::where('status', 'resolved')->count();
+        $totalReports = BrokenLinkReport::count();
+
+        return view('admin.reports.index', compact(
+            'reports',
+            'status',
+            'totalPending',
+            'totalResolved',
+            'totalReports'
+        ));
+    }
+
+    public function resolveReport(Request $request, int $reportId): RedirectResponse
+    {
+        if (Schema::hasTable('broken_link_reports')) {
+            BrokenLinkReport::where('id', $reportId)->update(['status' => 'resolved']);
+        }
+
+        return back()->with('success', 'Reporte marcado como solucionado.');
+    }
+
+    public function destroyReport(int $reportId): RedirectResponse
+    {
+        if (Schema::hasTable('broken_link_reports')) {
+            BrokenLinkReport::where('id', $reportId)->delete();
+        }
+
+        return back()->with('success', 'Reporte eliminado.');
+    }
+
+    /**
+     * Test Telegram notification channel
+     */
+    public function testTelegram(Request $request, NotificationDispatcher $dispatcher): JsonResponse
+    {
+        $botToken = $request->input('bot_token');
+        $chatId = $request->input('channel_id');
+
+        $result = $dispatcher->testTelegram($botToken, $chatId);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Test Discord Webhook notification channel
+     */
+    public function testDiscord(Request $request, NotificationDispatcher $dispatcher): JsonResponse
+    {
+        $webhookUrl = $request->input('webhook_url');
+
+        $result = $dispatcher->testDiscord($webhookUrl);
+
+        return response()->json($result);
     }
 }

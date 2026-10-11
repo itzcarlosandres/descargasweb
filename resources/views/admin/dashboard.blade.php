@@ -198,7 +198,7 @@
                         <div class="divide-y divide-[#241F1A]">
                             @forelse($topDownloaded as $index => $app)
                                 @php
-                                    $rank = $index + 1;
+                                    $rank = $loop->iteration;
                                     $rankColors = [
                                         1 => 'from-[#F59E0B] to-[#D97706] text-black border-[#FBBF24]',
                                         2 => 'from-[#94A3B8] to-[#64748B] text-black border-[#CBD5E1]',
@@ -535,6 +535,107 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Section: Insights & User Demand (Missing Searches + Broken Links) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 1. Missing Searches -->
+            <div class="card p-5 bg-[#141210] border-[#26211B] shadow-xl">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#26211B]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">
+                            Búsquedas Sin Resultados (Demanda de Usuarios)
+                        </h3>
+                    </div>
+                    <span class="text-[10px] text-[#8C847A] font-semibold">Oportunidades de catálogo</span>
+                </div>
+
+                @if($topMissingSearches->isNotEmpty())
+                    <div class="space-y-2">
+                        @foreach($topMissingSearches as $search)
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#1A1612] border border-[#2B241C] text-xs">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="text-amber-400 font-mono">🔍</span>
+                                    <span class="font-bold text-white truncate max-w-xs">{{ $search->query }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <span class="px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-mono font-bold">
+                                        {{ $search->total }} {{ $search->total === 1 ? 'búsqueda' : 'búsquedas' }}
+                                    </span>
+                                    <a href="{{ route('admin.scraper') }}" class="btn-secondary text-[10px] py-1 px-2 text-primary hover:text-white" title="Importar con Scraper">
+                                        Buscar en Scraper &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="py-6 text-center text-xs text-[#8C847A]">
+                        <span>No hay búsquedas fallidas registradas. ¡Tu catálogo está cubriendo la demanda!</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- 2. Broken Link Reports -->
+            <div class="card p-5 bg-[#141210] border-[#26211B] shadow-xl">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#26211B]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">
+                            Reportes de Enlaces ({{ $unresolvedReportsCount }} Pendientes)
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        @if($unresolvedReportsCount > 0)
+                            <span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">
+                                Requiere Atención
+                            </span>
+                        @endif
+                        <a href="{{ route('admin.reports') }}" class="text-[11px] text-primary hover:underline font-semibold">
+                            Ver todos &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                @if($recentBrokenReports->isNotEmpty())
+                    <div class="space-y-2">
+                        @foreach($recentBrokenReports as $report)
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#1A1612] border border-[#2B241C] text-xs">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('admin.applications.edit', $report->application_id) }}" class="font-bold text-white hover:text-primary transition-colors truncate max-w-xs">
+                                            {{ $report->application?->name ?? 'App #' . $report->application_id }}
+                                        </a>
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase {{ $report->status === 'resolved' ? 'bg-success/20 text-success' : 'bg-rose-500/20 text-rose-400' }}">
+                                            {{ $report->type }}
+                                        </span>
+                                    </div>
+                                    @if($report->notes)
+                                        <p class="text-[11px] text-[#A39B91] truncate mt-0.5">{{ $report->notes }}</p>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    @if($report->status !== 'resolved')
+                                        <form method="POST" action="{{ route('admin.reports.resolve', $report->id) }}">
+                                            @csrf
+                                            <button type="submit" class="btn-primary text-[10px] py-1 px-2.5 cursor-pointer">
+                                                Resolver
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-[10px] text-success font-semibold">✓ Resuelto</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="py-6 text-center text-xs text-[#8C847A]">
+                        <span>✓ No hay reportes de enlaces pendientes. ¡Todos los enlaces funcionan bien!</span>
+                    </div>
+                @endif
             </div>
         </div>
 

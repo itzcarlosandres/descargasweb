@@ -59,6 +59,58 @@ class ScraperTest extends TestCase
         $this->assertEquals(3, (int) Setting::get('scraper_cron_pages'));
     }
 
+    public function test_admin_can_toggle_drip_feed_mode(): void
+    {
+        $admin = $this->createAdminUser();
+
+        // Toggle on
+        $response = $this->actingAs($admin)->postJson(route('admin.scraper.toggle-drip'), [
+            'drip_mode' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'drip_mode' => true,
+            ]);
+
+        $this->assertTrue((bool) Setting::get('scraper_drip_feed_mode'));
+
+        // Toggle off
+        $response2 = $this->actingAs($admin)->postJson(route('admin.scraper.toggle-drip'), [
+            'drip_mode' => false,
+        ]);
+
+        $response2->assertOk()
+            ->assertJson([
+                'success' => true,
+                'drip_mode' => false,
+            ]);
+
+        $this->assertFalse((bool) Setting::get('scraper_drip_feed_mode'));
+    }
+
+    public function test_admin_can_save_drip_mode_via_cron_settings_without_cron_pages(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)->post(route('admin.scraper.cron-settings'), [
+            'cron_enabled' => '1',
+            'cron_frequency' => '2hours',
+            'cron_limit' => 15,
+            'cron_time' => '02:00',
+            'drip_mode' => '1',
+            'tab' => 'cron',
+        ]);
+
+        $response->assertRedirect(route('admin.scraper', ['tab' => 'cron']));
+        $response->assertSessionHas('success');
+
+        $this->assertTrue((bool) Setting::get('scraper_drip_feed_mode'));
+        $this->assertEquals(15, (int) Setting::get('scraper_cron_limit'));
+        $this->assertEquals('02:00', Setting::get('scraper_cron_time'));
+    }
+
     public function test_haxmac_parser_filters_ad_links_and_keeps_clean_mirrors(): void
     {
         $parser = new HaxmacParser;

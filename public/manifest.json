@@ -1,0 +1,17 @@
+{
+  "name": "HackMac - Apps & Games for macOS",
+  "short_name": "HackMac",
+  "description": "Discover and download verified applications and utilities for macOS.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0071E3",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

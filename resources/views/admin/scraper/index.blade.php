@@ -6,6 +6,26 @@
 @section('content')
 <div class="space-y-6 max-w-[1720px] mx-auto w-full" x-data="scraperApp()">
 
+    @if(session('success'))
+        <div class="bg-success/15 border border-success/30 text-success px-4 py-3 rounded-2xl text-xs font-semibold flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span>✓</span>
+                <span>{{ session('success') }}</span>
+            </div>
+        </div>
+    @endif
+
+    @if(isset($errors) && $errors->any())
+        <div class="bg-danger/15 border border-danger/30 text-danger px-4 py-3 rounded-2xl text-xs space-y-1">
+            <span class="font-bold block">No se pudo guardar la configuración:</span>
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Floating Success Toast -->
     <div x-show="toastVisible" x-cloak
          x-transition:enter="transition ease-out duration-200"
@@ -92,7 +112,12 @@
         <!-- EN COLA DRAFT (Idéntico a la imagen) -->
         <div class="p-4 bg-[#14110E] border border-[#262019] rounded-2xl shadow group relative hover:border-[#F59E0B]/40 transition-colors">
             <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block font-mono">EN COLA DRAFT</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] font-bold text-[#8C847A] uppercase tracking-wider block font-mono">EN COLA DRAFT</span>
+                    <span class="text-[9px] font-mono px-1 py-0.2 rounded font-bold"
+                          :class="dripMode ? 'bg-warning/20 text-warning border border-warning/30' : 'bg-[#2B241C] text-[#736B63]'"
+                          x-text="dripMode ? 'GOTEO ON' : 'OFF'"></span>
+                </div>
                 <button type="button" 
                         x-show="draftCount > 0" 
                         @click="releaseDripNow()"
@@ -1022,6 +1047,8 @@
     <div x-show="tab === 'cron'" x-cloak class="space-y-6">
         <form action="{{ route('admin.scraper.cron-settings') }}" method="POST" class="bg-[#14110E] border border-[#2B241C] rounded-2xl p-6 shadow-xl space-y-5">
             @csrf
+            <input type="hidden" name="cron_pages" value="{{ $stats['cron_pages'] ?? 2 }}">
+            <input type="hidden" name="tab" value="cron">
             <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-primary"></span>
                 Configuración del Cron de Auto-Importación
@@ -1066,13 +1093,18 @@
                 </div>
 
                 <div class="pt-3 border-t border-[#262019]">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" name="drip_mode" value="1" {{ ($stats['drip_mode'] ?? false) ? 'checked' : '' }}
-                               class="w-4 h-4 rounded text-warning focus:ring-warning bg-[#12100E] border-[#382E24]">
+                    <label class="flex items-center gap-3 cursor-pointer select-none">
+                        <input type="checkbox" name="drip_mode" value="1"
+                               x-model="dripMode"
+                               @change="toggleDripMode($event.target.checked)"
+                               class="w-4 h-4 rounded text-warning focus:ring-warning bg-[#12100E] border-[#382E24] cursor-pointer">
                         <div>
                             <span class="text-xs font-bold text-white block flex items-center gap-1.5">
                                 <span>Modo Goteo (Drip Feed en Cola Draft)</span>
                                 <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-warning/20 text-warning">RECOMENDADO</span>
+                                <template x-if="dripMode">
+                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-success/20 text-success border border-success/30">ACTIVO</span>
+                                </template>
                             </span>
                             <span class="text-[11px] text-[#8C847A]">Las nuevas apps importadas o sincronizadas se guardan como borrador (EN COLA DRAFT) y el Cron las va liberando y descontando gradualmente ({{ $stats['cron_limit'] ?? 10 }} apps cada 2h).</span>
                         </div>
@@ -1204,7 +1236,9 @@
 <script>
 function scraperApp() {
     return {
-    tab: 'search',
+    tab: (new URLSearchParams(window.location.search).get('tab')) || 'search',
+    dripMode: {{ ($stats['drip_mode'] ?? false) ? 'true' : 'false' }},
+    togglingDrip: false,
     gridCols: 6,
     searchQuery: '',
     searching: false,
@@ -1258,6 +1292,34 @@ function scraperApp() {
     draftCount: {{ $stats['draft_apps'] ?? 0 }},
     totalPortalApps: '{{ number_format($stats['total_apps']) }}',
     releasingDrip: false,
+
+    async toggleDripMode(newVal) {
+        if (this.togglingDrip) return;
+        this.togglingDrip = true;
+        try {
+            const res = await fetch('{{ route('admin.scraper.toggle-drip') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ drip_mode: newVal })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.dripMode = Boolean(data.drip_mode);
+                this.showToast(data.message);
+            } else {
+                this.dripMode = !newVal;
+                alert('No se pudo actualizar el Modo Goteo');
+            }
+        } catch (e) {
+            this.dripMode = !newVal;
+            alert('Error de conexión al actualizar el Modo Goteo');
+        } finally {
+            this.togglingDrip = false;
+        }
+    },
 
     async releaseDripNow() {
         if (this.releasingDrip || this.draftCount <= 0) return;

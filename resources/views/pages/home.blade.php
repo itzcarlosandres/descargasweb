@@ -94,8 +94,8 @@
                 <h2 class="font-heading text-xs font-bold text-[#1C1814] dark:text-white tracking-wider uppercase">Featured</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
-                @foreach($featured as $index => $app)
-                    <x-featured-card :app="$app" :position="$index + 1" />
+                @foreach($featured as $app)
+                    <x-featured-card :app="$app" :position="$loop->iteration" />
                 @endforeach
             </div>
         </div>

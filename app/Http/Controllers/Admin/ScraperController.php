@@ -316,22 +316,58 @@ class ScraperController extends Controller
     {
         $request->validate([
             'cron_enabled' => 'nullable|boolean',
-            'cron_time' => 'required|string',
-            'cron_pages' => 'required|integer|min:1|max:5',
+            'cron_time' => 'nullable|string',
+            'cron_pages' => 'nullable|integer|min:1|max:5',
             'cron_limit' => 'nullable|integer|min:1|max:50',
             'cron_frequency' => 'nullable|string',
             'drip_mode' => 'nullable|boolean',
         ]);
 
-        Setting::set('scraper_cron_enabled', $request->boolean('cron_enabled'), 'scraper');
-        Setting::set('scraper_cron_time', $request->cron_time, 'scraper');
-        Setting::set('scraper_cron_pages', $request->integer('cron_pages'), 'scraper');
-        Setting::set('scraper_cron_limit', $request->integer('cron_limit', 10), 'scraper');
-        Setting::set('scraper_cron_frequency', $request->input('cron_frequency', '2hours'), 'scraper');
-        Setting::set('scraper_drip_feed_mode', $request->boolean('drip_mode'), 'scraper');
+        $cronTime = $request->filled('cron_time')
+            ? $request->input('cron_time')
+            : Setting::get('scraper_cron_time', '03:00');
+        $cronPages = $request->filled('cron_pages')
+            ? $request->integer('cron_pages')
+            : (int) Setting::get('scraper_cron_pages', 2);
+        $cronLimit = $request->filled('cron_limit')
+            ? $request->integer('cron_limit')
+            : (int) Setting::get('scraper_cron_limit', 10);
+        $cronFrequency = $request->filled('cron_frequency')
+            ? $request->input('cron_frequency')
+            : Setting::get('scraper_cron_frequency', '2hours');
+
+        Setting::set('scraper_cron_enabled', $request->boolean('cron_enabled') ? '1' : '0', 'scraper');
+        Setting::set('scraper_cron_time', $cronTime, 'scraper');
+        Setting::set('scraper_cron_pages', $cronPages, 'scraper');
+        Setting::set('scraper_cron_limit', $cronLimit, 'scraper');
+        Setting::set('scraper_cron_frequency', $cronFrequency, 'scraper');
+        Setting::set('scraper_drip_feed_mode', $request->boolean('drip_mode') ? '1' : '0', 'scraper');
         Setting::clearCache();
 
-        return redirect()->route('admin.scraper')->with('success', 'Configuración de automatización guardada correctamente.');
+        $redirectUrl = $request->filled('tab')
+            ? route('admin.scraper', ['tab' => $request->input('tab')])
+            : route('admin.scraper');
+
+        return redirect()->to($redirectUrl)->with('success', 'Configuración de automatización guardada correctamente.');
+    }
+
+    /**
+     * Instant toggle of Drip Feed Mode (Cola Draft)
+     */
+    public function toggleDrip(Request $request): JsonResponse
+    {
+        $current = (bool) Setting::get('scraper_drip_feed_mode', false);
+        $new = $request->has('drip_mode') ? $request->boolean('drip_mode') : ! $current;
+        Setting::set('scraper_drip_feed_mode', $new ? '1' : '0', 'scraper');
+        Setting::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'drip_mode' => $new,
+            'message' => $new
+                ? 'Modo Goteo activado: Las nuevas apps se guardarán en Cola Draft.'
+                : 'Modo Goteo desactivado: Las nuevas apps se publicarán directamente.',
+        ]);
     }
 
     /**
@@ -341,7 +377,7 @@ class ScraperController extends Controller
     {
         $current = (bool) Setting::get('scraper_cron_enabled', false);
         $new = ! $current;
-        Setting::set('scraper_cron_enabled', $new ? 1 : 0, 'scraper');
+        Setting::set('scraper_cron_enabled', $new ? '1' : '0', 'scraper');
         Setting::clearCache();
 
         return response()->json([

@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\BrokenLinkReport;
 use App\Models\Category;
 use App\Models\Download;
 use App\Models\Favorite;
 use App\Models\Review;
+use App\Models\SearchLog;
+use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -25,11 +30,13 @@ class HomeController extends Controller
             ];
         });
 
-        $featured = Application::published()->featured()
-            ->with('category')
-            ->latest('updated_at')
-            ->limit(4)
-            ->get();
+        $featured = Cache::remember('home_featured_apps', 1800, function () {
+            return Application::published()->featured()
+                ->with('category')
+                ->latest('updated_at')
+                ->limit(4)
+                ->get();
+        });
 
         $applications = Application::published()
             ->with('category')
@@ -37,7 +44,9 @@ class HomeController extends Controller
             ->latest('id')
             ->paginate(12);
 
-        $topCategories = Category::active()->ordered()->limit(7)->get();
+        $topCategories = Cache::remember('home_top_categories', 3600, function () {
+            return Category::active()->ordered()->limit(7)->get();
+        });
 
         return view('pages.home', compact('stats', 'featured', 'applications', 'topCategories'));
     }
@@ -147,7 +156,46 @@ class HomeController extends Controller
         $results = $results->paginate(12)->appends(request()->query());
         $categories = Category::active()->ordered()->get();
 
+        if (! empty($query) && strlen(trim($query)) >= 2 && request()->query('page', 1) == 1) {
+            try {
+                SearchLog::create([
+                    'query' => Str::limit(trim($query), 150),
+                    'results_count' => $results->total(),
+                    'ip_address' => request()->ip(),
+                ]);
+            } catch (\Throwable $e) {
+            }
+        }
+
         return view('pages.search', compact('results', 'query', 'categories', 'categoryId'));
+    }
+
+    public function reportBrokenLink(Request $request, Application $application)
+    {
+        $validated = $request->validate([
+            'type' => 'nullable|string|in:ddl,torrent,mirror,other',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $report = BrokenLinkReport::create([
+            'application_id' => $application->id,
+            'type' => $validated['type'] ?? 'ddl',
+            'notes' => $validated['notes'] ?? null,
+            'ip_address' => $request->ip(),
+            'status' => 'pending',
+        ]);
+
+        try {
+            app(NotificationDispatcher::class)->notifyBrokenLink($report);
+        } catch (\Throwable $e) {
+            Log::warning("Could not dispatch broken link notification: {$e->getMessage()}");
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => '¡Reporte recibido con éxito! Nuestro equipo revisará el enlace de inmediato.']);
+        }
+
+        return back()->with('success', '¡Gracias! El reporte ha sido recibido y el enlace será verificado.');
     }
 
     public function popular()

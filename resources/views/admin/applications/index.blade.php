@@ -132,12 +132,60 @@
             </div>
         </div>
 
-        <!-- Table Card -->
-        <div class="card overflow-hidden bg-[#141210] border-[#26211B] shadow-xl">
+        <!-- Table Card with Bulk Action Support -->
+        <div class="card overflow-hidden bg-[#141210] border-[#26211B] shadow-xl"
+             x-data="{
+                 selected: [],
+                 selectAll: false,
+                 bulkAction: '',
+                 toggleSelectAll() {
+                     if (this.selectAll) {
+                         this.selected = [{{ $applications->pluck('id')->implode(',') }}];
+                     } else {
+                         this.selected = [];
+                     }
+                 }
+             }">
+
+            <!-- Bulk Action Toolbar (appears when items are selected) -->
+            <div x-show="selected.length > 0" x-cloak
+                 class="p-3 bg-[#1C1814] border-b border-[#3D3224] flex flex-wrap items-center justify-between gap-4 transition-all">
+                <div class="flex items-center gap-2 text-xs font-semibold text-white">
+                    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    <span><strong class="text-primary" x-text="selected.length"></strong> aplicaciones seleccionadas</span>
+                </div>
+                <form method="POST" action="{{ route('admin.applications.bulk-action') }}" class="flex items-center gap-2 flex-wrap">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="selected_ids[]" :value="id">
+                    </template>
+                    <select name="action" x-model="bulkAction" required class="input text-xs py-1.5 px-3 bg-[#14110E] border-[#3D3224] text-white cursor-pointer">
+                        <option value="">Seleccionar Acción en Lote...</option>
+                        <option value="publish">Publicar seleccionadas</option>
+                        <option value="unpublish">Mover a borrador (despublicar)</option>
+                        <option value="feature">Marcar como destacadas</option>
+                        <option value="unfeature">Quitar de destacadas</option>
+                        <option value="delete">Eliminar definitivamente</option>
+                    </select>
+                    <button type="submit"
+                            :disabled="!bulkAction"
+                            onclick="return confirm('¿Confirmas aplicar esta acción en lote a las aplicaciones seleccionadas?')"
+                            class="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 cursor-pointer">
+                        Aplicar
+                    </button>
+                    <button type="button" @click="selected = []; selectAll = false" class="btn-secondary text-xs py-1.5 px-2 cursor-pointer">
+                        Cancelar
+                    </button>
+                </form>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-[#1A1612] border-b border-[#26211B]">
                         <tr>
+                            <th class="w-10 px-4 py-3.5 text-center">
+                                <input type="checkbox" x-model="selectAll" @change="toggleSelectAll" class="rounded bg-[#221C16] border-[#3E342A] text-primary focus:ring-0 cursor-pointer">
+                            </th>
                             <th class="px-5 py-3.5 text-[11px] font-bold text-[#8C847A] uppercase tracking-wider">Aplicación</th>
                             <th class="px-5 py-3.5 text-[11px] font-bold text-[#8C847A] uppercase tracking-wider">Categoría</th>
                             <th class="px-5 py-3.5 text-[11px] font-bold text-[#8C847A] uppercase tracking-wider">Versión & Tamaño</th>
@@ -148,7 +196,10 @@
                     </thead>
                     <tbody class="divide-y divide-[#241F1A]">
                         @forelse($applications as $app)
-                        <tr class="hover:bg-[#181410] transition-colors group">
+                        <tr class="hover:bg-[#181410] transition-colors group" :class="selected.includes({{ $app->id }}) ? 'bg-primary/5' : ''">
+                            <td class="w-10 px-4 py-3.5 text-center">
+                                <input type="checkbox" :value="{{ $app->id }}" x-model="selected" class="rounded bg-[#221C16] border-[#3E342A] text-primary focus:ring-0 cursor-pointer">
+                            </td>
                             <!-- App & Icon -->
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center gap-3">
@@ -323,7 +374,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-16 text-center">
+                            <td colspan="7" class="px-5 py-16 text-center">
                                 <div class="flex flex-col items-center justify-center gap-3">
                                     <div class="w-12 h-12 rounded-2xl bg-[#1A1612] border border-[#2B241C] flex items-center justify-center text-[#736B63]">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

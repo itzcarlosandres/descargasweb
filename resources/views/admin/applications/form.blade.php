@@ -573,6 +573,57 @@
                                 <p class="text-[11px] text-[#6B635A] mt-1">Servidor secundario o enlace de respaldo para usuarios.</p>
                             </div>
 
+                            <!-- Sección Torrent & Magnet P2P -->
+                            <div class="pt-4 border-t border-[#26211B] space-y-4" x-data="{ hasTorrent: {{ old('has_torrent', (isset($app) && $app->has_torrent) ? 1 : 0) ? 'true' : 'false' }} }">
+                                <div class="flex items-center justify-between p-3 rounded-xl bg-[#1A1612] border border-[#2B241C]">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-7 h-7 rounded-lg bg-[#30D158]/20 text-[#30D158] flex items-center justify-center font-bold text-xs">
+                                            ⚡
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-white">Habilitar Descarga por Torrent (P2P)</p>
+                                            <p class="text-[10px] text-[#8C847A]">Permite a los usuarios descargar vía archivo .torrent o Magnet Link</p>
+                                        </div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="has_torrent" value="1" x-model="hasTorrent" class="sr-only peer">
+                                        <div class="w-10 h-5 bg-[#2B241C] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#30D158]"></div>
+                                    </label>
+                                </div>
+
+                                <div x-show="hasTorrent" x-cloak class="space-y-3.5 pl-2 border-l-2 border-[#30D158]/40">
+                                    <!-- URL del Archivo .torrent -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-[#A39B91] mb-1.5">
+                                            URL del Archivo .torrent (Servidor R2 / Almacenamiento)
+                                        </label>
+                                        <input type="text"
+                                               name="torrent_url"
+                                               value="{{ old('torrent_url', $app->torrent_url ?? '') }}"
+                                               placeholder="https://pub-r2.hackmac.cc/torrents/app.torrent o /storage/torrents/..."
+                                               class="input w-full text-xs font-mono">
+                                        <p class="text-[11px] text-[#6B635A] mt-1">El scraper lo sube automáticamente a R2. También puedes colocar una URL manual.</p>
+                                    </div>
+
+                                    <!-- Enlace Magnet -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-[#A39B91] mb-1.5 flex items-center justify-between">
+                                            <span>Enlace Magnet (magnet:?xt=urn:btih:...)</span>
+                                            <span class="text-[10px] text-[#30D158] font-bold">Auto-extraído o Manual</span>
+                                        </label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm select-none">🧲</span>
+                                            <input type="text"
+                                                   name="magnet_link"
+                                                   value="{{ old('magnet_link', $app->magnet_link ?? '') }}"
+                                                   placeholder="magnet:?xt=urn:btih:40_caracteres_hash&dn=NombreApp&tr=..."
+                                                   class="input w-full pl-9 text-xs font-mono">
+                                        </div>
+                                        <p class="text-[11px] text-[#6B635A] mt-1">Se extrae automáticamente de los torrents importados. También puedes pegarlo manualmente aquí.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Lista Dinámica de Servidores Adicionales (Mirrors) -->
                             <div class="pt-4 border-t border-[#26211B] space-y-3">
                                 <div class="flex items-center justify-between">

@@ -30,6 +30,74 @@
     testingR2: false,
     testR2Result: null,
 
+    // Real-Time Notification & Webhook State
+    telegramEnabled: {{ old('telegram_enabled', (bool) ($settings['telegram_enabled'] ?? false)) ? 'true' : 'false' }},
+    telegramBotToken: '{{ old('telegram_bot_token', $settings['telegram_bot_token'] ?? '') }}',
+    telegramChannelId: '{{ old('telegram_channel_id', $settings['telegram_channel_id'] ?? '') }}',
+    discordEnabled: {{ old('discord_enabled', (bool) ($settings['discord_enabled'] ?? false)) ? 'true' : 'false' }},
+    discordWebhookUrl: '{{ old('discord_webhook_url', $settings['discord_webhook_url'] ?? '') }}',
+    notifyNewApp: {{ old('notify_on_new_app', (bool) ($settings['notify_on_new_app'] ?? true)) ? 'true' : 'false' }},
+    notifyUpdate: {{ old('notify_on_update', (bool) ($settings['notify_on_update'] ?? true)) ? 'true' : 'false' }},
+    notifyBrokenLink: {{ old('notify_on_broken_link', (bool) ($settings['notify_on_broken_link'] ?? true)) ? 'true' : 'false' }},
+    showTelegramToken: false,
+    testingTelegram: false,
+    testTelegramResult: null,
+    testingDiscord: false,
+    testDiscordResult: null,
+
+    async testTelegramConnection() {
+        if (!this.telegramBotToken || !this.telegramChannelId) {
+            this.testTelegramResult = { success: false, message: 'Ingresa el Bot Token y el Chat ID de Telegram antes de probar.' };
+            return;
+        }
+        this.testingTelegram = true;
+        this.testTelegramResult = null;
+        try {
+            const res = await fetch('{{ route('admin.settings.test-telegram') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    bot_token: this.telegramBotToken,
+                    channel_id: this.telegramChannelId
+                })
+            });
+            this.testTelegramResult = await res.json();
+        } catch (e) {
+            this.testTelegramResult = { success: false, message: 'Error de red: ' + e.message };
+        } finally {
+            this.testingTelegram = false;
+        }
+    },
+
+    async testDiscordConnection() {
+        if (!this.discordWebhookUrl) {
+            this.testDiscordResult = { success: false, message: 'Ingresa la URL del Webhook de Discord antes de probar.' };
+            return;
+        }
+        this.testingDiscord = true;
+        this.testDiscordResult = null;
+        try {
+            const res = await fetch('{{ route('admin.settings.test-discord') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    webhook_url: this.discordWebhookUrl
+                })
+            });
+            this.testDiscordResult = await res.json();
+        } catch (e) {
+            this.testDiscordResult = { success: false, message: 'Error de red: ' + e.message };
+        } finally {
+            this.testingDiscord = false;
+        }
+    },
+
     async testGeminiConnection() {
         if (!this.geminiApiKey) {
             this.testGeminiResult = { success: false, message: 'Introduce una API Key antes de probar la conexión.' };
@@ -194,6 +262,15 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
             </svg>
             <span>☁️ Cloudflare R2</span>
+        </button>
+
+        <button type="button" @click="tab = 'notifications'"
+                :class="tab === 'notifications' ? 'bg-[#5865F2]/20 text-white border border-[#5865F2]/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
+                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4 text-[#5865F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span>🤖 Notificaciones &amp; Alertas</span>
         </button>
     </div>
 
@@ -626,26 +703,40 @@
                            placeholder="© 2026 HackMac.cc. All rights reserved. Clean, verified and direct macOS downloads.">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-3">
                     <div>
-                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Email de Contacto</label>
-                        <input type="email" name="contact_email" value="{{ $settings['contact_email'] ?? '' }}"
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Facebook (Página / Perfil)</label>
+                        <input type="text" name="facebook_url" value="{{ $settings['facebook_url'] ?? '' }}"
                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
-                               placeholder="contact@hackmac.cc">
+                               placeholder="https://facebook.com/tupagina">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">X.com / Twitter</label>
+                        <input type="text" name="twitter_url" value="{{ $settings['twitter_url'] ?? '' }}"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
+                               placeholder="https://x.com/tuusuario">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Instagram</label>
+                        <input type="text" name="instagram_url" value="{{ $settings['instagram_url'] ?? '' }}"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
+                               placeholder="https://instagram.com/tuperfil">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Canal de Telegram</label>
                         <input type="text" name="telegram_channel" value="{{ $settings['telegram_channel'] ?? '' }}"
                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
-                               placeholder="https://t.me/hackmac">
+                               placeholder="https://t.me/tucanal">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">X / Twitter</label>
-                        <input type="text" name="twitter_url" value="{{ $settings['twitter_url'] ?? '' }}"
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Email de Contacto</label>
+                        <input type="email" name="contact_email" value="{{ $settings['contact_email'] ?? '' }}"
                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
-                               placeholder="https://twitter.com/hackmac">
+                               placeholder="contact@hackmac.cc">
                     </div>
                 </div>
             </div>
@@ -1163,6 +1254,200 @@
                             Pega el primer bloque en <strong>&lt;HEAD&gt;</strong> y el bloque secundario <code class="text-purple-300 font-mono text-[10px]">&lt;noscript&gt;</code> en <strong>CÓDIGO DE APERTURA (&lt;BODY&gt;)</strong>.
                         </p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: NOTIFICACIONES & WEBHOOKS (TELEGRAM & DISCORD) -->
+        <div x-show="tab === 'notifications'" x-cloak class="space-y-6">
+            <input type="hidden" name="notifications_settings" value="1">
+
+            <!-- Banner Explicativo -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#5865F2] to-[#0088CC] p-0.5 shadow-lg shadow-[#5865F2]/20 flex-shrink-0">
+                        <div class="w-full h-full bg-[#181410] rounded-[10px] flex items-center justify-center text-[#5865F2]">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                            <span>Automatización &amp; Notificaciones en Tiempo Real</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30">BOTS &amp; WEBHOOKS</span>
+                        </h2>
+                        <p class="text-xs text-[#8C847A] mt-0.5">Recibe alertas automáticas en tus canales de Telegram y servidores de Discord cada vez que se publique una app, salga un update o un usuario reporte un enlace caído.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid: Telegram & Discord -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- 1. TELEGRAM BOT CARD -->
+                <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-5">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#241F1A]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-[#0088CC]/20 border border-[#0088CC]/30 flex items-center justify-center text-[#0088CC]">
+                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Canal / Bot de Telegram</h3>
+                                <p class="text-[11px] text-[#8C847A]">Alertas directas formateadas con foto y enlaces.</p>
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="telegram_enabled" value="1" x-model="telegramEnabled"
+                                   class="w-4 h-4 rounded text-[#0088CC] focus:ring-[#0088CC] bg-[#12100E] border-[#382E24]">
+                            <span class="text-xs font-bold" :class="telegramEnabled ? 'text-[#0088CC]' : 'text-[#736B63]'" x-text="telegramEnabled ? 'Activo' : 'Inactivo'"></span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Telegram Bot Token</label>
+                            <div class="relative">
+                                <input :type="showTelegramToken ? 'text' : 'password'"
+                                       name="telegram_bot_token"
+                                       x-model="telegramBotToken"
+                                       placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                                       class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                                <button type="button" @click="showTelegramToken = !showTelegramToken"
+                                        class="absolute right-3 top-2.5 text-[#736B63] hover:text-white text-xs cursor-pointer"
+                                        x-text="showTelegramToken ? 'Ocultar' : 'Mostrar'"></button>
+                            </div>
+                            <p class="text-[10px] text-[#736B63] mt-1">Obtén tu token con <strong>@BotFather</strong> en Telegram.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Chat ID o @Canal</label>
+                            <input type="text"
+                                   name="telegram_channel_id"
+                                   x-model="telegramChannelId"
+                                   placeholder="@MiCanalTelegram o -1001234567890"
+                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                            <p class="text-[10px] text-[#736B63] mt-1">El bot debe ser <strong>administrador</strong> del canal para poder publicar mensajes.</p>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between">
+                            <button type="button"
+                                    @click="testTelegramConnection()"
+                                    :disabled="testingTelegram"
+                                    class="px-4 py-2 rounded-xl bg-[#0088CC]/15 hover:bg-[#0088CC]/25 text-[#0088CC] border border-[#0088CC]/30 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+                                <span x-show="!testingTelegram">⚡ Probar Telegram</span>
+                                <span x-show="testingTelegram">Enviando mensaje...</span>
+                            </button>
+                        </div>
+
+                        <!-- Feedback Test Telegram -->
+                        <template x-if="testTelegramResult">
+                            <div class="p-3 rounded-xl text-xs font-medium border"
+                                 :class="testTelegramResult.success ? 'bg-success/15 border-success/30 text-success' : 'bg-danger/15 border-danger/30 text-danger'">
+                                <span x-text="testTelegramResult.message"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 2. DISCORD WEBHOOK CARD -->
+                <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-5">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#241F1A]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-[#5865F2]/20 border border-[#5865F2]/30 flex items-center justify-center text-[#5865F2]">
+                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Servidor de Discord (Webhook)</h3>
+                                <p class="text-[11px] text-[#8C847A]">Embeds con miniaturas, categoría y botón directo.</p>
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="discord_enabled" value="1" x-model="discordEnabled"
+                                   class="w-4 h-4 rounded text-[#5865F2] focus:ring-[#5865F2] bg-[#12100E] border-[#382E24]">
+                            <span class="text-xs font-bold" :class="discordEnabled ? 'text-[#5865F2]' : 'text-[#736B63]'" x-text="discordEnabled ? 'Activo' : 'Inactivo'"></span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Discord Webhook URL</label>
+                            <input type="url"
+                                   name="discord_webhook_url"
+                                   x-model="discordWebhookUrl"
+                                   placeholder="https://discord.com/api/webhooks/123456789/ABCdefGhIJKlmNoP..."
+                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#5865F2] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                            <p class="text-[10px] text-[#736B63] mt-1">Crea un Webhook en Discord: <em>Canal &gt; Editar canal &gt; Integraciones &gt; Webhooks</em>.</p>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between">
+                            <button type="button"
+                                    @click="testDiscordConnection()"
+                                    :disabled="testingDiscord"
+                                    class="px-4 py-2 rounded-xl bg-[#5865F2]/15 hover:bg-[#5865F2]/25 text-[#5865F2] border border-[#5865F2]/30 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+                                <span x-show="!testingDiscord">⚡ Probar Discord</span>
+                                <span x-show="testingDiscord">Enviando webhook...</span>
+                            </button>
+                        </div>
+
+                        <!-- Feedback Test Discord -->
+                        <template x-if="testDiscordResult">
+                            <div class="p-3 rounded-xl text-xs font-medium border"
+                                 :class="testDiscordResult.success ? 'bg-success/15 border-success/30 text-success' : 'bg-danger/15 border-danger/30 text-danger'">
+                                <span x-text="testDiscordResult.message"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. SELECCIÓN DE EVENTOS A NOTIFICAR -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-primary"></span>
+                    Eventos que Disparan Notificaciones
+                </h3>
+                <p class="text-xs text-[#8C847A]">Elige qué sucesos deben enviar alertas automáticas a tus canales activos.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <!-- Event 1: Nuevo Programa -->
+                    <label class="p-4 rounded-xl bg-[#171411] border border-[#2B241C] hover:border-primary/40 transition-colors flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="notify_on_new_app" value="1" x-model="notifyNewApp"
+                               class="w-4 h-4 rounded text-primary focus:ring-primary bg-[#12100E] border-[#382E24] mt-0.5">
+                        <div>
+                            <span class="text-xs font-bold text-white block">🚀 Nuevos Lanzamientos</span>
+                            <span class="text-[11px] text-[#8C847A] leading-relaxed">Envía ficha con imagen, categoría y enlaces cuando se publica un programa nuevo.</span>
+                        </div>
+                    </label>
+
+                    <!-- Event 2: Actualización de Versión -->
+                    <label class="p-4 rounded-xl bg-[#171411] border border-[#2B241C] hover:border-primary/40 transition-colors flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="notify_on_update" value="1" x-model="notifyUpdate"
+                               class="w-4 h-4 rounded text-primary focus:ring-primary bg-[#12100E] border-[#382E24] mt-0.5">
+                        <div>
+                            <span class="text-xs font-bold text-white block">🔄 Actualizaciones de Versión</span>
+                            <span class="text-[11px] text-[#8C847A] leading-relaxed">Notifica cuando una app existente sube de versión (ej. de v2.1 a v2.2).</span>
+                        </div>
+                    </label>
+
+                    <!-- Event 3: Enlace Caído Reportado -->
+                    <label class="p-4 rounded-xl bg-[#171411] border border-danger/30 hover:border-danger/60 transition-colors flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="notify_on_broken_link" value="1" x-model="notifyBrokenLink"
+                               class="w-4 h-4 rounded text-danger focus:ring-danger bg-[#12100E] border-[#382E24] mt-0.5">
+                        <div>
+                            <span class="text-xs font-bold text-white block flex items-center gap-1.5">
+                                <span>⚠️ Enlaces Caídos</span>
+                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-danger/20 text-danger">URGENTE</span>
+                            </span>
+                            <span class="text-[11px] text-[#8C847A] leading-relaxed">Alerta instantánea al admin cuando un visitante reporta que un enlace no descarga.</span>
+                        </div>
+                    </label>
                 </div>
             </div>
         </div>

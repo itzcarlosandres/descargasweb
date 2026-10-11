@@ -40,7 +40,9 @@ class Setting extends Model
         'footer_text' => '© 2026 HackMac.cc. All rights reserved. Clean, verified and direct macOS downloads.',
         'contact_email' => 'contact@hackmac.cc',
         'telegram_channel' => 'https://t.me/hackmac',
-        'twitter_url' => 'https://twitter.com/hackmac',
+        'twitter_url' => 'https://x.com/hackmac',
+        'facebook_url' => 'https://facebook.com',
+        'instagram_url' => 'https://instagram.com',
         'gemini_api_key' => '',
         'gemini_model' => 'gemini-2.5-flash',
         'gemini_auto_generate' => '1',
@@ -61,7 +63,16 @@ class Setting extends Model
         'scraper_cron_pages' => '2',
         'scraper_cron_limit' => '10',
         'scraper_cron_frequency' => '2hours',
+        'scraper_drip_feed_mode' => '0',
         'torrentmac_cron_enabled' => '1',
+        'telegram_enabled' => '0',
+        'telegram_bot_token' => '',
+        'telegram_channel_id' => '',
+        'discord_enabled' => '0',
+        'discord_webhook_url' => '',
+        'notify_on_new_app' => '1',
+        'notify_on_update' => '1',
+        'notify_on_broken_link' => '1',
     ];
 
     /**

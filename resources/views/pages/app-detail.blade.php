@@ -187,25 +187,28 @@
                                         </span>
                                         <span class="sr-only">Download Now</span>
                                     </a>
-
-                                    @if($application->has_torrent)
-                                        <!-- Secondary Torrent Download Option (Dual Mode) -->
-                                        <a href="{{ route('download', ['application' => $application->slug, 'type' => 'torrent']) }}"
-                                           class="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#30D158] bg-[#30D158]/10 hover:bg-[#30D158]/20 border border-[#30D158]/30 transition-all shadow-sm group cursor-pointer"
-                                           title="Download Torrent file">
-                                            <span class="text-sm">🧲</span>
-                                            <span>Download Torrent (.torrent)</span>
-                                        </a>
-                                    @endif
                                 @endif
 
-                                <div class="mt-2 text-center sm:text-right w-full sm:w-auto">
+                                <div class="mt-2 text-center sm:text-right w-full sm:w-auto" x-data>
                                     <span class="text-xs text-[#8C847A] font-medium block">
                                         {{ $application->version }} · {{ strtoupper($application->license ?? 'Free') }} · Universal
                                     </span>
-                                    <a class="sah-older inline-block mt-0.5 text-xs text-[#8C847A] hover:text-primary transition-colors" href="#older-versions">
-                                        All older versions
-                                    </a>
+                                    <div class="flex items-center justify-center sm:justify-end gap-2.5 mt-1">
+                                        <a class="sah-older text-xs text-[#8C847A] hover:text-primary transition-colors" href="#older-versions">
+                                            All older versions
+                                        </a>
+                                        <span class="text-zinc-600 text-xs">·</span>
+                                        <button type="button"
+                                                @click="$dispatch('open-report-modal')"
+                                                onclick="window.dispatchEvent(new CustomEvent('open-report-modal'))"
+                                                class="text-xs text-amber-500 hover:text-amber-400 font-medium inline-flex items-center gap-1 py-0.5 px-1.5 rounded-md hover:bg-amber-500/10 transition-colors cursor-pointer"
+                                                title="Reportar si el enlace no funciona">
+                                            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                            </svg>
+                                            <span>Reportar enlace</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -412,8 +415,8 @@
 
                             <ul class="cp-versions-list mt-3 space-y-2">
                                 @if($application->versions && $application->versions->count() > 0)
-                                    @foreach($application->versions as $index => $ver)
-                                        <li x-show="expanded || {{ $index }} < 2"
+                                    @foreach($application->versions as $ver)
+                                        <li x-show="expanded || {{ $loop->index }} < 2"
                                             x-transition:enter="transition ease-out duration-200"
                                             x-transition:enter-start="opacity-0 -translate-y-1"
                                             x-transition:enter-end="opacity-100 translate-y-0"
@@ -542,40 +545,8 @@
                         </div>
                         @endif
 
-                        @if($application->has_torrent)
-                        <div class="mt-4 p-4 bg-[#1B1815] border border-[#30D158]/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-[#30D158]/15 border border-[#30D158]/30 flex items-center justify-center text-lg flex-shrink-0">
-                                    🧲
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <strong class="text-white text-sm">Torrent Option Available</strong>
-                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#30D158]/20 text-[#30D158]">P2P R2</span>
-                                    </div>
-                                    <span class="text-[#8C847A] text-[11px] block mt-0.5">Verified .torrent file, no waiting and unlimited speed.</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
-                                @if($application->magnet_link)
-                                <a href="{{ $application->magnet_link }}" 
-                                   class="px-3 py-2 rounded-xl bg-[#262019] hover:bg-[#332A20] text-[#D8CFBE] hover:text-white border border-[#3D3224] transition-colors font-medium text-xs">
-                                    Magnet
-                                </a>
-                                @endif
-                                <a href="{{ route('download', ['application' => $application->slug, 'type' => 'torrent']) }}" 
-                                   class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#30D158] to-[#10B981] hover:from-[#28C840] hover:to-[#059669] text-black font-extrabold text-xs shadow-md shadow-success/20 flex items-center gap-1.5 transition-all cursor-pointer">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                    <span>Download .torrent</span>
-                                </a>
-                            </div>
-                        </div>
-                        @endif
-
                         <!-- Entry Foot: Tags & Share -->
-                        <div class="entry-foot" x-data="{ copied: false }">
+                        <div class="entry-foot">
                             <div class="entry-tags">
                                 @if($application->tags && $application->tags->count() > 0)
                                     @foreach($application->tags as $t)
@@ -588,27 +559,50 @@
                             </div>
 
                             <div class="cp-share">
-                                <span class="share-label">Share:</span>
-                                <a class="share-facebook" href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(url()->current()) }}" target="_blank" rel="noopener nofollow" aria-label="Share on Facebook">
+                                <span class="share-label">Follow us:</span>
+                                @if(\App\Models\Setting::get('facebook_url'))
+                                <a class="share-facebook hover:!text-[#1877F2] hover:!border-[#1877F2]/50" 
+                                   href="{{ \App\Models\Setting::get('facebook_url', 'https://facebook.com') }}" 
+                                   target="_blank" 
+                                   rel="noopener nofollow" 
+                                   aria-label="Facebook">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.5 0-1.96.93-1.96 1.89v2.26h3.32l-.53 3.5h-2.8V24C19.62 23.1 24 18.1 24 12.07"></path></svg>
-                                    Facebook
+                                    <span>Facebook</span>
                                 </a>
-                                <a class="share-x" href="https://twitter.com/intent/tweet?url={{ urlencode(url()->current()) }}&amp;text={{ urlencode($application->name) }}" target="_blank" rel="noopener nofollow" aria-label="Share on X">
+                                @endif
+
+                                @if(\App\Models\Setting::get('twitter_url'))
+                                <a class="share-x hover:!text-white hover:!border-white/50" 
+                                   href="{{ \App\Models\Setting::get('twitter_url', 'https://x.com') }}" 
+                                   target="_blank" 
+                                   rel="noopener nofollow" 
+                                   aria-label="X.com">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.4l-5.8-7.58-6.64 7.58H.46l8.6-9.83L0 1.15h7.6l5.24 6.93zM17.6 20.64h2.04L6.49 3.24H4.3z"></path></svg>
-                                    X
+                                    <span>X.com</span>
                                 </a>
-                                <a class="share-whatsapp" href="https://api.whatsapp.com/send?text={{ urlencode($application->name . ' ' . url()->current()) }}" target="_blank" rel="noopener nofollow" aria-label="Share on WhatsApp">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.4-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.48-.5-.67-.5h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35M12.05 21.78h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 0 1 9.88 9.9c0 5.44-4.44 9.87-9.89 9.87m8.41-18.3A11.8 11.8 0 0 0 12.04 0C5.5 0 .16 5.33.16 11.89c0 2.1.55 4.14 1.6 5.94L.05 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.16-3.48-8.41"></path></svg>
-                                    WhatsApp
+                                @endif
+
+                                @if(\App\Models\Setting::get('instagram_url'))
+                                <a class="share-instagram hover:!text-[#E1306C] hover:!border-[#E1306C]/50" 
+                                   href="{{ \App\Models\Setting::get('instagram_url', 'https://instagram.com') }}" 
+                                   target="_blank" 
+                                   rel="noopener nofollow" 
+                                   aria-label="Instagram">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                                    <span>Instagram</span>
                                 </a>
-                                <a class="share-telegram" href="https://t.me/share/url?url={{ urlencode(url()->current()) }}&amp;text={{ urlencode($application->name) }}" target="_blank" rel="noopener nofollow" aria-label="Share on Telegram">
+                                @endif
+
+                                @if(\App\Models\Setting::get('telegram_channel'))
+                                <a class="share-telegram hover:!text-[#229ED9] hover:!border-[#229ED9]/50" 
+                                   href="{{ \App\Models\Setting::get('telegram_channel', 'https://t.me/hackmac') }}" 
+                                   target="_blank" 
+                                   rel="noopener nofollow" 
+                                   aria-label="Telegram">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0m5.57 8.16-1.97 9.28c-.15.66-.54.82-1.09.51l-3-2.21-1.45 1.39c-.16.16-.3.3-.6.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.37-.12l-6.87 4.33-2.96-.93c-.64-.2-.66-.64.14-.95l11.57-4.46c.54-.2 1.01.12.83.93"></path></svg>
-                                    Telegram
+                                    <span>Telegram</span>
                                 </a>
-                                <button type="button" class="share-copy" @click="navigator.clipboard.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 2000)">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12M8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 1 1 0 6.2h-4V17h4a5 5 0 0 0 0-10"></path></svg>
-                                    <span x-text="copied ? 'Copied!' : 'Copy link'">Copy link</span>
-                                </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -918,6 +912,52 @@
                     @endforelse
                 </ol>
             </div>
+
+            <!-- Similar Alternatives / Recommended Apps Section (SEO & Dwell Time Booster) -->
+            @if(isset($moreApps) && $moreApps->count() > 0)
+            <div class="single-window mt-6">
+                <div class="window-titlebar flex items-center justify-between px-4 py-3 border-b border-[#2D251D] dark:border-[#2D251D]">
+                    <div class="flex items-center gap-2">
+                        <span class="traffic-lights" aria-hidden="true">
+                            <span class="tl-red"></span>
+                            <span class="tl-yellow"></span>
+                            <span class="tl-green"></span>
+                        </span>
+                        <h3 class="font-heading text-xs font-bold text-white tracking-wider uppercase ml-1">
+                            Similar Alternatives to {{ $application->name }}
+                        </h3>
+                    </div>
+                    <a href="{{ route('category', $application->category->slug) }}" class="text-[11px] text-primary hover:underline font-semibold">
+                        View All in {{ $application->category->name }} →
+                    </a>
+                </div>
+                <div class="p-4 sm:p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        @foreach($moreApps->take(6) as $altApp)
+                        <a href="{{ route('app', $altApp->slug) }}" class="p-3 rounded-2xl bg-[#14110E] hover:bg-[#1C1814] border border-[#2D251D] hover:border-primary/40 transition-all flex items-center gap-3 group shadow-sm">
+                            <div class="w-12 h-12 rounded-xl bg-[#1C1814] border border-[#2D251D] p-1 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                <img src="{{ $altApp->icon_url }}" alt="{{ $altApp->name }}" class="w-full h-full object-contain rounded-lg" loading="lazy"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="w-full h-full bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold text-sm" style="display: none;">
+                                    {{ strtoupper(substr($altApp->name, 0, 1)) }}
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-heading text-xs font-bold text-white truncate group-hover:text-primary transition-colors">
+                                    {{ $altApp->name }}
+                                </h4>
+                                <div class="flex items-center gap-1.5 mt-1 text-[10px] text-[#8C847A]">
+                                    <span class="font-mono text-primary font-semibold">v{{ $altApp->version }}</span>
+                                    <span>&middot;</span>
+                                    <span>{{ $altApp->formatted_downloads }} dl</span>
+                                </div>
+                            </div>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
         </article>
 
         <!-- Sidebar Column (320px in desktop grid) -->
@@ -933,11 +973,11 @@
                     <h3 class="font-heading text-xs font-semibold text-[#1D1D1F] dark:text-[#A1A1A6] tracking-wide">Top Posts</h3>
                 </div>
                 <div class="divide-y divide-[#E5E7EB] dark:divide-[#333336] px-3">
-                    @foreach($topPosts as $index => $topApp)
+                    @foreach($topPosts as $topApp)
                     <a href="{{ route('app', $topApp->slug) }}" class="flex items-center gap-3.5 py-3 px-1 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2F] transition-colors group">
                         <!-- Number Rank Badge -->
-                        <span class="w-6 h-6 rounded-md {{ $index < 3 ? 'bg-[#0071E3] text-white font-extrabold shadow-sm' : 'bg-[#F5F5F7] dark:bg-[#242426] text-[#6B7280] dark:text-[#A1A1A6] font-bold border border-[#E5E7EB] dark:border-[#333336]' }} text-[11px] flex items-center justify-center flex-shrink-0">
-                            {{ $index + 1 }}
+                        <span class="w-6 h-6 rounded-md {{ $loop->iteration <= 3 ? 'bg-[#0071E3] text-white font-extrabold shadow-sm' : 'bg-[#F5F5F7] dark:bg-[#242426] text-[#6B7280] dark:text-[#A1A1A6] font-bold border border-[#E5E7EB] dark:border-[#333336]' }} text-[11px] flex items-center justify-center flex-shrink-0">
+                            {{ $loop->iteration }}
                         </span>
 
                         <!-- App Icon (48px squircle) -->
@@ -1023,4 +1063,7 @@
         </aside>
 
     </div>
+
+    <!-- Modal for Reporting Broken Link -->
+    <x-report-modal :application="$application" />
 </x-app-layout>
