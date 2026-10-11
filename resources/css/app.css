@@ -65,14 +65,14 @@
 
 .dark, html.dark {
     color-scheme: dark;
-    /* Dark Mode Tokens (HaxMac Official New Theme from Screenshot) */
-    --color-background: #161617;
-    --color-header: #161617;
-    --color-surface: #242426;
-    --color-card: #242426;
-    --color-card-hover: #2C2C2F;
-    --color-border: #333336;
-    --color-border-soft: #2B2B2E;
+    /* Dark Mode Tokens (Deep Midnight with Ambient Pastel Glow) */
+    --color-background: #090B10;
+    --color-header: #0C0E14;
+    --color-surface: #141720;
+    --color-card: #141720;
+    --color-card-hover: #1B1F2C;
+    --color-border: #232734;
+    --color-border-soft: #1C202B;
     --color-primary: #0071E3;
     --color-primary-hover: #0077ED;
     --color-primary-dark: #005FBF;
@@ -83,10 +83,10 @@
     --color-warning: #FEBC2E;
     --color-danger: #FF5F57;
 
-    --bg-glass: rgba(22, 22, 23, 0.92);
-    --bg-elevated: #1D1D1F;
+    --bg-glass: rgba(12, 14, 20, 0.88);
+    --bg-elevated: #141720;
     --text: #F5F5F7;
-    --chip: #2A2A2D;
+    --chip: #1F232E;
     --cta-bg: #0b0b0c;
     --accent-rgb: 0, 113, 227;
     --shadow-pop: rgba(0, 0, 0, 0.75) 0px 20px 48px 0px;
@@ -96,10 +96,25 @@
 @layer base {
     body {
         background-color: var(--color-background);
+        background-image: 
+            radial-gradient(ellipse 70% 45% at 15% -5%, rgba(56, 189, 248, 0.22), transparent 60%),
+            radial-gradient(ellipse 60% 40% at 85% -5%, rgba(254, 240, 138, 0.16), transparent 55%),
+            linear-gradient(180deg, #0b1b36 0%, #081326 35%, #050811 70%, #04060a 100%);
+        background-attachment: fixed;
+        background-repeat: no-repeat;
         color: var(--color-text);
         font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+        position: relative;
+    }
+
+    html:not(.dark) body {
+        background-image: 
+            radial-gradient(ellipse 70% 45% at 15% -5%, rgba(147, 197, 253, 0.32), transparent 60%),
+            radial-gradient(ellipse 60% 40% at 85% -5%, rgba(254, 240, 138, 0.22), transparent 55%),
+            linear-gradient(180deg, #dbe8fb 0%, #edf2f9 35%, #f6f8fc 100%);
     }
 
     code, kbd, samp, pre {

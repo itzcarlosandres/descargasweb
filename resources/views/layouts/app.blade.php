@@ -90,7 +90,17 @@
         {!! setting('custom_head_code') !!}
     @endif
 </head>
-<body class="min-h-screen flex flex-col bg-background text-text antialiased selection:bg-primary/30">
+<body class="min-h-screen flex flex-col bg-background text-text antialiased selection:bg-primary/30 relative overflow-x-hidden">
+    <!-- Ambient Background Gradients: Azul Marino Medianoche + Azul Pastel + Amarillo Pastel -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
+        <!-- Base Vertical Azul Marino / Medianoche Profundo (degradado idéntico a la captura) -->
+        <div class="absolute inset-0 bg-gradient-to-b from-[#0b1b36] via-[#081326] via-45% to-[#04060a] opacity-90 dark:opacity-100"></div>
+        <!-- Soft Pastel Blue Glow (Azul Pastel Suave en la izquierda) -->
+        <div class="absolute -top-[120px] left-[8%] w-[650px] h-[580px] rounded-full bg-[#38bdf8]/22 dark:bg-[#60a5fa]/24 blur-[130px] transform-gpu"></div>
+        <!-- Soft Pastel Yellow Glow (Amarillo Pastel Suave en la derecha) -->
+        <div class="absolute -top-[100px] right-[8%] w-[580px] h-[520px] rounded-full bg-[#fde047]/18 dark:bg-[#fef08a]/16 blur-[140px] transform-gpu"></div>
+    </div>
+
     <!-- Custom Code & Analytics (Body Start) -->
     @if(!empty(setting('custom_body_code')))
         {!! setting('custom_body_code') !!}
