@@ -118,6 +118,10 @@ AddDefaultCharset UTF-8
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Force Remove /index.php/ from visible URL (Prevents index.php in search & pagination)
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php(?:/([^\s\?]*))? [NC]
+    RewriteRule ^index\.php(?:/(.*))?$ /%1 [R=301,L,NE]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
