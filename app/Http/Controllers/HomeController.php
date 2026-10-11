@@ -12,6 +12,7 @@ use App\Models\SearchLog;
 use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -31,12 +32,40 @@ class HomeController extends Controller
         });
 
         $featured = Cache::remember('home_featured_apps', 1800, function () {
-            return Application::published()->featured()
+            $apps = Application::published()->featured()
                 ->with('category')
                 ->latest('updated_at')
                 ->limit(4)
                 ->get();
+
+            if ($apps->isEmpty()) {
+                $apps = Application::published()
+                    ->with('category')
+                    ->latest('updated_at')
+                    ->limit(4)
+                    ->get();
+            }
+
+            return $apps;
         });
+
+        // Self-heal in case the cache was corrupted with strings/slugs
+        if (! ($featured instanceof Collection) || $featured->contains(fn ($app) => ! ($app instanceof Application))) {
+            Cache::forget('home_featured_apps');
+            $featured = Application::published()->featured()
+                ->with('category')
+                ->latest('updated_at')
+                ->limit(4)
+                ->get();
+
+            if ($featured->isEmpty()) {
+                $featured = Application::published()
+                    ->with('category')
+                    ->latest('updated_at')
+                    ->limit(4)
+                    ->get();
+            }
+        }
 
         $applications = Application::published()
             ->with('category')

@@ -43,6 +43,7 @@ class Setting extends Model
         'twitter_url' => 'https://x.com/hackmac',
         'facebook_url' => 'https://facebook.com',
         'instagram_url' => 'https://instagram.com',
+        'discord_url' => 'https://discord.gg/hackmac',
         'gemini_api_key' => '',
         'gemini_model' => 'gemini-2.5-flash',
         'gemini_auto_generate' => '1',

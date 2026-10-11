@@ -733,6 +733,13 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Discord (Servidor / Comunidad)</label>
+                        <input type="text" name="discord_url" value="{{ $settings['discord_url'] ?? '' }}"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"
+                               placeholder="https://discord.gg/tuserver">
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Email de Contacto</label>
                         <input type="email" name="contact_email" value="{{ $settings['contact_email'] ?? '' }}"
                                class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors"

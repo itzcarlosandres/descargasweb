@@ -1,5 +1,12 @@
 @props(['app', 'position' => null])
 
+@php
+    if (is_string($app)) {
+        $app = \App\Models\Application::where('slug', $app)->orWhere('id', $app)->first();
+    }
+@endphp
+
+@if($app && is_object($app))
 <a href="{{ route('app', $app->slug) }}" class="card card-hover p-4 sm:p-5 flex flex-col items-center text-center relative bg-white/95 dark:bg-[#1d1d1f]/85 backdrop-blur-md border border-[#E5E7EB] dark:border-[#ffffff]/10 rounded-[18px] group overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[rgba(0,_0,_0,_0.6)_0px_12px_40px_0px] hover:shadow-xl hover:-translate-y-1 hover:border-[#CBD5E1] dark:hover:border-[#ffffff]/30 transition-all duration-300">
     @if($position)
     <span class="absolute top-2.5 left-2.5 w-5 h-5 sm:w-6 sm:h-6 rounded-[6px] bg-[#0071E3] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-md shadow-[#0071E3]/30">
@@ -36,3 +43,4 @@
         </span>
     </div>
 </a>
+@endif

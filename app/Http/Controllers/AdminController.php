@@ -487,6 +487,7 @@ class AdminController extends Controller
             'twitter_url' => 'nullable|string|max:255',
             'facebook_url' => 'nullable|string|max:255',
             'instagram_url' => 'nullable|string|max:255',
+            'discord_url' => 'nullable|string|max:255',
             'gemini_api_key' => 'nullable|string|max:255',
             'gemini_model' => 'nullable|string|in:gemini-2.5-flash,gemini-2.5-pro,gemini-2.0-flash',
             'gemini_auto_generate' => 'nullable|string|in:0,1',
@@ -579,6 +580,9 @@ class AdminController extends Controller
         }
         if ($request->has('instagram_url')) {
             Setting::set('instagram_url', $validated['instagram_url'] ?? null, 'general');
+        }
+        if ($request->has('discord_url')) {
+            Setting::set('discord_url', $validated['discord_url'] ?? null, 'general');
         }
 
         // Gemini AI Settings
