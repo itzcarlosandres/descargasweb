@@ -39,7 +39,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"></path>
         </svg>
-        <time datetime="{{ $app->updated_at?->toIso8601String() }}">Updated {{ $app->updated_at?->format('M j, Y') ?? 'Oct 4, 2026' }}</time>
+        @if($app->is_updated)
+        <time datetime="{{ $app->updated_at?->toIso8601String() }}">Updated {{ $app->updated_at?->format('M j, Y') }}</time>
+        @else
+        <time datetime="{{ ($app->released_at ?? $app->created_at)?->toIso8601String() }}">Added {{ ($app->released_at ?? $app->created_at)?->format('M j, Y') }}</time>
+        @endif
       </span>
       <span class="card-dl" title="{{ $app->formatted_downloads }} downloads">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">

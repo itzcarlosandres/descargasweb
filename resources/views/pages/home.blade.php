@@ -100,8 +100,8 @@
             </div>
         </div>
 
-        <!-- Latest Releases / Recently Added Section -->
-        <div class="space-y-4">
+        <!-- Latest Releases (Newly Added Applications) -->
+        <div class="space-y-4 mb-8">
             <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-[3px] bg-primary inline-block"></span>
@@ -109,10 +109,10 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="text-[11px] text-[#7E776F] dark:text-[#8C847A] font-medium hidden sm:inline-block">
-                        Recently added &amp; updated apps
+                        Recently added to catalog
                     </span>
                     <a href="{{ route('new') }}" class="text-[11px] font-semibold text-[#7E776F] dark:text-[#8C847A] hover:text-primary transition-colors flex items-center gap-1">
-                        <span>View All</span>
+                        <span>View All New</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
@@ -126,8 +126,37 @@
                 @endforeach
             </div>
 
-            <!-- Numbered Pagination matching screenshot -->
+            <!-- Numbered Pagination for Newly Added Releases -->
             <x-pagination :paginator="$applications" />
         </div>
+
+        <!-- Recently Updated Section (Debajo de Latest Releases) -->
+        @if(isset($recentlyUpdated) && $recentlyUpdated->isNotEmpty())
+        <div class="space-y-4 pt-2">
+            <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-[3px] bg-[#30D158] inline-block shadow-sm shadow-[#30D158]/50"></span>
+                    <h2 class="font-heading text-xs font-bold text-[#1C1814] dark:text-white tracking-wider uppercase">Recently Updated</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[11px] text-[#7E776F] dark:text-[#8C847A] font-medium hidden sm:inline-block">
+                        Latest versions &amp; patches
+                    </span>
+                    <a href="{{ route('updated') }}" class="text-[11px] font-semibold text-[#7E776F] dark:text-[#8C847A] hover:text-[#30D158] transition-colors flex items-center gap-1">
+                        <span>View All Updated</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-3.5 sm:gap-4">
+                @foreach($recentlyUpdated as $app)
+                    <x-app-card :app="$app" />
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
 </x-app-layout>

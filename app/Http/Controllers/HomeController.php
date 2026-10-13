@@ -69,15 +69,32 @@ class HomeController extends Controller
 
         $applications = Application::published()
             ->with('category')
-            ->latest('updated_at')
-            ->latest('id')
+            ->recentlyAdded()
             ->paginate(12);
+
+        $recentlyUpdated = Cache::remember('home_recently_updated_apps', 1800, function () {
+            $apps = Application::published()
+                ->recentlyUpdated()
+                ->with('category')
+                ->limit(6)
+                ->get();
+
+            if ($apps->isEmpty()) {
+                $apps = Application::published()
+                    ->with('category')
+                    ->latest('updated_at')
+                    ->limit(6)
+                    ->get();
+            }
+
+            return $apps;
+        });
 
         $topCategories = Cache::remember('home_top_categories', 3600, function () {
             return Category::active()->ordered()->limit(7)->get();
         });
 
-        return view('pages.home', compact('stats', 'featured', 'applications', 'topCategories'));
+        return view('pages.home', compact('stats', 'featured', 'applications', 'recentlyUpdated', 'topCategories'));
     }
 
     public function categories()
@@ -242,10 +259,20 @@ class HomeController extends Controller
     {
         $applications = Application::published()
             ->with('category')
-            ->orderBy('released_at', 'desc')
+            ->recentlyAdded()
             ->paginate(12);
 
         return view('pages.new', compact('applications'));
+    }
+
+    public function updated()
+    {
+        $applications = Application::published()
+            ->with('category')
+            ->recentlyUpdated()
+            ->paginate(12);
+
+        return view('pages.updated', compact('applications'));
     }
 
     public function downloadPage(Application $application)

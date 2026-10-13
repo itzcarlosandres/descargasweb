@@ -12,13 +12,15 @@ class PortalTest extends TestCase
 {
     private function createCategoryAndApp(array $appAttributes = []): array
     {
-        $category = Category::create([
-            'name' => 'Utilidades',
-            'slug' => 'utilidades',
-            'description' => 'Herramientas útiles',
-            'is_active' => true,
-            'sort_order' => 1,
-        ]);
+        $category = Category::firstOrCreate(
+            ['slug' => 'utilidades'],
+            [
+                'name' => 'Utilidades',
+                'description' => 'Herramientas útiles',
+                'is_active' => true,
+                'sort_order' => 1,
+            ]
+        );
 
         $app = Application::create(array_merge([
             'category_id' => $category->id,
@@ -371,5 +373,55 @@ class PortalTest extends TestCase
         $response = $this->get(route('home'));
         $response->assertStatus(200);
         $response->assertSee('Programa actualizado');
+    }
+
+    public function test_home_page_displays_latest_releases_and_recently_updated(): void
+    {
+        [$category, $newApp] = $this->createCategoryAndApp([
+            'name' => 'Brand New App',
+            'slug' => 'brand-new-app',
+            'published' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        [$category2, $updatedApp] = $this->createCategoryAndApp([
+            'name' => 'Existing Updated App',
+            'slug' => 'existing-updated-app',
+            'published' => true,
+        ]);
+
+        Application::where('id', $updatedApp->id)->update([
+            'created_at' => now()->subMonths(2),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Latest Releases');
+        $response->assertSee('Recently Updated');
+        $response->assertSee('Brand New App');
+        $response->assertSee('Existing Updated App');
+    }
+
+    public function test_updated_page_renders_successfully(): void
+    {
+        [$category, $app] = $this->createCategoryAndApp([
+            'name' => 'Recently Patched App',
+            'slug' => 'recently-patched-app',
+            'published' => true,
+        ]);
+
+        Application::where('id', $app->id)->update([
+            'created_at' => now()->subMonth(),
+            'updated_at' => now()->subHours(2),
+        ]);
+
+        $response = $this->get(route('updated'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Recently Updated');
+        $response->assertSee('Recently Patched App');
     }
 }

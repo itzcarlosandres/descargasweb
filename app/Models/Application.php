@@ -66,6 +66,7 @@ class Application extends Model
             cache()->forget('sitemap_xml');
             cache()->forget('home_stats');
             cache()->forget('home_featured_apps');
+            cache()->forget('home_recently_updated_apps');
             cache()->forget('home_top_categories');
         };
 
@@ -154,6 +155,18 @@ class Application extends Model
     public function scopeOrderedByNewest($query)
     {
         return $query->orderBy('released_at', 'desc');
+    }
+
+    public function scopeRecentlyAdded($query)
+    {
+        return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+    }
+
+    public function scopeRecentlyUpdated($query)
+    {
+        return $query->whereColumn('updated_at', '>', 'created_at')
+            ->orderBy('updated_at', 'desc')
+            ->orderBy('id', 'desc');
     }
 
     public function scopeSearch($query, ?string $term)

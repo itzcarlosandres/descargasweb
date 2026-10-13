@@ -15,6 +15,7 @@ Route::post('/review/{review}/vote', [HomeController::class, 'voteReview'])->nam
 Route::get('/search', [HomeController::class, 'search'])->name('search');
 Route::get('/popular', [HomeController::class, 'popular'])->name('popular');
 Route::get('/new', [HomeController::class, 'new'])->name('new');
+Route::get('/updated', [HomeController::class, 'updated'])->name('updated');
 Route::get('/download/{application:slug}', [HomeController::class, 'downloadPage'])->name('download');
 Route::get('/download/{application:slug}/file', [HomeController::class, 'downloadFile'])->name('download.file');
 Route::get('/dl/{token}', [HomeController::class, 'resolveDownloadToken'])->name('download.token');
