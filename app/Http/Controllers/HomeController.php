@@ -57,14 +57,6 @@ class HomeController extends Controller
             ->limit(6)
             ->get();
 
-        if ($recentlyUpdated->isEmpty()) {
-            $recentlyUpdated = Application::published()
-                ->with('category')
-                ->latest('updated_at')
-                ->limit(6)
-                ->get();
-        }
-
         $topCategories = Category::active()
             ->ordered()
             ->limit(7)

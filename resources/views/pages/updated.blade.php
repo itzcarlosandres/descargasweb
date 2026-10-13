@@ -18,7 +18,7 @@
 
         <div class="grid md:grid-cols-2 gap-4">
             @forelse($applications as $app)
-                <x-app-card :app="$app" />
+                <x-app-card :app="$app" :show-updated="true" />
             @empty
                 <div class="col-span-2 card p-12 text-center">
                     <p class="text-text-muted">No recently updated applications found.</p>

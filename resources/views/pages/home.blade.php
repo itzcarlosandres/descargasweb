@@ -122,7 +122,7 @@
 
             <div class="grid md:grid-cols-2 gap-3.5 sm:gap-4">
                 @foreach($applications as $app)
-                    <x-app-card :app="$app" />
+                    <x-app-card :app="$app" :show-updated="false" />
                 @endforeach
             </div>
 
@@ -153,7 +153,7 @@
 
             <div class="grid md:grid-cols-2 gap-3.5 sm:gap-4">
                 @foreach($recentlyUpdated as $app)
-                    <x-app-card :app="$app" />
+                    <x-app-card :app="$app" :show-updated="true" />
                 @endforeach
             </div>
         </div>

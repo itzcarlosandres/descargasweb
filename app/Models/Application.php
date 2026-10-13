@@ -265,7 +265,9 @@ class Application extends Model
 
     public function incrementDownloads(): void
     {
-        $this->increment('downloads');
+        static::withoutTimestamps(function () {
+            $this->increment('downloads');
+        });
     }
 
     public function recalculateRating(): void
@@ -327,6 +329,7 @@ class Application extends Model
             foreach ($allDrafts as $draftApp) {
                 $draftApp->update([
                     'published' => true,
+                    'created_at' => $now,
                     'released_at' => $now,
                     'updated_at' => $now,
                 ]);

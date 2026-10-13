@@ -424,4 +424,40 @@ class PortalTest extends TestCase
         $response->assertSee('Recently Updated');
         $response->assertSee('Recently Patched App');
     }
+
+    public function test_downloading_application_increments_downloads_without_touching_updated_at(): void
+    {
+        [$category, $app] = $this->createCategoryAndApp([
+            'name' => 'Downloadable App',
+            'slug' => 'downloadable-app',
+            'downloads' => 10,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $originalUpdatedAt = $app->fresh()->updated_at->toDateTimeString();
+
+        $app->incrementDownloads();
+
+        $app->refresh();
+        $this->assertEquals(11, $app->downloads);
+        $this->assertEquals($originalUpdatedAt, $app->updated_at->toDateTimeString());
+    }
+
+    public function test_home_latest_releases_shows_added_date_and_not_updated_badge(): void
+    {
+        [$category, $app] = $this->createCategoryAndApp([
+            'name' => 'Fresh Catalog App',
+            'slug' => 'fresh-catalog-app',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Fresh Catalog App');
+        $response->assertSee('Added ' . now()->format('M j, Y'));
+        $response->assertDontSee('title="Programa actualizado"', false);
+    }
 }

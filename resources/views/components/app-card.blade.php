@@ -1,4 +1,8 @@
-@props(['app'])
+@props(['app', 'showUpdated' => null])
+
+@php
+    $isUpdated = $showUpdated ?? (bool) $app->is_updated;
+@endphp
 
 <article id="post-{{ $app->id }}" class="post-card post-{{ $app->id }} post type-post status-publish format-standard has-post-thumbnail hentry category-application category-{{ $app->category?->slug ?? 'system-utilities' }} group">
   <a href="{{ route('app', $app->slug) }}" aria-hidden="true" tabindex="-1" class="shrink-0 flex items-center justify-center">
@@ -11,7 +15,7 @@
   <div class="card-body">
     <h2 class="entry-title flex items-center gap-1.5 min-w-0">
       <a href="{{ route('app', $app->slug) }}" class="truncate after:absolute after:inset-0 after:z-[1]">{{ $app->name }}</a>
-      @if($app->is_updated)
+      @if($isUpdated)
       <!-- Animated Update Badge (Blue, High-contrast White Icon, No text) -->
       <span class="relative flex h-4 w-4 shrink-0 z-[2]" title="Programa actualizado">
         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-60"></span>
@@ -39,7 +43,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"></path>
         </svg>
-        @if($app->is_updated)
+        @if($isUpdated)
         <time datetime="{{ $app->updated_at?->toIso8601String() }}">Updated {{ $app->updated_at?->format('M j, Y') }}</time>
         @else
         <time datetime="{{ ($app->released_at ?? $app->created_at)?->toIso8601String() }}">Added {{ ($app->released_at ?? $app->created_at)?->format('M j, Y') }}</time>
