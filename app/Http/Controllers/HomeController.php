@@ -12,7 +12,6 @@ use App\Models\SearchLog;
 use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -31,40 +30,20 @@ class HomeController extends Controller
             ];
         });
 
-        $featured = Cache::remember('home_featured_apps', 1800, function () {
-            $apps = Application::published()->featured()
+        // Consultas directas e instantáneas (1-2 ms) sin serializar modelos en caché
+        $featured = Application::published()
+            ->featured()
+            ->with('category')
+            ->latest('updated_at')
+            ->limit(4)
+            ->get();
+
+        if ($featured->isEmpty()) {
+            $featured = Application::published()
                 ->with('category')
                 ->latest('updated_at')
                 ->limit(4)
                 ->get();
-
-            if ($apps->isEmpty()) {
-                $apps = Application::published()
-                    ->with('category')
-                    ->latest('updated_at')
-                    ->limit(4)
-                    ->get();
-            }
-
-            return $apps;
-        });
-
-        // Self-heal in case the cache was corrupted with strings/slugs
-        if (! ($featured instanceof Collection) || $featured->contains(fn ($app) => ! ($app instanceof Application))) {
-            Cache::forget('home_featured_apps');
-            $featured = Application::published()->featured()
-                ->with('category')
-                ->latest('updated_at')
-                ->limit(4)
-                ->get();
-
-            if ($featured->isEmpty()) {
-                $featured = Application::published()
-                    ->with('category')
-                    ->latest('updated_at')
-                    ->limit(4)
-                    ->get();
-            }
         }
 
         $applications = Application::published()
@@ -72,27 +51,24 @@ class HomeController extends Controller
             ->recentlyAdded()
             ->paginate(12);
 
-        $recentlyUpdated = Cache::remember('home_recently_updated_apps', 1800, function () {
-            $apps = Application::published()
-                ->recentlyUpdated()
+        $recentlyUpdated = Application::published()
+            ->recentlyUpdated()
+            ->with('category')
+            ->limit(6)
+            ->get();
+
+        if ($recentlyUpdated->isEmpty()) {
+            $recentlyUpdated = Application::published()
                 ->with('category')
+                ->latest('updated_at')
                 ->limit(6)
                 ->get();
+        }
 
-            if ($apps->isEmpty()) {
-                $apps = Application::published()
-                    ->with('category')
-                    ->latest('updated_at')
-                    ->limit(6)
-                    ->get();
-            }
-
-            return $apps;
-        });
-
-        $topCategories = Cache::remember('home_top_categories', 3600, function () {
-            return Category::active()->ordered()->limit(7)->get();
-        });
+        $topCategories = Category::active()
+            ->ordered()
+            ->limit(7)
+            ->get();
 
         return view('pages.home', compact('stats', 'featured', 'applications', 'recentlyUpdated', 'topCategories'));
     }

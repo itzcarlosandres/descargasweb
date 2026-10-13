@@ -131,7 +131,7 @@
         </div>
 
         <!-- Recently Updated Section (Debajo de Latest Releases) -->
-        @if(isset($recentlyUpdated) && $recentlyUpdated->isNotEmpty())
+        @if(!empty($recentlyUpdated) && $recentlyUpdated->isNotEmpty())
         <div class="space-y-4 pt-2">
             <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-2">
