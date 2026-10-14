@@ -210,6 +210,76 @@ class HaxmacImporter
     }
 
     /**
+     * Import a batch of applications from HaxMac historical catalog/backlog.
+     * Advances page cursor sequentially and skips already imported apps.
+     *
+     * @param  int  $limit  Number of new apps to import
+     * @param  bool  $asDraft  Whether to save as draft (published = false)
+     * @param  bool  $downloadImages
+     * @return array{imported: int, next_page: int, items: array}
+     */
+    public function importBacklogBatch(int $limit = 10, bool $asDraft = true, bool $downloadImages = true): array
+    {
+        $startPage = (int) Setting::get('scraper_haxmac_backlog_page', 4);
+        $currentPage = max(1, $startPage);
+        $imported = 0;
+        $items = [];
+        $maxPagesToScan = 25;
+        $pagesScanned = 0;
+
+        while ($imported < $limit && $pagesScanned < $maxPagesToScan) {
+            $pagesScanned++;
+            $data = $this->getHaxmacAppsByCategory('all', $currentPage);
+            $cards = $data['items'] ?? [];
+
+            if (empty($cards)) {
+                $currentPage = 4;
+                break;
+            }
+
+            foreach ($cards as $card) {
+                if ($imported >= $limit) {
+                    break;
+                }
+
+                if (! empty($card['is_imported'])) {
+                    continue;
+                }
+
+                try {
+                    $url = $card['url'] ?? $card['slug'];
+                    $app = $this->importApp($url, $downloadImages, ! $asDraft);
+                    if ($app) {
+                        $imported++;
+                        $items[] = [
+                            'id' => $app->id,
+                            'name' => $app->name,
+                            'version' => $app->version,
+                            'published' => $app->published,
+                            'source' => 'haxmac',
+                        ];
+                    }
+                    usleep(200000);
+                } catch (\Throwable $e) {
+                    Log::error("HaxmacImporter backlog error on {$card['slug']}: {$e->getMessage()}");
+                }
+            }
+
+            $currentPage++;
+        }
+
+        Setting::set('scraper_haxmac_backlog_page', $currentPage, 'scraper');
+        Setting::clearCache();
+
+        return [
+            'imported' => $imported,
+            'next_page' => $currentPage,
+            'items' => $items,
+        ];
+    }
+
+
+    /**
      * Scan recent HaxMac pages and return only applications that exist locally with a newer version available
      *
      * @return array<int, array>
@@ -305,7 +375,7 @@ class HaxmacImporter
     /**
      * Import or update a single application by its HaxMac page URL or slug
      */
-    public function importApp(string $urlOrSlug, bool $downloadImages = true): ?Application
+    public function importApp(string $urlOrSlug, bool $downloadImages = true, ?bool $forcePublished = null): ?Application
     {
         $url = str_starts_with($urlOrSlug, 'http')
             ? $urlOrSlug
@@ -404,7 +474,7 @@ class HaxmacImporter
             'size' => $appData['size'],
             'platform' => $appData['platform'] ?? 'Universal',
             'download_url_external' => $primaryDownloadUrl,
-            'published' => $existing ? (bool) $existing->published : (! (bool) Setting::get('scraper_drip_feed_mode', false)),
+            'published' => $existing ? (bool) $existing->published : ($forcePublished !== null ? $forcePublished : (! (bool) Setting::get('scraper_drip_feed_mode', false))),
             'released_at' => now(),
         ];
 

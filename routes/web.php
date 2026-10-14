@@ -119,6 +119,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/scraper/toggle-cron', [ScraperController::class, 'toggleCron'])->name('scraper.toggle-cron');
     Route::post('/scraper/toggle-drip', [ScraperController::class, 'toggleDrip'])->name('scraper.toggle-drip');
     Route::post('/scraper/drip/release-now', [ScraperController::class, 'releaseDripBatch'])->name('scraper.drip.release-now');
+    Route::post('/scraper/drip/fill-drafts', [ScraperController::class, 'fillDraftBatch'])->name('scraper.drip.fill-drafts');
 
     // TorrentMac Scraper & Cloud Sync
     Route::get('/scraper/torrentmac/latest', [ScraperController::class, 'getTorrentmacLatest'])->name('scraper.torrentmac.latest');

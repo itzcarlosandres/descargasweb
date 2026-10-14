@@ -118,14 +118,23 @@
                           :class="dripMode ? 'bg-warning/20 text-warning border border-warning/30' : 'bg-[#2B241C] text-[#736B63]'"
                           x-text="dripMode ? 'GOTEO ON' : 'OFF'"></span>
                 </div>
-                <button type="button" 
-                        x-show="draftCount > 0" 
-                        @click="releaseDripNow()"
-                        :disabled="releasingDrip"
-                        class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning hover:bg-warning/25 transition-all cursor-pointer disabled:opacity-50"
-                        title="Publicar tanda ahora">
-                    <span x-text="releasingDrip ? '...' : '⚡ Gotear'"></span>
-                </button>
+                <div class="flex items-center gap-1">
+                    <button type="button" 
+                            @click="fillDraftsNow(10)"
+                            :disabled="fillingDrafts"
+                            class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all cursor-pointer disabled:opacity-50"
+                            title="Cargar 10 programas del catálogo histórico a borradores">
+                        <span x-text="fillingDrafts ? '...' : '+ Cargar'"></span>
+                    </button>
+                    <button type="button" 
+                            x-show="draftCount > 0" 
+                            @click="releaseDripNow()"
+                            :disabled="releasingDrip"
+                            class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning hover:bg-warning/25 transition-all cursor-pointer disabled:opacity-50"
+                            title="Publicar tanda ahora">
+                        <span x-text="releasingDrip ? '...' : '⚡ Gotear'"></span>
+                    </button>
+                </div>
             </div>
             <div class="text-2xl font-black text-[#F59E0B] font-mono" x-text="draftCount">
                 {{ number_format($stats['draft_apps'] ?? 0) }}
@@ -1290,8 +1299,35 @@ function scraperApp() {
     effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
     r2Configured: {{ ($stats['r2_configured'] ?? false) ? 'true' : 'false' }},
     draftCount: {{ $stats['draft_apps'] ?? 0 }},
-    totalPortalApps: '{{ number_format($stats['total_apps']) }}',
     releasingDrip: false,
+    fillingDrafts: false,
+
+    async fillDraftsNow(amount = 10) {
+        if (this.fillingDrafts) return;
+        this.fillingDrafts = true;
+        this.showToast('📥 Cargando ' + amount + ' programas del catálogo histórico a borradores...');
+        try {
+            const res = await fetch('{{ route('admin.scraper.drip.fill-drafts') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ limit: amount })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.draftCount = data.total_drafts;
+                this.showToast('✓ ' + data.message);
+            } else {
+                alert(data.message || 'Error al cargar borradores');
+            }
+        } catch(e) {
+            alert('Error de conexión al cargar borradores del catálogo');
+        } finally {
+            this.fillingDrafts = false;
+        }
+    },
 
     async toggleDripMode(newVal) {
         if (this.togglingDrip) return;

@@ -416,6 +416,32 @@ class ScraperController extends Controller
     }
 
     /**
+     * Replenish the draft queue by importing from HaxMac & TorrentMac backlog catalogs
+     */
+    public function fillDraftBatch(Request $request): JsonResponse
+    {
+        $limit = max(2, min(50, (int) $request->input('limit', 10)));
+        $half = (int) ceil($limit / 2);
+
+        $haxmacResult = $this->importer->importBacklogBatch($half, true, true);
+        $torrentResult = $this->torrentmacImporter->importBacklogBatch($half, true, true);
+
+        $totalImported = $haxmacResult['imported'] + $torrentResult['imported'];
+        $remainingDrafts = Application::where('published', false)->count();
+
+        return response()->json([
+            'success' => true,
+            'imported' => $totalImported,
+            'haxmac_imported' => $haxmacResult['imported'],
+            'torrent_imported' => $torrentResult['imported'],
+            'total_drafts' => $remainingDrafts,
+            'haxmac_next_page' => $haxmacResult['next_page'] ?? null,
+            'torrent_next_page' => $torrentResult['next_page'] ?? null,
+            'message' => "Se cargaron {$totalImported} nuevos borradores desde el catálogo histórico ({$haxmacResult['imported']} DDL, {$torrentResult['imported']} Torrent). Total en cola: {$remainingDrafts} borradores.",
+        ]);
+    }
+
+    /**
      * Get paginated latest programs from TorrentMac (with category filter support)
      */
     public function getTorrentmacLatest(Request $request): JsonResponse

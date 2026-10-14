@@ -14,7 +14,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desactivado en la configuración}', function (HaxmacImporter $haxmac, TorrentmacImporter $torrentmac) {
+Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desactivado en la configuración} {--fill-drafts=0 : Rellenar la cola con N borradores del catálogo}', function (HaxmacImporter $haxmac, TorrentmacImporter $torrentmac) {
     $isEnabled = filter_var(Setting::get('scraper_cron_enabled', false), FILTER_VALIDATE_BOOLEAN) || $this->option('force');
 
     if (! $isEnabled) {
@@ -25,30 +25,75 @@ Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desa
 
     $limit = (int) Setting::get('scraper_cron_limit', 10);
     $halfLimit = (int) ceil($limit / 2);
+    $dripMode = filter_var(Setting::get('scraper_drip_feed_mode', false), FILTER_VALIDATE_BOOLEAN);
 
-    $this->info("Iniciando sincronización DDL (HaxMac, hasta {$halfLimit} apps)...");
+    // 1. Si se solicita rellenar borradores manualmente o la cola está seca en modo goteo
+    $requestedFill = (int) $this->option('fill-drafts');
+    $currentDrafts = Application::where('published', false)->count();
+    $fillNeeded = $requestedFill > 0 ? $requestedFill : ($dripMode && $currentDrafts < $limit ? $limit : 0);
+
+    if ($fillNeeded > 0) {
+        $halfFill = (int) ceil($fillNeeded / 2);
+        $this->info("Rellenando Cola Draft con {$fillNeeded} programas del catálogo histórico (página HaxMac: ".Setting::get('scraper_haxmac_backlog_page', 4).", TorrentMac: ".Setting::get('scraper_torrentmac_backlog_page', 4).")...");
+        $bHax = $haxmac->importBacklogBatch($halfFill, true, true);
+        $bTor = $torrentmac->importBacklogBatch($halfFill, true, true);
+        $this->info("✓ Cola Draft reabastecida: +{$bHax['imported']} DDL, +{$bTor['imported']} Torrent. Total en cola: ".Application::where('published', false)->count());
+    }
+
+    // 2. Sincronización de novedades desde portadas
+    $this->info("Iniciando sincronización DDL de portada (HaxMac, hasta {$halfLimit} apps)...");
     $ddlResult = $haxmac->syncLatestUpdates(true, $halfLimit, 3);
     Setting::set('scraper_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
     $this->info("✓ DDL completado: {$ddlResult['new_imported']} nuevos, {$ddlResult['updated']} actualizados.");
 
     if (filter_var(Setting::get('torrentmac_cron_enabled', true), FILTER_VALIDATE_BOOLEAN)) {
-        $this->info("Iniciando sincronización Torrent (TorrentMac, hasta {$halfLimit} apps)...");
+        $this->info("Iniciando sincronización Torrent de portada (TorrentMac, hasta {$halfLimit} apps)...");
         $torrentResult = $torrentmac->syncLatestUpdates(1, true, $halfLimit, 3);
         Setting::set('torrentmac_last_sync', now()->format('Y-m-d H:i:s'), 'scraper');
         $this->info("✓ Torrent completado: {$torrentResult['new_imported']} nuevos, {$torrentResult['updated']} actualizados.");
     }
 
-    // Goteo de drafts (publicación escalonada equilibrada 50% Torrent y 50% DDL)
-    $dripResult = Application::releaseDripBatch($limit);
-    if ($dripResult['published_count'] > 0) {
-        $remaining = Application::where('published', false)->count();
-        $this->info("✓ Goteo Draft: {$dripResult['published_count']} apps publicadas ({$dripResult['torrent_count']} Torrent, {$dripResult['ddl_count']} DDL). Quedan {$remaining} en cola draft.");
+    // 3. Si no hay modo goteo y no se alcanzaron novedades, rellenar el déficit directamente publicado
+    if (! $dripMode) {
+        $totalNew = $ddlResult['new_imported'] + ($torrentResult['new_imported'] ?? 0);
+        $deficit = $limit - $totalNew;
+        if ($deficit > 0) {
+            $halfDeficit = (int) ceil($deficit / 2);
+            $this->info("No hubo suficientes novedades ({$totalNew}/{$limit}). Extrayendo {$deficit} programas antiguos del catálogo histórico...");
+            $haxDirect = $haxmac->importBacklogBatch($halfDeficit, false, true);
+            $torDirect = $torrentmac->importBacklogBatch($halfDeficit, false, true);
+            $this->info("✓ Publicados desde archivo: +{$haxDirect['imported']} DDL, +{$torDirect['imported']} Torrent.");
+        }
+    } else {
+        // 4. Goteo de drafts (publicación escalonada equilibrada 50% Torrent y 50% DDL)
+        $dripResult = Application::releaseDripBatch($limit);
+        if ($dripResult['published_count'] > 0) {
+            $remaining = Application::where('published', false)->count();
+            $this->info("✓ Goteo Draft: {$dripResult['published_count']} apps publicadas ({$dripResult['torrent_count']} Torrent, {$dripResult['ddl_count']} DDL). Quedan {$remaining} en cola draft.");
+        }
     }
 
     $this->info('Sincronización finalizada correctamente.');
 
     return 0;
 })->purpose('Ejecuta la sincronización automática de novedades del scraper');
+
+Artisan::command('scraper:fill-drafts {count=10 : Cantidad de programas a cargar desde el catálogo}', function (HaxmacImporter $haxmac, TorrentmacImporter $torrentmac) {
+    $count = max(2, (int) $this->argument('count'));
+    $half = (int) ceil($count / 2);
+
+    $this->info("Extrayendo {$count} aplicaciones desde el catálogo histórico para la Cola Draft...");
+    $hax = $haxmac->importBacklogBatch($half, true, true);
+    $tor = $torrentmac->importBacklogBatch($half, true, true);
+
+    $total = $hax['imported'] + $tor['imported'];
+    $currentDrafts = Application::where('published', false)->count();
+
+    $this->info("✓ Se importaron {$total} nuevos borradores (+{$hax['imported']} DDL, +{$tor['imported']} Torrent).");
+    $this->info("✓ Total actual en Cola Draft: {$currentDrafts} aplicaciones listas para goteo.");
+
+    return 0;
+})->purpose('Carga programas antiguos desde el archivo de HaxMac y TorrentMac a la Cola Draft');
 
 // Dynamic frequency and time settings from DB
 $frequency = (string) Setting::get('scraper_cron_frequency', '2hours');
@@ -93,6 +138,16 @@ $applyFrequency($torrentmacEvent, $frequency);
 $dripEvent = Schedule::call(function () {
     if (filter_var(Setting::get('scraper_cron_enabled', false), FILTER_VALIDATE_BOOLEAN)) {
         $limit = (int) Setting::get('scraper_cron_limit', 10);
+        $currentDrafts = Application::where('published', false)->count();
+
+        // Si la cola de drafts tiene menos que el límite, rellenarla automáticamente desde el backlog
+        if ($currentDrafts < $limit) {
+            $needed = max($limit, 10);
+            $half = (int) ceil($needed / 2);
+            app(HaxmacImporter::class)->importBacklogBatch($half, true, true);
+            app(TorrentmacImporter::class)->importBacklogBatch($half, true, true);
+        }
+
         $dripResult = Application::releaseDripBatch($limit);
         if ($dripResult['published_count'] > 0) {
             $remaining = Application::where('published', false)->count();
