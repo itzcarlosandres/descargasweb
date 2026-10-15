@@ -16,7 +16,7 @@ class GenerateSitemapCommand extends Command
 
     public function handle(): int
     {
-        $this->info('Generando sitemap XML estático...');
+        $this->info('Generando sitemaps XML modulares...');
 
         $appUrl = config('app.url');
         if (empty($appUrl) || str_contains($appUrl, 'localhost') || str_contains($appUrl, '127.0.0.1')) {
@@ -37,13 +37,32 @@ class GenerateSitemapCommand extends Command
             ->get();
 
         $latestAppDate = $applications->first()?->updated_at?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+        $latestCategoryDate = $categories->sortByDesc('updated_at')->first()?->updated_at?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+        $latestPagesDate = $latestAppDate;
 
-        $xml = view('sitemap', compact('categories', 'applications', 'latestAppDate'))->render();
+        // 1. sitemap-apps.xml
+        $appsXml = view('sitemap.apps', compact('applications'))->render();
+        file_put_contents(public_path('sitemap-apps.xml'), $appsXml);
+        Cache::put('sitemap_apps_xml', $appsXml, 86400);
 
-        file_put_contents(public_path('sitemap.xml'), $xml);
-        Cache::put('sitemap_xml', $xml, 86400);
+        // 2. sitemap-categories.xml
+        $catsXml = view('sitemap.categories', compact('categories'))->render();
+        file_put_contents(public_path('sitemap-categories.xml'), $catsXml);
+        Cache::put('sitemap_categories_xml', $catsXml, 86400);
 
-        $this->info('✓ Sitemap generado exitosamente en '.public_path('sitemap.xml'));
+        // 3. sitemap-pages.xml
+        $pagesXml = view('sitemap.pages', compact('latestAppDate'))->render();
+        file_put_contents(public_path('sitemap-pages.xml'), $pagesXml);
+        Cache::put('sitemap_pages_xml', $pagesXml, 86400);
+
+        // 4. sitemap.xml (Index)
+        $indexXml = view('sitemap.index', compact('latestAppDate', 'latestCategoryDate', 'latestPagesDate'))->render();
+        file_put_contents(public_path('sitemap.xml'), $indexXml);
+        Cache::put('sitemap_index_xml', $indexXml, 86400);
+        Cache::put('sitemap_xml', $indexXml, 86400);
+
+        $this->info('✓ Sitemap Index generado en '.public_path('sitemap.xml'));
+        $this->info('✓ Sub-sitemaps generados: sitemap-apps.xml, sitemap-categories.xml, sitemap-pages.xml');
 
         return self::SUCCESS;
     }

@@ -467,7 +467,7 @@ class HomeController extends Controller
         return back();
     }
 
-    public function sitemap(): Response
+    protected function prepareSitemapUrl(): void
     {
         $appUrl = config('app.url');
         if (empty($appUrl) || str_contains($appUrl, 'localhost') || str_contains($appUrl, '127.0.0.1')) {
@@ -476,24 +476,88 @@ class HomeController extends Controller
         URL::forceRootUrl($appUrl);
         $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
         URL::forceScheme($scheme);
+    }
 
-        $xml = Cache::remember('sitemap_xml', 3600, function () {
-            $categories = Category::active()->ordered()
-                ->select(['id', 'name', 'slug', 'updated_at'])
-                ->get();
+    public function sitemap(): Response
+    {
+        return $this->sitemapIndex();
+    }
 
+    public function sitemapIndex(): Response
+    {
+        $this->prepareSitemapUrl();
+
+        $xml = Cache::remember('sitemap_index_xml', 3600, function () {
+            $latestAppDate = Application::published()->latest('updated_at')->value('updated_at')?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+            $latestCategoryDate = Category::active()->latest('updated_at')->value('updated_at')?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+            $latestPagesDate = $latestAppDate;
+
+            return view('sitemap.index', compact('latestAppDate', 'latestCategoryDate', 'latestPagesDate'))->render();
+        });
+
+        $staticPath = public_path('sitemap.xml');
+        @file_put_contents($staticPath, $xml);
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=utf-8')
+            ->header('X-Robots-Tag', 'index, follow')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    public function sitemapApps(): Response
+    {
+        $this->prepareSitemapUrl();
+
+        $xml = Cache::remember('sitemap_apps_xml', 3600, function () {
             $applications = Application::published()
                 ->select(['id', 'category_id', 'name', 'slug', 'updated_at', 'featured', 'icon', 'screenshot'])
                 ->latest('updated_at')
                 ->get();
 
-            $latestAppDate = $applications->first()?->updated_at?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
-
-            return view('sitemap', compact('categories', 'applications', 'latestAppDate'))->render();
+            return view('sitemap.apps', compact('applications'))->render();
         });
 
-        // Ensure static physical sitemap.xml stays fresh on disk for Nginx static serving
-        $staticPath = public_path('sitemap.xml');
+        $staticPath = public_path('sitemap-apps.xml');
+        @file_put_contents($staticPath, $xml);
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=utf-8')
+            ->header('X-Robots-Tag', 'index, follow')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    public function sitemapCategories(): Response
+    {
+        $this->prepareSitemapUrl();
+
+        $xml = Cache::remember('sitemap_categories_xml', 3600, function () {
+            $categories = Category::active()->ordered()
+                ->select(['id', 'name', 'slug', 'updated_at'])
+                ->get();
+
+            return view('sitemap.categories', compact('categories'))->render();
+        });
+
+        $staticPath = public_path('sitemap-categories.xml');
+        @file_put_contents($staticPath, $xml);
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=utf-8')
+            ->header('X-Robots-Tag', 'index, follow')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    public function sitemapPages(): Response
+    {
+        $this->prepareSitemapUrl();
+
+        $xml = Cache::remember('sitemap_pages_xml', 3600, function () {
+            $latestAppDate = Application::published()->latest('updated_at')->value('updated_at')?->tz('UTC')->toAtomString() ?? now()->tz('UTC')->toAtomString();
+
+            return view('sitemap.pages', compact('latestAppDate'))->render();
+        });
+
+        $staticPath = public_path('sitemap-pages.xml');
         @file_put_contents($staticPath, $xml);
 
         return response($xml, 200)

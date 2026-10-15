@@ -23,6 +23,9 @@ Route::post('/app/{application:slug}/favorite', [HomeController::class, 'toggleF
 Route::post('/app/{application:slug}/report', [HomeController::class, 'reportBrokenLink'])->name('app.report');
 Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
 Route::get('/sitemap', [HomeController::class, 'sitemap']);
+Route::get('/sitemap-apps.xml', [HomeController::class, 'sitemapApps'])->name('sitemap.apps');
+Route::get('/sitemap-categories.xml', [HomeController::class, 'sitemapCategories'])->name('sitemap.categories');
+Route::get('/sitemap-pages.xml', [HomeController::class, 'sitemapPages'])->name('sitemap.pages');
 Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
 // macOS Guides
