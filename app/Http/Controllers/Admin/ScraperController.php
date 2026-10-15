@@ -28,7 +28,7 @@ class ScraperController extends Controller
     public function index()
     {
         $stats = [
-            'total_apps' => Application::count(),
+            'total_apps' => Application::published()->count(),
             'total_torrent_apps' => Application::where('has_torrent', true)->count(),
             'total_categories' => Category::count(),
             'total_versions' => ApplicationVersion::count(),

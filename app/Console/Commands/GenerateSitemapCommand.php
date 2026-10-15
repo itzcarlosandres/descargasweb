@@ -19,13 +19,13 @@ class GenerateSitemapCommand extends Command
         $this->info('Generando sitemap XML estático...');
 
         $appUrl = config('app.url');
-        if ($appUrl) {
-            URL::forceRootUrl($appUrl);
-            $scheme = parse_url($appUrl, PHP_URL_SCHEME);
-            if ($scheme) {
-                URL::forceScheme($scheme);
-            }
+        if (empty($appUrl) || str_contains($appUrl, 'localhost') || str_contains($appUrl, '127.0.0.1')) {
+            $appUrl = 'https://hackmac.cc';
         }
+
+        URL::forceRootUrl($appUrl);
+        $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
+        URL::forceScheme($scheme);
 
         $categories = Category::active()->ordered()
             ->select(['id', 'name', 'slug', 'updated_at'])

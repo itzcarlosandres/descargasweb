@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class HomeController extends Controller
@@ -468,6 +469,14 @@ class HomeController extends Controller
 
     public function sitemap(): Response
     {
+        $appUrl = config('app.url');
+        if (empty($appUrl) || str_contains($appUrl, 'localhost') || str_contains($appUrl, '127.0.0.1')) {
+            $appUrl = 'https://hackmac.cc';
+        }
+        URL::forceRootUrl($appUrl);
+        $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
+        URL::forceScheme($scheme);
+
         $xml = Cache::remember('sitemap_xml', 3600, function () {
             $categories = Category::active()->ordered()
                 ->select(['id', 'name', 'slug', 'updated_at'])
@@ -483,16 +492,14 @@ class HomeController extends Controller
             return view('sitemap', compact('categories', 'applications', 'latestAppDate'))->render();
         });
 
-        // Ensure static physical sitemap.xml exists on disk for Nginx static serving
+        // Ensure static physical sitemap.xml stays fresh on disk for Nginx static serving
         $staticPath = public_path('sitemap.xml');
-        if (! file_exists($staticPath)) {
-            @file_put_contents($staticPath, $xml);
-        }
+        @file_put_contents($staticPath, $xml);
 
         return response($xml, 200)
             ->header('Content-Type', 'application/xml; charset=utf-8')
             ->header('X-Robots-Tag', 'index, follow')
-            ->header('Cache-Control', 'public, max-age=86400');
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 
     public function robots(): Response

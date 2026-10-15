@@ -1299,6 +1299,7 @@ function scraperApp() {
     effectiveStorageDisk: '{{ $stats['storage_disk'] ?? 'local' }}',
     r2Configured: {{ ($stats['r2_configured'] ?? false) ? 'true' : 'false' }},
     draftCount: {{ $stats['draft_apps'] ?? 0 }},
+    totalPortalApps: '{{ number_format($stats['total_apps'] ?? 0) }}',
     releasingDrip: false,
     fillingDrafts: false,
 
