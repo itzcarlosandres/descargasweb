@@ -502,6 +502,12 @@ class AdminController extends Controller
             'custom_head_code' => 'nullable|string',
             'custom_body_code' => 'nullable|string',
             'custom_footer_code' => 'nullable|string',
+            'vip_download_enabled' => 'nullable|boolean',
+            'vip_download_url' => 'nullable|string|max:1000',
+            'vip_download_text' => 'nullable|string|max:100',
+            'vip_download_subtext' => 'nullable|string|max:150',
+            'vip_download_badge' => 'nullable|string|max:50',
+            'vip_download_open_new_tab' => 'nullable|boolean',
         ]);
 
         // Text & Branding settings
@@ -643,6 +649,16 @@ class AdminController extends Controller
             Setting::set('notify_on_new_app', $request->boolean('notify_on_new_app') ? '1' : '0', 'notifications');
             Setting::set('notify_on_update', $request->boolean('notify_on_update') ? '1' : '0', 'notifications');
             Setting::set('notify_on_broken_link', $request->boolean('notify_on_broken_link') ? '1' : '0', 'notifications');
+        }
+
+        // VIP Download Button Settings
+        if ($request->has('vip_download_settings') || $request->input('active_tab') === 'vip') {
+            Setting::set('vip_download_enabled', $request->boolean('vip_download_enabled') ? '1' : '0', 'vip');
+            Setting::set('vip_download_url', trim((string) $request->input('vip_download_url', '')), 'vip');
+            Setting::set('vip_download_text', trim((string) $request->input('vip_download_text', 'Download Speed VIP')), 'vip');
+            Setting::set('vip_download_subtext', trim((string) $request->input('vip_download_subtext', 'Direct High-Speed Server • Max Priority • 0s Wait')), 'vip');
+            Setting::set('vip_download_badge', trim((string) $request->input('vip_download_badge', 'ULTRA FAST')), 'vip');
+            Setting::set('vip_download_open_new_tab', $request->boolean('vip_download_open_new_tab') ? '1' : '0', 'vip');
         }
 
         Setting::clearCache();

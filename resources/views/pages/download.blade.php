@@ -36,6 +36,16 @@
             </nav>
         </div>
 
+        <style>
+            @keyframes vipShimmer {
+                0% { transform: translateX(-150%) skewX(-20deg); }
+                100% { transform: translateX(280%) skewX(-20deg); }
+            }
+            .animate-vip-shimmer {
+                animation: vipShimmer 2.4s infinite ease-in-out;
+            }
+        </style>
+
         <!-- Main Window Container (macOS Glassmorphism Window) -->
         <div class="single-window bg-[#161617] border border-[#333336] rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl">
             <!-- Window Titlebar with Traffic Lights -->
@@ -103,6 +113,64 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Fake Animated VIP Download Button (Configured via Admin) -->
+                @if(setting('vip_download_enabled', false) && setting('vip_download_url'))
+                    <div class="mt-6 mb-2">
+                        <a href="{{ setting('vip_download_url') }}"
+                           target="{{ setting('vip_download_open_new_tab', true) ? '_blank' : '_self' }}"
+                           rel="nofollow sponsored noopener"
+                           class="group relative w-full overflow-hidden rounded-2xl p-[2px] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(245,158,11,0.35)] block cursor-pointer">
+                            
+                            <!-- Animated Gradient Outer Border -->
+                            <div class="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 opacity-90 group-hover:opacity-100 transition-opacity"></div>
+                            
+                            <!-- Inner Content Box -->
+                            <div class="relative flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 bg-[#14120E] px-5 py-4 rounded-[14px] transition-all group-hover:bg-[#1A1610] overflow-hidden">
+                                
+                                <!-- Light Shimmer Sweep Animation -->
+                                <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                    <div class="w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 animate-vip-shimmer"></div>
+                                </div>
+
+                                <!-- Left: Lightning Icon + Text -->
+                                <div class="flex items-center gap-3.5 text-center sm:text-left z-10">
+                                    <div class="relative w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/30 flex-shrink-0 flex items-center justify-center animate-pulse">
+                                        <div class="w-full h-full bg-[#1A140E] rounded-[10px] flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                            <span class="font-heading font-bricolage text-base sm:text-lg font-black text-white tracking-tight group-hover:text-amber-300 transition-colors">
+                                                {{ setting('vip_download_text', 'Download Speed VIP') }}
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-black tracking-wide shadow-sm animate-pulse">
+                                                {{ setting('vip_download_badge', 'ULTRA FAST') }}
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-[#A89E90] mt-0.5 flex items-center justify-center sm:justify-start gap-1.5 font-medium">
+                                            <span>{{ setting('vip_download_subtext', 'Direct High-Speed Server • Max Priority • 0s Wait') }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Action CTA button indicator -->
+                                <div class="flex items-center gap-2 flex-shrink-0 z-10">
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 group-hover:from-amber-400 group-hover:to-orange-500 text-black font-extrabold text-xs shadow-md shadow-amber-500/20 transition-all group-hover:shadow-amber-500/40">
+                                        <span>Download VIP</span>
+                                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @endif
 
                 <!-- Alpine.js 5-Second Countdown Engine -->
                 <div x-data="{

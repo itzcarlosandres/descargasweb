@@ -45,6 +45,14 @@
     testingDiscord: false,
     testDiscordResult: null,
 
+    // VIP Download Button State
+    vipEnabled: {{ old('vip_download_enabled', (bool) ($settings['vip_download_enabled'] ?? false)) ? 'true' : 'false' }},
+    vipUrl: '{{ old('vip_download_url', $settings['vip_download_url'] ?? '') }}',
+    vipText: '{{ old('vip_download_text', $settings['vip_download_text'] ?? 'Download Speed VIP') }}',
+    vipSubtext: '{{ old('vip_download_subtext', $settings['vip_download_subtext'] ?? 'Direct High-Speed Server • Max Priority • 0s Wait') }}',
+    vipBadge: '{{ old('vip_download_badge', $settings['vip_download_badge'] ?? 'ULTRA FAST') }}',
+    vipOpenNewTab: {{ old('vip_download_open_new_tab', (bool) ($settings['vip_download_open_new_tab'] ?? true)) ? 'true' : 'false' }},
+
     async testTelegramConnection() {
         if (!this.telegramBotToken || !this.telegramChannelId) {
             this.testTelegramResult = { success: false, message: 'Ingresa el Bot Token y el Chat ID de Telegram antes de probar.' };
@@ -209,7 +217,7 @@
     @endif
 
     <!-- Navigation Pills / Tabs -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 p-1.5 bg-[#14110E] border border-[#262019] rounded-2xl">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 p-1.5 bg-[#14110E] border border-[#262019] rounded-2xl">
         <button type="button" @click="tab = 'logo'"
                 :class="tab === 'logo' ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
                 class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
@@ -226,6 +234,15 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <span>SEO & Metadatos</span>
+        </button>
+
+        <button type="button" @click="tab = 'vip'"
+                :class="tab === 'vip' ? 'bg-[#F59E0B]/20 text-white border border-[#F59E0B]/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
+                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4 text-[#F59E0B] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span>⚡ Botón VIP</span>
         </button>
 
         <button type="button" @click="tab = 'scripts'"
@@ -1455,6 +1472,165 @@
                             <span class="text-[11px] text-[#8C847A] leading-relaxed">Alerta instantánea al admin cuando un visitante reporta que un enlace no descarga.</span>
                         </div>
                     </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Botón Fake de Descarga VIP -->
+        <div x-show="tab === 'vip'" x-cloak class="space-y-6">
+            <input type="hidden" name="vip_download_settings" value="1">
+
+            <!-- Banner Card -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/25 flex-shrink-0 flex items-center justify-center animate-pulse">
+                        <div class="w-full h-full bg-[#18130E] rounded-[14px] flex items-center justify-center">
+                            <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-bold text-white tracking-tight">Botón de Descarga VIP (Monetización / Afiliados)</h2>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">ALTO CTR</span>
+                        </div>
+                        <p class="text-xs text-[#8C847A] mt-0.5">
+                            Inserta un botón premium con animación justo encima del contador de descargas para dirigir tráfico a tu enlace de afiliado, acortador o red de publicidad.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Toggle Switch -->
+                <label class="relative inline-flex items-center cursor-pointer select-none flex-shrink-0">
+                    <input type="checkbox" name="vip_download_enabled" value="1"
+                           x-model="vipEnabled" class="sr-only peer">
+                    <div class="w-12 h-6 bg-[#2B241C] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#3A3025] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 shadow-inner"></div>
+                    <span class="ml-3 text-xs font-bold" :class="vipEnabled ? 'text-amber-400' : 'text-[#8C847A]'" x-text="vipEnabled ? 'BOTÓN ACTIVO' : 'PAUSADO'"></span>
+                </label>
+            </div>
+
+            <!-- Configuration Fields Card -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-6">
+                <div class="border-b border-[#241E18] pb-4">
+                    <h3 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>🔗 Enlace de Destino y Textos</span>
+                    </h3>
+                    <p class="text-xs text-[#8C847A]">Configura la URL a la que serán redirigidos los usuarios al presionar el botón.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- URL de destino -->
+                    <div class="col-span-1 md:col-span-2 space-y-2">
+                        <label class="block text-xs font-bold text-white flex items-center justify-between">
+                            <span>Enlace de Destino (URL) <span class="text-danger">*</span></span>
+                            <span class="text-[11px] text-amber-400 font-mono">Destino del clic</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8C847A]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                            </div>
+                            <input type="url" name="vip_download_url" x-model="vipUrl"
+                                   placeholder="https://tu-acortador-o-afiliado.com/oferta-vip"
+                                   class="w-full pl-10 pr-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all font-mono">
+                        </div>
+                        <span class="text-[11px] text-[#8C847A] block">Puedes colocar cualquier link: Acortador, enlace directo de descarga externa, oferta CPA o red de afiliados.</span>
+                    </div>
+
+                    <!-- Texto Principal -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">
+                            Texto del Botón (Título)
+                        </label>
+                        <input type="text" name="vip_download_text" x-model="vipText"
+                               placeholder="Download Speed VIP"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all">
+                        <span class="text-[11px] text-[#8C847A] block">Ejemplo: "Download Speed VIP", "⚡ Descarga Rápida VIP", "Fast VIP Download".</span>
+                    </div>
+
+                    <!-- Badge Destacado -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">
+                            Badge Destacado (Pill)
+                        </label>
+                        <input type="text" name="vip_download_badge" x-model="vipBadge"
+                               placeholder="ULTRA FAST"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all font-mono uppercase">
+                        <span class="text-[11px] text-[#8C847A] block">Ejemplo: "ULTRA FAST", "MAX SPEED", "NO WAIT", "PREMIUM".</span>
+                    </div>
+
+                    <!-- Subtexto -->
+                    <div class="col-span-1 md:col-span-2 space-y-2">
+                        <label class="block text-xs font-bold text-white">
+                            Subtítulo Explicativo
+                        </label>
+                        <input type="text" name="vip_download_subtext" x-model="vipSubtext"
+                               placeholder="Direct High-Speed Server • Max Priority • 0s Wait"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all">
+                        <span class="text-[11px] text-[#8C847A] block">Breve frase que refuerza la ventaja de usar el servidor de alta velocidad.</span>
+                    </div>
+
+                    <!-- Abrir en pestaña nueva -->
+                    <div class="col-span-1 md:col-span-2 pt-2">
+                        <label class="flex items-center gap-3 p-3.5 rounded-xl bg-[#1B1713] border border-[#2F261E] hover:border-[#3E342A] transition-all cursor-pointer">
+                            <input type="checkbox" name="vip_download_open_new_tab" value="1"
+                                   x-model="vipOpenNewTab"
+                                   class="w-4 h-4 rounded text-amber-500 bg-[#251F19] border-[#3E342A] focus:ring-0 focus:ring-offset-0">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Abrir enlace en una nueva pestaña (target="_blank")</span>
+                                <span class="text-[11px] text-[#8C847A]">Recomendado: El usuario no abandona la descarga original en tu portal mientras se abre el enlace.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Preview Card -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-[#241E18] pb-3">
+                    <span class="text-xs font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        <span>Vista Previa en Vivo (Así se verá en la página de descarga)</span>
+                    </span>
+                    <span class="text-[11px] font-mono text-amber-400" x-text="vipEnabled ? 'Estado: Visible para usuarios' : 'Estado: Oculto (Activa el switch para mostrarlo)'"></span>
+                </div>
+
+                <!-- Preview Box Container -->
+                <div class="p-6 bg-[#0E0C0A] rounded-2xl border border-[#231C16]">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="relative w-full overflow-hidden rounded-2xl p-[2px] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(245,158,11,0.35)] block cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 opacity-90"></div>
+                            
+                            <div class="relative flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#14120E] px-5 py-4 rounded-[14px]">
+                                <div class="flex items-center gap-3.5 text-center sm:text-left">
+                                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/30 flex-shrink-0 flex items-center justify-center animate-pulse">
+                                        <div class="w-full h-full bg-[#1A140E] rounded-[10px] flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                            <span class="font-heading font-bricolage text-base sm:text-lg font-black text-white" x-text="vipText || 'Download Speed VIP'"></span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-black tracking-wide" x-text="vipBadge || 'ULTRA FAST'"></span>
+                                        </div>
+                                        <p class="text-xs text-[#A89E90] mt-0.5" x-text="vipSubtext || 'Direct High-Speed Server • Max Priority • 0s Wait'"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-xs shadow-md">
+                                        <span>Download VIP</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
