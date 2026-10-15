@@ -1478,6 +1478,7 @@
 
         <!-- Tab: Botón Fake de Descarga VIP -->
         <div x-show="tab === 'vip'" x-cloak class="space-y-6">
+            @include('partials.vip-button-styles')
             <input type="hidden" name="vip_download_settings" value="1">
 
             <!-- Banner Card -->
@@ -1600,33 +1601,31 @@
                 <!-- Preview Box Container -->
                 <div class="p-6 bg-[#0E0C0A] rounded-2xl border border-[#231C16]">
                     <div class="max-w-2xl mx-auto">
-                        <div class="relative w-full overflow-hidden rounded-2xl p-[2px] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(245,158,11,0.35)] block cursor-pointer">
-                            <div class="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 opacity-90"></div>
-                            
-                            <div class="relative flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#14120E] px-5 py-4 rounded-[14px]">
-                                <div class="flex items-center gap-3.5 text-center sm:text-left">
-                                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/30 flex-shrink-0 flex items-center justify-center animate-pulse">
-                                        <div class="w-full h-full bg-[#1A140E] rounded-[10px] flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="vip-download-card">
+                            <div class="vip-download-card-inner">
+                                <div class="vip-shimmer-ray"></div>
+
+                                <div class="vip-content-left">
+                                    <div class="vip-icon-wrapper">
+                                        <div class="vip-icon-inner">
+                                            <svg fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
                                             </svg>
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                                            <span class="font-heading font-bricolage text-base sm:text-lg font-black text-white" x-text="vipText || 'Download Speed VIP'"></span>
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-black tracking-wide" x-text="vipBadge || 'ULTRA FAST'"></span>
+                                        <div class="vip-title-row">
+                                            <span class="vip-title-text" x-text="vipText || 'Download Speed VIP'"></span>
+                                            <span class="vip-badge-pill" x-text="vipBadge || 'ULTRA FAST'"></span>
                                         </div>
-                                        <p class="text-xs text-[#A89E90] mt-0.5" x-text="vipSubtext || 'Direct High-Speed Server • Max Priority • 0s Wait'"></p>
+                                        <div class="vip-subtext" x-text="vipSubtext || 'Direct High-Speed Server • Max Priority • 0s Wait'"></div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                    <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold text-xs shadow-md">
-                                        <span>Download VIP</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                                        </svg>
-                                    </span>
+                                <div class="vip-action-cta">
+                                    <span>Download VIP</span>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
