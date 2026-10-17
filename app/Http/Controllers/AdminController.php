@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AI\GeminiService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Storage\CloudflareR2Service;
+use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -458,11 +459,12 @@ class AdminController extends Controller
         return redirect()->route('admin.categories')->with('success', 'Category deleted successfully.');
     }
 
-    public function settings()
+    public function settings(TelegramBotService $telegramService)
     {
         $settings = Setting::getAll();
+        $telegramStats = $telegramService->getQueueStats();
 
-        return view('admin.settings.index', compact('settings'));
+        return view('admin.settings.index', compact('settings', 'telegramStats'));
     }
 
     public function updateSettings(Request $request)
@@ -644,6 +646,14 @@ class AdminController extends Controller
             Setting::set('telegram_enabled', $request->boolean('telegram_enabled') ? '1' : '0', 'notifications');
             Setting::set('telegram_bot_token', trim((string) $request->input('telegram_bot_token', '')), 'notifications');
             Setting::set('telegram_channel_id', trim((string) $request->input('telegram_channel_id', '')), 'notifications');
+            Setting::set('telegram_channel_url', trim((string) $request->input('telegram_channel_url', 'https://t.me/hackmac')), 'notifications');
+            Setting::set('telegram_button_tooltip', trim((string) $request->input('telegram_button_tooltip', '¿Problemas con la descarga o buscas otra app? Únete a nuestro Telegram')), 'notifications');
+            Setting::set('telegram_auto_pilot', $request->boolean('telegram_auto_pilot') ? '1' : '0', 'notifications');
+            Setting::set('telegram_daily_limit', (string) max(0, (int) $request->input('telegram_daily_limit', 20)), 'notifications');
+            Setting::set('telegram_floating_button_enabled', $request->boolean('telegram_floating_button_enabled') ? '1' : '0', 'notifications');
+            if ($request->has('telegram_template')) {
+                Setting::set('telegram_template', trim((string) $request->input('telegram_template', '')), 'notifications');
+            }
             Setting::set('discord_enabled', $request->boolean('discord_enabled') ? '1' : '0', 'notifications');
             Setting::set('discord_webhook_url', trim((string) $request->input('discord_webhook_url', '')), 'notifications');
             Setting::set('notify_on_new_app', $request->boolean('notify_on_new_app') ? '1' : '0', 'notifications');
@@ -816,14 +826,52 @@ class AdminController extends Controller
     /**
      * Test Telegram notification channel
      */
-    public function testTelegram(Request $request, NotificationDispatcher $dispatcher): JsonResponse
+    public function testTelegram(Request $request, TelegramBotService $telegramService): JsonResponse
     {
         $botToken = $request->input('bot_token');
         $chatId = $request->input('channel_id');
 
-        $result = $dispatcher->testTelegram($botToken, $chatId);
+        $result = $telegramService->testConnection($botToken, $chatId);
 
         return response()->json($result);
+    }
+
+    /**
+     * Dispatch 1 pending application now to Telegram
+     */
+    public function dispatchTelegramOne(TelegramBotService $telegramService): JsonResponse
+    {
+        $result = $telegramService->dispatchNext();
+        $stats = $telegramService->getQueueStats();
+
+        return response()->json(array_merge($result, ['stats' => $stats]));
+    }
+
+    /**
+     * Instant toggle of Telegram Auto-Pilot
+     */
+    public function toggleTelegramAutoPilot(Request $request, TelegramBotService $telegramService): JsonResponse
+    {
+        $current = filter_var(Setting::get('telegram_auto_pilot', false), FILTER_VALIDATE_BOOLEAN);
+        $new = $request->has('auto_pilot') ? $request->boolean('auto_pilot') : ! $current;
+
+        Setting::set('telegram_auto_pilot', $new ? '1' : '0', 'notifications');
+        Setting::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'auto_pilot' => $new,
+            'stats' => $telegramService->getQueueStats(),
+            'message' => $new ? '✓ Piloto Automático de Telegram activado.' : 'Piloto Automático de Telegram pausado.',
+        ]);
+    }
+
+    /**
+     * Get live Telegram queue statistics
+     */
+    public function telegramStats(TelegramBotService $telegramService): JsonResponse
+    {
+        return response()->json($telegramService->getQueueStats());
     }
 
     /**

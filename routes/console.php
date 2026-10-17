@@ -5,6 +5,7 @@ use App\Models\Category;
 use App\Models\Setting;
 use App\Services\Scraper\HaxmacImporter;
 use App\Services\Scraper\TorrentmacImporter;
+use App\Services\Telegram\TelegramBotService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +35,7 @@ Artisan::command('scraper:sync {--force : Ejecutar incluso si el cron está desa
 
     if ($fillNeeded > 0) {
         $halfFill = (int) ceil($fillNeeded / 2);
-        $this->info("Rellenando Cola Draft con {$fillNeeded} programas del catálogo histórico (página HaxMac: ".Setting::get('scraper_haxmac_backlog_page', 4).", TorrentMac: ".Setting::get('scraper_torrentmac_backlog_page', 4).")...");
+        $this->info("Rellenando Cola Draft con {$fillNeeded} programas del catálogo histórico (página HaxMac: ".Setting::get('scraper_haxmac_backlog_page', 4).', TorrentMac: '.Setting::get('scraper_torrentmac_backlog_page', 4).')...');
         $bHax = $haxmac->importBacklogBatch($halfFill, true, true);
         $bTor = $torrentmac->importBacklogBatch($halfFill, true, true);
         $this->info("✓ Cola Draft reabastecida: +{$bHax['imported']} DDL, +{$bTor['imported']} Torrent. Total en cola: ".Application::where('published', false)->count());
@@ -175,3 +176,32 @@ Schedule::call(function () {
 
 // 4. Automated Daily Sitemap Generation
 Schedule::command('sitemap:generate')->dailyAt('04:00')->name('generate-sitemap');
+
+// 5. Automated Telegram Drip Dispatcher (1 app per minute if auto pilot is active)
+Schedule::call(function () {
+    app(TelegramBotService::class)->dispatchCron();
+})->everyMinute()->name('telegram-auto-pilot')->withoutOverlapping(10);
+
+Artisan::command('telegram:dispatch {--force : Despacha incluso si el piloto automático está apagado}', function (TelegramBotService $telegram) {
+    if ($this->option('force')) {
+        $result = $telegram->dispatchNext();
+    } else {
+        $result = $telegram->dispatchCron();
+    }
+
+    if (! empty($result['success'])) {
+        $this->info($result['message']);
+
+        return 0;
+    }
+
+    if (! empty($result['skipped'])) {
+        $this->warn($result['reason']);
+
+        return 0;
+    }
+
+    $this->error($result['message'] ?? 'No se pudo despachar.');
+
+    return 1;
+})->purpose('Despacha 1 aplicación pendiente hacia el canal de Telegram');

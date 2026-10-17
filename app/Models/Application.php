@@ -43,6 +43,8 @@ class Application extends Model
         'rating',
         'reviews_count',
         'released_at',
+        'telegram_sent',
+        'telegram_sent_at',
     ];
 
     protected function casts(): array
@@ -57,6 +59,8 @@ class Application extends Model
             'rating' => 'decimal:2',
             'reviews_count' => 'integer',
             'released_at' => 'datetime',
+            'telegram_sent' => 'boolean',
+            'telegram_sent_at' => 'datetime',
         ];
     }
 
@@ -130,6 +134,13 @@ class Application extends Model
     public function scopePublished($query)
     {
         return $query->where('published', true);
+    }
+
+    public function scopePendingTelegram($query)
+    {
+        return $query->where('published', true)
+            ->where('telegram_sent', false)
+            ->oldest('id');
     }
 
     public function scopeFeatured($query)

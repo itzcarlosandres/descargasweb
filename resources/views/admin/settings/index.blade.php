@@ -34,6 +34,21 @@
     telegramEnabled: {{ old('telegram_enabled', (bool) ($settings['telegram_enabled'] ?? false)) ? 'true' : 'false' }},
     telegramBotToken: '{{ old('telegram_bot_token', $settings['telegram_bot_token'] ?? '') }}',
     telegramChannelId: '{{ old('telegram_channel_id', $settings['telegram_channel_id'] ?? '') }}',
+    telegramChannelUrl: '{{ old('telegram_channel_url', $settings['telegram_channel_url'] ?? 'https://t.me/hackmac') }}',
+    telegramButtonTooltip: '{{ addslashes(old('telegram_button_tooltip', $settings['telegram_button_tooltip'] ?? '¿Problemas con la descarga o buscas otra app? Únete a nuestro Telegram')) }}',
+    telegramAutoPilot: {{ old('telegram_auto_pilot', (bool) ($settings['telegram_auto_pilot'] ?? false)) ? 'true' : 'false' }},
+    telegramDailyLimit: {{ (int) old('telegram_daily_limit', $settings['telegram_daily_limit'] ?? 20) }},
+    telegramFloatingButtonEnabled: {{ old('telegram_floating_button_enabled', (bool) ($settings['telegram_floating_button_enabled'] ?? true)) ? 'true' : 'false' }},
+    telegramStats: {
+        pending_count: {{ $telegramStats['pending_count'] ?? 0 }},
+        sent_today: {{ $telegramStats['sent_today'] ?? 0 }},
+        daily_limit: {{ $telegramStats['daily_limit'] ?? 20 }},
+        total_sent: {{ $telegramStats['total_sent'] ?? 0 }},
+        auto_pilot: {{ ($telegramStats['auto_pilot'] ?? false) ? 'true' : 'false' }}
+    },
+    dispatchingTelegram: false,
+    dispatchTelegramResult: null,
+    togglingTelegramAutoPilot: false,
     discordEnabled: {{ old('discord_enabled', (bool) ($settings['discord_enabled'] ?? false)) ? 'true' : 'false' }},
     discordWebhookUrl: '{{ old('discord_webhook_url', $settings['discord_webhook_url'] ?? '') }}',
     notifyNewApp: {{ old('notify_on_new_app', (bool) ($settings['notify_on_new_app'] ?? true)) ? 'true' : 'false' }},
@@ -78,6 +93,63 @@
         } finally {
             this.testingTelegram = false;
         }
+    },
+
+    async dispatchTelegramOneNow() {
+        this.dispatchingTelegram = true;
+        this.dispatchTelegramResult = null;
+        try {
+            const res = await fetch('{{ route('admin.settings.telegram.dispatch-one') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            const data = await res.json();
+            this.dispatchTelegramResult = data;
+            if (data.stats) {
+                this.telegramStats = data.stats;
+            }
+        } catch (e) {
+            this.dispatchTelegramResult = { success: false, message: 'Error de red: ' + e.message };
+        } finally {
+            this.dispatchingTelegram = false;
+        }
+    },
+
+    async toggleTelegramAutoPilotSwitch() {
+        this.togglingTelegramAutoPilot = true;
+        try {
+            const res = await fetch('{{ route('admin.settings.telegram.toggle-auto-pilot') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ auto_pilot: this.telegramAutoPilot })
+            });
+            const data = await res.json();
+            if (data.stats) {
+                this.telegramStats = data.stats;
+                this.telegramAutoPilot = data.stats.auto_pilot;
+            }
+        } catch (e) {
+            console.error('Error toggling Telegram auto pilot:', e);
+        } finally {
+            this.togglingTelegramAutoPilot = false;
+        }
+    },
+
+    insertTelegramTag(tag) {
+        const textarea = document.getElementById('telegram_template_textarea');
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        textarea.value = text.substring(0, start) + tag + text.substring(end);
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + tag.length;
     },
 
     async testDiscordConnection() {
@@ -1306,77 +1378,264 @@
                 </div>
             </div>
 
-            <!-- Grid: Telegram & Discord -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                <!-- 1. TELEGRAM BOT CARD -->
-                <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-5">
-                    <div class="flex items-center justify-between pb-3 border-b border-[#241F1A]">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-lg bg-[#0088CC]/20 border border-[#0088CC]/30 flex items-center justify-center text-[#0088CC]">
-                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-white">Canal / Bot de Telegram</h3>
-                                <p class="text-[11px] text-[#8C847A]">Alertas directas formateadas con foto y enlaces.</p>
-                            </div>
+            <!-- 1. CREDENCIALES DEL BOT & CANAL OFICIAL -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#241F1A]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#0088CC]/20 border border-[#0088CC]/30 flex items-center justify-center text-[#0088CC] flex-shrink-0 shadow-md shadow-[#0088CC]/20">
+                            <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                            </svg>
                         </div>
-
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="telegram_enabled" value="1" x-model="telegramEnabled"
-                                   class="w-4 h-4 rounded text-[#0088CC] focus:ring-[#0088CC] bg-[#12100E] border-[#382E24]">
-                            <span class="text-xs font-bold" :class="telegramEnabled ? 'text-[#0088CC]' : 'text-[#736B63]'" x-text="telegramEnabled ? 'Activo' : 'Inactivo'"></span>
-                        </label>
+                        <div>
+                            <h3 class="text-sm font-bold text-white tracking-wide uppercase">Credenciales del Bot &amp; Canal Oficial</h3>
+                            <p class="text-xs text-[#8C847A] mt-0.5">Conecta tu Bot de Telegram para publicar automáticamente novedades y alimentar la comunidad.</p>
+                        </div>
                     </div>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Telegram Bot Token</label>
-                            <div class="relative">
-                                <input :type="showTelegramToken ? 'text' : 'password'"
-                                       name="telegram_bot_token"
-                                       x-model="telegramBotToken"
-                                       placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                                       class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
-                                <button type="button" @click="showTelegramToken = !showTelegramToken"
-                                        class="absolute right-3 top-2.5 text-[#736B63] hover:text-white text-xs cursor-pointer"
-                                        x-text="showTelegramToken ? 'Ocultar' : 'Mostrar'"></button>
-                            </div>
-                            <p class="text-[10px] text-[#736B63] mt-1">Obtén tu token con <strong>@BotFather</strong> en Telegram.</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-[#A8A199] uppercase tracking-wider mb-2">Chat ID o @Canal</label>
-                            <input type="text"
-                                   name="telegram_channel_id"
-                                   x-model="telegramChannelId"
-                                   placeholder="@MiCanalTelegram o -1001234567890"
-                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
-                            <p class="text-[10px] text-[#736B63] mt-1">El bot debe ser <strong>administrador</strong> del canal para poder publicar mensajes.</p>
-                        </div>
-
-                        <div class="pt-2 flex items-center justify-between">
-                            <button type="button"
-                                    @click="testTelegramConnection()"
-                                    :disabled="testingTelegram"
-                                    class="px-4 py-2 rounded-xl bg-[#0088CC]/15 hover:bg-[#0088CC]/25 text-[#0088CC] border border-[#0088CC]/30 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                                <span x-show="!testingTelegram">⚡ Probar Telegram</span>
-                                <span x-show="testingTelegram">Enviando mensaje...</span>
-                            </button>
-                        </div>
-
-                        <!-- Feedback Test Telegram -->
-                        <template x-if="testTelegramResult">
-                            <div class="p-3 rounded-xl text-xs font-medium border"
-                                 :class="testTelegramResult.success ? 'bg-success/15 border-success/30 text-success' : 'bg-danger/15 border-danger/30 text-danger'">
-                                <span x-text="testTelegramResult.message"></span>
-                            </div>
-                        </template>
+                    <div class="flex items-center gap-3">
+                        <button type="button"
+                                @click="testTelegramConnection()"
+                                :disabled="testingTelegram"
+                                class="px-4 py-2 rounded-xl bg-[#0088CC]/15 hover:bg-[#0088CC]/25 text-[#0088CC] border border-[#0088CC]/40 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-sm">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                            </svg>
+                            <span x-show="!testingTelegram">Probar Conexión con Telegram</span>
+                            <span x-show="testingTelegram">Probando conexión...</span>
+                        </button>
                     </div>
                 </div>
 
+                <div class="space-y-4">
+                    <!-- Token BotFather -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-[#A8A199] tracking-wide flex items-center gap-1.5">
+                                <span>🔑 Token del Bot de Telegram (BotFather)</span>
+                            </label>
+                            <a href="https://t.me/BotFather" target="_blank" class="text-xs text-[#0088CC] hover:underline flex items-center gap-1">
+                                <span>Crear bot con @BotFather</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                        </div>
+                        <div class="relative">
+                            <input :type="showTelegramToken ? 'text' : 'password'"
+                                   name="telegram_bot_token"
+                                   x-model="telegramBotToken"
+                                   placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                            <button type="button" @click="showTelegramToken = !showTelegramToken"
+                                    class="absolute right-3 top-2.5 text-[#736B63] hover:text-white text-xs cursor-pointer"
+                                    x-text="showTelegramToken ? 'Ocultar' : 'Mostrar'"></button>
+                        </div>
+                        <p class="text-[11px] text-[#736B63] mt-1.5">Token privado que te entrega @BotFather tras crear el bot. Nunca lo compartas.</p>
+                    </div>
+
+                    <!-- 2 Cols: ID Canal & Enlace Público -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] tracking-wide mb-2 flex items-center gap-1.5">
+                                <span># ID o Username del Canal de Publicación</span>
+                            </label>
+                            <input type="text"
+                                   name="telegram_channel_id"
+                                   x-model="telegramChannelId"
+                                   placeholder="@micanal o -1001234567890"
+                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                            <p class="text-[11px] text-[#736B63] mt-1.5">Username público del canal (ej: @micanal) o su ID numérico. El bot debe ser <strong>Administrador</strong> del canal.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-[#A8A199] tracking-wide mb-2 flex items-center gap-1.5">
+                                <span>🔗 Enlace Público del Canal (Para Botones en la Web)</span>
+                            </label>
+                            <input type="url"
+                                   name="telegram_channel_url"
+                                   x-model="telegramChannelUrl"
+                                   placeholder="https://t.me/micanal"
+                                   class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                            <p class="text-[11px] text-[#736B63] mt-1.5">Enlace al que se redirige a los visitantes al hacer clic en el botón de Telegram en la web.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tooltip y Botón Flotante -->
+                    <div>
+                        <label class="block text-xs font-bold text-[#A8A199] tracking-wide mb-2 flex items-center gap-1.5">
+                            <span>T Texto / Tooltip del Botón en Ficha de App / Botón Flotante</span>
+                        </label>
+                        <input type="text"
+                               name="telegram_button_tooltip"
+                               x-model="telegramButtonTooltip"
+                               placeholder="¿Problemas con la descarga o buscas otra app? Únete a nuestro Telegram"
+                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition-colors">
+                    </div>
+
+                    <!-- Toggle Botón Flotante Web & Notificaciones -->
+                    <div class="pt-3 border-t border-[#241F1A] grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-[#100D0B] border border-[#241F1A]">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Botón Flotante en la Web</span>
+                                <span class="text-[10px] text-[#8C847A] block">Muestra burbuja en la esquina para unirse.</span>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="telegram_floating_button_enabled" value="1" x-model="telegramFloatingButtonEnabled"
+                                       class="w-4 h-4 rounded text-[#0088CC] focus:ring-[#0088CC] bg-[#12100E] border-[#382E24]">
+                                <span class="text-xs font-bold" :class="telegramFloatingButtonEnabled ? 'text-[#0088CC]' : 'text-[#736B63]'" x-text="telegramFloatingButtonEnabled ? 'Activo' : 'Oculto'"></span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-[#100D0B] border border-[#241F1A]">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Notificaciones Automáticas</span>
+                                <span class="text-[10px] text-[#8C847A] block">Activa el canal para avisos de apps.</span>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="telegram_enabled" value="1" x-model="telegramEnabled"
+                                       class="w-4 h-4 rounded text-[#0088CC] focus:ring-[#0088CC] bg-[#12100E] border-[#382E24]">
+                                <span class="text-xs font-bold" :class="telegramEnabled ? 'text-[#0088CC]' : 'text-[#736B63]'" x-text="telegramEnabled ? 'Activo' : 'Inactivo'"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Test Telegram -->
+                    <template x-if="testTelegramResult">
+                        <div class="p-4 rounded-xl text-xs font-medium border"
+                             :class="testTelegramResult.success ? 'bg-success/15 border-success/30 text-success' : 'bg-danger/15 border-danger/30 text-danger'">
+                            <span x-text="testTelegramResult.message"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- 2. PUBLICACIÓN AUTOMÁTICA & PLANTILLA -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-6">
+                <!-- Header con Switch Piloto Automático -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#241F1A]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 flex-shrink-0 shadow-md shadow-amber-500/20">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white tracking-wide uppercase">Publicación Automática &amp; Plantilla</h3>
+                            <p class="text-xs text-[#8C847A] mt-0.5">Disparador dosificado en segundo plano (1 app / minuto) para mantener el canal activo sin saturarlo.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="telegram_auto_pilot" value="1"
+                                   x-model="telegramAutoPilot"
+                                   @change="toggleTelegramAutoPilotSwitch()"
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-[#2B241C] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0088CC]"></div>
+                            <span class="ml-2.5 text-xs font-bold" :class="telegramAutoPilot ? 'text-[#0088CC]' : 'text-[#736B63]'" x-text="telegramAutoPilot ? 'Piloto Automático Activo' : 'Piloto Automático Inactivo'"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="p-4 rounded-xl bg-[#100D0B] border border-[#241F1A] flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3 sm:gap-6 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" :class="telegramAutoPilot ? 'bg-emerald-500 animate-pulse' : 'bg-[#736B63]'"></span>
+                            <span class="text-[#8C847A]">Frecuencia Cron:</span>
+                            <span class="font-bold text-white" x-text="telegramAutoPilot ? 'Cada 1 min (Activo)' : 'En pausa'"></span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[#8C847A]">Enviados hoy:</span>
+                            <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                <span x-text="telegramStats.sent_today">0</span> / <span x-text="telegramStats.daily_limit ? telegramStats.daily_limit : '∞'">20</span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[#8C847A]">En cola pendientes:</span>
+                            <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-[#0088CC]/15 text-[#0088CC] border border-[#0088CC]/30" x-text="telegramStats.pending_count">0</span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[#8C847A]">Total histórico:</span>
+                            <span class="font-bold text-white font-mono" x-text="telegramStats.total_sent">0</span>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                            @click="dispatchTelegramOneNow()"
+                            :disabled="dispatchingTelegram"
+                            class="px-3.5 py-1.5 rounded-xl bg-[#0088CC] hover:bg-[#0077B5] text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-[#0088CC]/30">
+                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                        <span x-show="!dispatchingTelegram">Despachar 1 Ahora</span>
+                        <span x-show="dispatchingTelegram">Despachando...</span>
+                    </button>
+                </div>
+
+                <!-- Feedback Despacho Manual -->
+                <template x-if="dispatchTelegramResult">
+                    <div class="p-3 rounded-xl text-xs font-medium border"
+                         :class="dispatchTelegramResult.success ? 'bg-success/15 border-success/30 text-success' : 'bg-danger/15 border-danger/30 text-danger'">
+                        <span x-text="dispatchTelegramResult.message"></span>
+                    </div>
+                </template>
+
+                <!-- Límite Diario -->
+                <div class="p-4 rounded-xl bg-[#100D0B] border border-[#241F1A] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>⏱️ Límite Máximo Diario (Tope de Envíos al Día)</span>
+                        </label>
+                        <p class="text-[11px] text-[#8C847A] mt-0.5">Controla cuántas apps publicar como máximo en Telegram cada día. Ingresa 0 para desactivar el límite y enviar todos los pendientes.</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="number"
+                               name="telegram_daily_limit"
+                               x-model.number="telegramDailyLimit"
+                               min="0"
+                               max="500"
+                               class="w-24 bg-[#14110E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-3 py-1.5 text-center text-xs font-mono font-bold text-white focus:outline-none">
+                        <span class="text-xs text-[#8C847A] font-medium">apps / día</span>
+                    </div>
+                </div>
+
+                <!-- Editor de Plantilla -->
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <label class="block text-xs font-bold text-[#A8A199] tracking-wide">
+                            Plantilla del Mensaje de Telegram:
+                        </label>
+                        <span class="text-[11px] text-[#736B63]">Soporta formato HTML (&lt;b&gt;, &lt;i&gt;, &lt;code&gt;, &lt;a&gt;)</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <!-- Botones de inserción de variables -->
+                        <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <span class="text-xs text-[#8C847A] mr-1">Insertar variables:</span>
+                            <button type="button" @click="insertTelegramTag('{title}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{title}</button>
+                            <button type="button" @click="insertTelegramTag('{category}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{category}</button>
+                            <button type="button" @click="insertTelegramTag('{version}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{version}</button>
+                            <button type="button" @click="insertTelegramTag('{size}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{size}</button>
+                            <button type="button" @click="insertTelegramTag('{type}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{type}</button>
+                            <button type="button" @click="insertTelegramTag('{url}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{url}</button>
+                            <button type="button" @click="insertTelegramTag('{description}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{description}</button>
+                        </div>
+
+                        <textarea id="telegram_template_textarea"
+                                  name="telegram_template"
+                                  rows="7"
+                                  class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl p-4 text-xs font-mono text-white focus:outline-none transition-colors leading-relaxed"
+                                  placeholder="Escribe la plantilla del mensaje...">{!! $settings['telegram_template'] ?? "🚀 <b>NEW APP PUBLISHED!</b>\n\n📱 <b>Title:</b> {title}\n📂 <b>Category:</b> {category}\n🏷️ <b>Version:</b> {version}\n💾 <b>Size:</b> {size}\n⚡ <b>Type:</b> {type}\n\n🔗 <a href=\"{url}\">Download on HackMac.cc</a>" !!}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DISCORD & WEBHOOKS (Fila Inferior) -->
+            <div class="grid grid-cols-1 gap-6">
                 <!-- 2. DISCORD WEBHOOK CARD -->
                 <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-5">
                     <div class="flex items-center justify-between pb-3 border-b border-[#241F1A]">

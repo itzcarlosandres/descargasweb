@@ -5,6 +5,7 @@ namespace App\Services\Notification;
 use App\Models\Application;
 use App\Models\BrokenLinkReport;
 use App\Models\Setting;
+use App\Services\Telegram\TelegramBotService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -136,43 +137,7 @@ class NotificationDispatcher
      */
     public function notifyTelegram(Application $app, bool $isUpdate = false): void
     {
-        $botToken = Setting::get('telegram_bot_token');
-        $chatId = Setting::get('telegram_channel_id');
-
-        if (empty($botToken) || empty($chatId)) {
-            return;
-        }
-
-        try {
-            $action = $isUpdate ? '🔄 *App Actualizada*' : '🚀 *Nuevo Lanzamiento*';
-            $appUrl = route('app', $app->slug);
-            $type = $app->has_torrent && $app->download_url_external ? 'Dual (Torrent + DDL)' : ($app->has_torrent ? 'Torrent P2P' : 'DDL Directo');
-
-            $caption = "{$action}\n\n"
-                ."📱 *{$app->name}* `v{$app->version}`\n"
-                .'📂 *Categoría:* '.($app->category?->name ?? 'General')."\n"
-                .'💾 *Tamaño:* '.($app->size ?: 'Universal')."\n"
-                ."⚡ *Tipo:* {$type}\n\n"
-                ."🔗 [Descargar en HackMac.cc]({$appUrl})";
-
-            if (! empty($app->icon_url)) {
-                Http::timeout(10)->post("https://api.telegram.org/bot{$botToken}/sendPhoto", [
-                    'chat_id' => $chatId,
-                    'photo' => $app->icon_url,
-                    'caption' => $caption,
-                    'parse_mode' => 'Markdown',
-                ]);
-            } else {
-                Http::timeout(10)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                    'chat_id' => $chatId,
-                    'text' => $caption,
-                    'parse_mode' => 'Markdown',
-                    'disable_web_page_preview' => false,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning("Telegram notification failed for '{$app->name}': {$e->getMessage()}");
-        }
+        app(TelegramBotService::class)->sendApplication($app);
     }
 
     /**

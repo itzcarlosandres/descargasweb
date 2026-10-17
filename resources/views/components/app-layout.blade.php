@@ -135,6 +135,8 @@
 
     <x-footer />
 
+    <x-telegram-floating-button />
+
     @livewireScripts
     @stack('scripts')
 

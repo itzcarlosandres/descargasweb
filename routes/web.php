@@ -108,6 +108,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/settings/test-gemini', [AdminController::class, 'testGemini'])->name('settings.test-gemini');
     Route::post('/settings/test-r2', [AdminController::class, 'testR2'])->name('settings.test-r2');
     Route::post('/settings/test-telegram', [AdminController::class, 'testTelegram'])->name('settings.test-telegram');
+    Route::post('/settings/telegram/dispatch-one', [AdminController::class, 'dispatchTelegramOne'])->name('settings.telegram.dispatch-one');
+    Route::post('/settings/telegram/toggle-auto-pilot', [AdminController::class, 'toggleTelegramAutoPilot'])->name('settings.telegram.toggle-auto-pilot');
+    Route::get('/settings/telegram/stats', [AdminController::class, 'telegramStats'])->name('settings.telegram.stats');
     Route::post('/settings/test-discord', [AdminController::class, 'testDiscord'])->name('settings.test-discord');
 
     // DDL Scraper & Auto-Sync
