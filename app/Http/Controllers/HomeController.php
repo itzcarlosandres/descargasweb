@@ -215,13 +215,16 @@ class HomeController extends Controller
 
     public function popular()
     {
-        $applications = Application::published()
-            ->popular()
+        $topApplications = Application::published()
             ->with('category')
             ->orderBy('downloads', 'desc')
-            ->paginate(12);
+            ->limit(25)
+            ->get();
 
-        return view('pages.popular', compact('applications'));
+        $topThree = $topApplications->take(3);
+        $remainingApps = $topApplications->slice(3);
+
+        return view('pages.popular', compact('topApplications', 'topThree', 'remainingApps'));
     }
 
     public function new()

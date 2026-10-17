@@ -17,6 +17,9 @@
 
         <!-- Center Navigation Links -->
         <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6B7280] dark:text-[#A1A1A6] mb-10 pb-8 border-b border-[#E5E7EB] dark:border-[#333336]">
+            <a href="{{ route('popular') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">Top Downloads</a>
+            <a href="{{ route('guide.sip') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">Disable SIP</a>
+            <a href="{{ route('guide.fix') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">Fix Damaged Apps</a>
             <a href="{{ route('contact') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">Contact Us</a>
             <a href="{{ route('privacy') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">Privacy Policy</a>
             <a href="{{ route('dmca') }}" class="hover:text-[#0071E3] dark:hover:text-white transition-colors">DMCA — Copyrights !</a>

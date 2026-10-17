@@ -36,11 +36,11 @@
         <!-- Center Navigation Menu -->
         <nav class="main-nav hidden lg:flex items-center" aria-label="Top menu">
             <ul id="menu-main-menu" class="menu flex items-center gap-6 xl:gap-7 text-[14.5px] font-medium text-[#38322B] dark:text-[#F6F3EC]">
-                <!-- Editor's Choice -->
+                <!-- Top Downloads -->
                 <li id="menu-item-6907" class="menu-item">
                     <a href="{{ route('popular') }}"
                        class="hover:text-[#0071E3] dark:hover:text-white transition-colors cursor-pointer {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        Editor’s Choice
+                        Top Downloads
                     </a>
                 </li>
 
@@ -214,21 +214,6 @@
                     </ul>
                 </li>
 
-                <!-- Disable SIP -->
-                <li id="menu-item-7167" class="menu-item">
-                    <a href="{{ route('guide.sip') }}"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors cursor-pointer {{ request()->routeIs('guide.sip') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        Disable SIP
-                    </a>
-                </li>
-
-                <!-- Fix Damaged Apps -->
-                <li id="menu-item-7168" class="menu-item">
-                    <a href="{{ route('guide.fix') }}"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors cursor-pointer {{ request()->routeIs('guide.fix') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        Fix Damaged Apps
-                    </a>
-                </li>
             </ul>
         </nav>
 
@@ -374,12 +359,10 @@
                 <input type="text" name="q" placeholder="Search apps & games..." value="{{ request('q') }}" class="input w-full text-xs">
             </form>
             <nav class="flex flex-col gap-1 text-sm text-[#38322B] dark:text-[#F6F3EC]/90">
-                <a href="{{ route('popular') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Editor’s Choice</a>
+                <a href="{{ route('popular') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Top Downloads</a>
                 <a href="{{ route('categories') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Application</a>
                 <a href="{{ route('search', ['q' => 'Adobe']) }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Adobe Collection</a>
                 <a href="{{ route('category', 'games') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Games</a>
-                <a href="{{ route('guide.sip') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938] text-[#0071E3]">Disable SIP</a>
-                <a href="{{ route('guide.fix') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938] text-[#0071E3]">Fix Damaged Apps</a>
                 @auth
                     <a href="{{ route('admin.dashboard') }}" class="py-2 text-[#0071E3] font-medium">Admin Panel</a>
                     <form method="POST" action="{{ route('logout') }}">
