@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class TelegramBotService
 {
@@ -16,7 +17,7 @@ class TelegramBotService
     {
         $template = $template ?: Setting::get('telegram_template');
         if (empty($template)) {
-            $template = "🚀 <b>¡NUEVO PROGRAMA PUBLICADO!</b>\n\n📱 <b>Título:</b> {title}\n📂 <b>Categoría:</b> {category}\n🏷️ <b>Versión:</b> {version}\n💾 <b>Tamaño:</b> {size}\n⚡ <b>Tipo:</b> {type}\n\n🔗 <a href=\"{url}\">Descargar en HackMac.cc</a>";
+            $template = "🚀 <b>NEW APP PUBLISHED!</b>\n\n📱 <b>Title:</b> {title}\n📂 <b>Category:</b> {category}\n🏷️ <b>Version:</b> {version}\n💾 <b>Size:</b> {size}\n⚡ <b>Type:</b> {type}\n\n🔗 <a href=\"{url}\">Download on HackMac.cc</a>";
         }
 
         $appUrl = route('app', $app->slug);
@@ -95,10 +96,16 @@ class TelegramBotService
             }
 
             if ($sent) {
-                $app->updateQuietly([
-                    'telegram_sent' => true,
-                    'telegram_sent_at' => now(),
-                ]);
+                try {
+                    if (Schema::hasColumn('applications', 'telegram_sent')) {
+                        $app->updateQuietly([
+                            'telegram_sent' => true,
+                            'telegram_sent_at' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo marcar la app como telegram_sent: '.$e->getMessage());
+                }
 
                 $todayCount = (int) Setting::get('telegram_sent_today_count', 0) + 1;
                 $totalCount = (int) Setting::get('telegram_total_sent_count', 0) + 1;
@@ -153,6 +160,20 @@ class TelegramBotService
                 'success' => false,
                 'message' => "Se ha alcanzado el límite diario de {$dailyLimit} publicaciones.",
                 'limit_reached' => true,
+            ];
+        }
+
+        try {
+            if (! Schema::hasColumn('applications', 'telegram_sent')) {
+                return [
+                    'success' => false,
+                    'message' => 'Falta ejecutar las migraciones en la base de datos (php artisan migrate).',
+                ];
+            }
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Error de conexión a la base de datos: '.$e->getMessage(),
             ];
         }
 
@@ -267,7 +288,15 @@ class TelegramBotService
     {
         $this->resetDailyCounterIfNeeded();
 
-        $pendingCount = Application::where('published', true)->where('telegram_sent', false)->count();
+        $pendingCount = 0;
+        try {
+            if (Schema::hasColumn('applications', 'telegram_sent')) {
+                $pendingCount = Application::where('published', true)->where('telegram_sent', false)->count();
+            }
+        } catch (\Throwable $e) {
+            $pendingCount = 0;
+        }
+
         $sentToday = (int) Setting::get('telegram_sent_today_count', 0);
         $dailyLimit = (int) Setting::get('telegram_daily_limit', 20);
         $totalSent = (int) Setting::get('telegram_total_sent_count', 0);

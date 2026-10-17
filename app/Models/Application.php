@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Application extends Model
 {
@@ -139,7 +140,11 @@ class Application extends Model
     public function scopePendingTelegram($query)
     {
         return $query->where('published', true)
-            ->where('telegram_sent', false)
+            ->when(
+                Schema::hasColumn('applications', 'telegram_sent'),
+                fn ($q) => $q->where('telegram_sent', false),
+                fn ($q) => $q->whereRaw('1 = 0')
+            )
             ->oldest('id');
     }
 
