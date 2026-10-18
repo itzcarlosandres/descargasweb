@@ -281,6 +281,18 @@ class TelegramBotService
         $message = $this->formatMessage($app, $customTemplate);
         $cover = $this->resolveCoverImage($app);
 
+        $buttonText = Setting::get('telegram_post_button_text') ?: '📥 DESCARGAR AHORA';
+        $replyMarkup = json_encode([
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => $buttonText,
+                        'url' => route('app', $app->slug),
+                    ],
+                ],
+            ],
+        ]);
+
         try {
             $sent = false;
             $response = null;
@@ -298,6 +310,7 @@ class TelegramBotService
                             'chat_id' => $chatId,
                             'caption' => $caption,
                             'parse_mode' => 'HTML',
+                            'reply_markup' => $replyMarkup,
                         ]);
                 } elseif (! empty($cover['url'])) {
                     $response = Http::timeout(20)->post("https://api.telegram.org/bot{$botToken}/sendPhoto", [
@@ -305,6 +318,7 @@ class TelegramBotService
                         'photo' => $cover['url'],
                         'caption' => $caption,
                         'parse_mode' => 'HTML',
+                        'reply_markup' => $replyMarkup,
                     ]);
                 }
 
@@ -322,7 +336,8 @@ class TelegramBotService
                     'chat_id' => $chatId,
                     'text' => $message,
                     'parse_mode' => 'HTML',
-                    'disable_web_page_preview' => false,
+                    'disable_web_page_preview' => true,
+                    'reply_markup' => $replyMarkup,
                 ]);
 
                 if ($response && $response->successful()) {

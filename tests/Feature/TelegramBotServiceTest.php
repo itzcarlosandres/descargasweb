@@ -85,7 +85,8 @@ class TelegramBotServiceTest extends TestCase
             return str_contains($request->url(), 'sendPhoto') &&
                 str_contains($request->body(), '@hackmactest') &&
                 str_contains($request->body(), 'Pixelmator Pro') &&
-                str_contains($request->body(), 'fake-image-binary-data');
+                str_contains($request->body(), 'fake-image-binary-data') &&
+                str_contains($request->body(), 'inline_keyboard');
         });
     }
 

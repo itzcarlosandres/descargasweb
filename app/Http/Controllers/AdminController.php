@@ -654,6 +654,7 @@ class AdminController extends Controller
             if ($request->has('telegram_template')) {
                 Setting::set('telegram_template', trim((string) $request->input('telegram_template', '')), 'notifications');
             }
+            Setting::set('telegram_post_button_text', trim((string) $request->input('telegram_post_button_text', '📥 DESCARGAR AHORA')), 'notifications');
             Setting::set('discord_enabled', $request->boolean('discord_enabled') ? '1' : '0', 'notifications');
             Setting::set('discord_webhook_url', trim((string) $request->input('discord_webhook_url', '')), 'notifications');
             Setting::set('notify_on_new_app', $request->boolean('notify_on_new_app') ? '1' : '0', 'notifications');

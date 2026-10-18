@@ -1633,6 +1633,19 @@
                                   placeholder="Escribe la plantilla del mensaje...">{!! $settings['telegram_template'] ?? "🚀 <b>NEW APP PUBLISHED!</b>\n\n📱 <b>Title:</b> {title}\n📂 <b>Category:</b> {category}\n🏷️ <b>Version:</b> {version}\n💾 <b>Size:</b> {size}\n⚡ <b>Type:</b> {type}\n\n🔗 <a href=\"{url}\">Download on HackMac.cc</a>" !!}</textarea>
                     </div>
                 </div>
+
+                <!-- Botón Interactivo de Telegram (Inline Button) -->
+                <div>
+                    <label class="block text-xs font-bold text-[#A8A199] tracking-wide mb-1.5">
+                        Texto del Botón Directo en Telegram (Inline Keyboard Button):
+                    </label>
+                    <input type="text"
+                           name="telegram_post_button_text"
+                           value="{{ $settings['telegram_post_button_text'] ?? '📥 DESCARGAR AHORA' }}"
+                           placeholder="Ej: 📥 DESCARGAR AHORA o ⚡ DESCARGAR EN HACKMAC.CC"
+                           class="w-full bg-[#12100E] border border-[#2B241C] focus:border-[#0088CC] rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors">
+                    <p class="text-[11px] text-[#736B63] mt-1">Este botón azul interactivo aparecerá debajo de cada publicación en el canal de Telegram con enlace directo a la ficha de descarga.</p>
+                </div>
             </div>
 
             <!-- DISCORD & WEBHOOKS (Fila Inferior) -->
