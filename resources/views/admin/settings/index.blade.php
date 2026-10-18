@@ -1623,6 +1623,7 @@
                             <button type="button" @click="insertTelegramTag('{type}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{type}</button>
                             <button type="button" @click="insertTelegramTag('{url}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{url}</button>
                             <button type="button" @click="insertTelegramTag('{description}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{description}</button>
+                            <button type="button" @click="insertTelegramTag('{image}')" class="px-2 py-0.5 rounded bg-[#1B1713] hover:bg-[#0088CC]/20 text-[#0088CC] border border-[#2B241C] hover:border-[#0088CC]/40 font-mono transition-colors cursor-pointer">{image}</button>
                         </div>
 
                         <textarea id="telegram_template_textarea"

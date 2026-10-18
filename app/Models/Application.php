@@ -244,6 +244,10 @@ class Application extends Model
     public function getScreenshotUrlAttribute(): ?string
     {
         if ($this->screenshot) {
+            if (str_starts_with($this->screenshot, 'http://') || str_starts_with($this->screenshot, 'https://')) {
+                return $this->screenshot;
+            }
+
             return asset('storage/'.$this->screenshot);
         }
 
@@ -253,6 +257,12 @@ class Application extends Model
         }
 
         return null;
+    }
+
+    public function getCoverImageUrlAttribute(): string
+    {
+        return $this->screenshot_url
+            ?: ($this->images->first()?->url ?: $this->icon_url);
     }
 
     public function getWhatsNewAttribute(): ?string

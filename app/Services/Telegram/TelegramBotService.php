@@ -7,6 +7,7 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class TelegramBotService
 {
@@ -26,6 +27,7 @@ class TelegramBotService
         $version = $app->version ?: 'Universal';
         $size = $app->formatted_size ?: 'Universal';
         $shortDesc = strip_tags($app->short_description ?: '');
+        $coverUrl = $app->screenshot_url ?: ($app->images->first()?->url ?: $app->icon_url);
 
         $replacements = [
             '{title}' => htmlspecialchars($app->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
@@ -35,9 +37,228 @@ class TelegramBotService
             '{type}' => htmlspecialchars($type, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             '{url}' => $appUrl,
             '{description}' => htmlspecialchars($shortDesc, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            '{image}' => $coverUrl,
+            '{cover}' => $coverUrl,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    /**
+     * Resolve and prepare cover image for Telegram sendPhoto.
+     * Handles local disk paths, formats (converts AVIF to JPEG in memory), and URLs.
+     *
+     * @return array{bytes?: string, filename?: string, mime?: string, url?: string}|null
+     */
+    public function resolveCoverImage(Application $app): ?array
+    {
+        $candidate = null;
+
+        // 1. Direct screenshot property
+        if (! empty($app->screenshot)) {
+            $candidate = $app->screenshot;
+        }
+
+        // 2. First gallery image
+        if (empty($candidate)) {
+            $firstGallery = $app->images()->orderBy('sort_order')->first();
+            if ($firstGallery && ! empty($firstGallery->path)) {
+                $candidate = $firstGallery->path;
+            }
+        }
+
+        // 3. Check disk for matching screenshot files (e.g. apps/{slug}-screen-*)
+        if (empty($candidate)) {
+            try {
+                $diskFiles = Storage::disk('public')->files('apps');
+                $matches = array_values(array_filter($diskFiles, fn ($f) => str_starts_with($f, 'apps/'.$app->slug.'-screen')));
+                if (! empty($matches)) {
+                    $candidate = $matches[0];
+                    try {
+                        $app->updateQuietly(['screenshot' => $candidate]);
+                    } catch (\Throwable $e) {
+                        // ignore DB write errors
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore storage listing errors
+            }
+        }
+
+        // 4. App icon as secondary fallback
+        if (empty($candidate) && ! empty($app->icon)) {
+            $candidate = $app->icon;
+        }
+
+        // 5. If no candidate found, use default site OG cover
+        if (empty($candidate)) {
+            $defaultOg = public_path('images/og-share.jpg');
+            if (file_exists($defaultOg)) {
+                return [
+                    'bytes' => file_get_contents($defaultOg),
+                    'filename' => 'cover.jpg',
+                    'mime' => 'image/jpeg',
+                ];
+            }
+
+            return null;
+        }
+
+        // Case A: Remote URL
+        if (str_starts_with($candidate, 'http://') || str_starts_with($candidate, 'https://')) {
+            try {
+                $imgRes = Http::timeout(10)->get($candidate);
+                if ($imgRes->successful()) {
+                    $body = $imgRes->body();
+                    $pathPart = parse_url($candidate, PHP_URL_PATH) ?? '';
+                    if (str_ends_with(strtolower($pathPart), '.avif') || str_starts_with(substr($body, 4, 8), 'ftypavif')) {
+                        $converted = $this->convertAvifToJpeg($body);
+                        if ($converted) {
+                            return [
+                                'bytes' => $converted,
+                                'filename' => 'cover.jpg',
+                                'mime' => 'image/jpeg',
+                            ];
+                        }
+                    }
+
+                    return [
+                        'bytes' => $body,
+                        'filename' => basename($pathPart) ?: 'cover.jpg',
+                        'mime' => $imgRes->header('Content-Type') ?: 'image/jpeg',
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Could not download remote cover {$candidate}: ".$e->getMessage());
+            }
+
+            return [
+                'url' => $candidate,
+            ];
+        }
+
+        // Case B: Local storage or public file
+        $localPath = Storage::disk('public')->path($candidate);
+        if (! file_exists($localPath)) {
+            $altPath = public_path('storage/'.$candidate);
+            if (file_exists($altPath)) {
+                $localPath = $altPath;
+            } elseif (file_exists(public_path($candidate))) {
+                $localPath = public_path($candidate);
+            } else {
+                $defaultOg = public_path('images/og-share.jpg');
+                if (file_exists($defaultOg)) {
+                    $localPath = $defaultOg;
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        $extension = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+
+        // SVG is not supported by Telegram sendPhoto - use default banner
+        if ($extension === 'svg') {
+            $defaultOg = public_path('images/og-share.jpg');
+            if (file_exists($defaultOg)) {
+                return [
+                    'bytes' => file_get_contents($defaultOg),
+                    'filename' => 'cover.jpg',
+                    'mime' => 'image/jpeg',
+                ];
+            }
+
+            return null;
+        }
+
+        // Convert AVIF to JPEG in memory
+        if ($extension === 'avif') {
+            $converted = $this->convertAvifPathToJpeg($localPath);
+            if ($converted) {
+                return [
+                    'bytes' => $converted,
+                    'filename' => 'cover.jpg',
+                    'mime' => 'image/jpeg',
+                ];
+            }
+
+            $defaultOg = public_path('images/og-share.jpg');
+            if (file_exists($defaultOg)) {
+                return [
+                    'bytes' => file_get_contents($defaultOg),
+                    'filename' => 'cover.jpg',
+                    'mime' => 'image/jpeg',
+                ];
+            }
+        }
+
+        // Standard JPEG, PNG, WEBP
+        $bytes = @file_get_contents($localPath);
+        if ($bytes !== false) {
+            return [
+                'bytes' => $bytes,
+                'filename' => basename($localPath),
+                'mime' => @mime_content_type($localPath) ?: 'image/jpeg',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Convert an AVIF file on disk to JPEG binary bytes.
+     */
+    protected function convertAvifPathToJpeg(string $filePath): ?string
+    {
+        if (! function_exists('imagecreatefromavif')) {
+            return null;
+        }
+
+        try {
+            $img = @imagecreatefromavif($filePath);
+            if (! $img) {
+                return null;
+            }
+
+            ob_start();
+            imagejpeg($img, null, 88);
+            $jpgData = ob_get_clean();
+            imagedestroy($img);
+
+            return $jpgData ?: null;
+        } catch (\Throwable $e) {
+            Log::warning("AVIF to JPEG conversion failed for {$filePath}: ".$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Convert in-memory AVIF binary data to JPEG binary bytes.
+     */
+    protected function convertAvifToJpeg(string $binaryData): ?string
+    {
+        if (! function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        try {
+            $img = @imagecreatefromstring($binaryData);
+            if (! $img) {
+                return null;
+            }
+
+            ob_start();
+            imagejpeg($img, null, 88);
+            $jpgData = ob_get_clean();
+            imagedestroy($img);
+
+            return $jpgData ?: null;
+        } catch (\Throwable $e) {
+            Log::warning('AVIF binary to JPEG conversion failed: '.$e->getMessage());
+
+            return null;
+        }
     }
 
     /**
@@ -46,7 +267,7 @@ class TelegramBotService
     public function sendApplication(Application $app, ?string $customTemplate = null): array
     {
         $botToken = Setting::get('telegram_bot_token');
-        $chatId = Setting::get('telegram_channel_id');
+        $chatId = Setting::get('telegram_channel_id') ?: Setting::get('telegram_channel');
 
         if (empty($botToken) || empty($chatId)) {
             return [
@@ -58,30 +279,44 @@ class TelegramBotService
         $this->resetDailyCounterIfNeeded();
 
         $message = $this->formatMessage($app, $customTemplate);
-        $imageUrl = ! empty($app->screenshot_url) ? $app->screenshot_url : $app->icon_url;
+        $cover = $this->resolveCoverImage($app);
 
         try {
             $sent = false;
             $response = null;
 
-            // Attempt to send as photo if image URL is available
-            if (! empty($imageUrl) && filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+            // 1. Attempt to send as photo if cover image is available
+            if ($cover) {
                 // Telegram caption limit is 1024 characters
                 $caption = mb_strlen($message) > 1020 ? mb_substr($message, 0, 1017).'...' : $message;
 
-                $response = Http::timeout(15)->post("https://api.telegram.org/bot{$botToken}/sendPhoto", [
-                    'chat_id' => $chatId,
-                    'photo' => $imageUrl,
-                    'caption' => $caption,
-                    'parse_mode' => 'HTML',
-                ]);
+                if (! empty($cover['bytes'])) {
+                    $response = Http::timeout(30)
+                        ->asMultipart()
+                        ->attach('photo', $cover['bytes'], $cover['filename'] ?? 'cover.jpg')
+                        ->post("https://api.telegram.org/bot{$botToken}/sendPhoto", [
+                            'chat_id' => $chatId,
+                            'caption' => $caption,
+                            'parse_mode' => 'HTML',
+                        ]);
+                } elseif (! empty($cover['url'])) {
+                    $response = Http::timeout(20)->post("https://api.telegram.org/bot{$botToken}/sendPhoto", [
+                        'chat_id' => $chatId,
+                        'photo' => $cover['url'],
+                        'caption' => $caption,
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
 
-                if ($response->successful()) {
+                if ($response && $response->successful()) {
                     $sent = true;
+                } else {
+                    $err = $response ? ($response->json('description') ?? $response->body()) : 'sin respuesta';
+                    Log::warning("Telegram sendPhoto failed for {$app->name}: {$err}. Intentando fallback a sendMessage.");
                 }
             }
 
-            // Fallback to text message if sendPhoto failed or no photo URL
+            // 2. Fallback to text message if sendPhoto failed or no photo
             if (! $sent) {
                 $response = Http::timeout(15)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
                     'chat_id' => $chatId,
@@ -90,7 +325,7 @@ class TelegramBotService
                     'disable_web_page_preview' => false,
                 ]);
 
-                if ($response->successful()) {
+                if ($response && $response->successful()) {
                     $sent = true;
                 }
             }
