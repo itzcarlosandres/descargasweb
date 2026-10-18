@@ -2,9 +2,7 @@
     @php
         $appTitle = "Download {$application->name} {$application->version} for Mac - " . config('app.name');
         $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: "Download {$application->name} {$application->version} for macOS. Safe and verified software.";
-        $shareImage = $application->screenshot_url 
-            ?: ($application->images->first()?->image_url 
-            ?: ($application->icon_url ?: asset('images/og-share.jpg')));
+        $shareImage = route('app.og-image', $application->slug);
     @endphp
 
     @section('title', $appTitle)

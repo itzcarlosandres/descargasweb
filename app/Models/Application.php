@@ -261,8 +261,7 @@ class Application extends Model
 
     public function getCoverImageUrlAttribute(): string
     {
-        return $this->screenshot_url
-            ?: ($this->images->first()?->url ?: $this->icon_url);
+        return route('app.og-image', $this->slug);
     }
 
     public function getWhatsNewAttribute(): ?string

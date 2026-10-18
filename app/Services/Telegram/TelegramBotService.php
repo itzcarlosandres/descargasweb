@@ -27,7 +27,7 @@ class TelegramBotService
         $version = $app->version ?: 'Universal';
         $size = $app->formatted_size ?: 'Universal';
         $shortDesc = strip_tags($app->short_description ?: '');
-        $coverUrl = $app->screenshot_url ?: ($app->images->first()?->url ?: $app->icon_url);
+        $coverUrl = route('app.og-image', $app->slug);
 
         $replacements = [
             '{title}' => htmlspecialchars($app->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),

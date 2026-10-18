@@ -161,4 +161,14 @@ class TelegramBotServiceTest extends TestCase
             $this->assertNotEmpty($cover['bytes']);
         }
     }
+
+    public function test_app_og_image_route_serves_jpeg_image(): void
+    {
+        $app = $this->createTestApp();
+
+        $response = $this->get(route('app.og-image', $app->slug));
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'image/jpeg');
+    }
 }

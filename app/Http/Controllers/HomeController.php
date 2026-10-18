@@ -10,6 +10,7 @@ use App\Models\Favorite;
 use App\Models\Review;
 use App\Models\SearchLog;
 use App\Services\Notification\NotificationDispatcher;
+use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -711,5 +712,43 @@ class HomeController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Serve a real JPEG Open Graph image for the application.
+     * Ensures Telegram, WhatsApp, Twitter and Facebook always display the app's featured image.
+     */
+    public function ogImage(Application $application)
+    {
+        $cacheFilename = "og-cache/{$application->slug}-{$application->id}.jpg";
+        if (Storage::disk('public')->exists($cacheFilename)) {
+            $path = Storage::disk('public')->path($cacheFilename);
+
+            return response()->file($path, [
+                'Content-Type' => 'image/jpeg',
+                'Cache-Control' => 'public, max-age=604800, immutable',
+            ]);
+        }
+
+        $telegramService = app(TelegramBotService::class);
+        $cover = $telegramService->resolveCoverImage($application);
+
+        if ($cover && ! empty($cover['bytes'])) {
+            try {
+                Storage::disk('public')->put($cacheFilename, $cover['bytes']);
+            } catch (\Throwable $e) {
+                // ignore cache write error
+            }
+
+            return response($cover['bytes'], 200, [
+                'Content-Type' => $cover['mime'] ?? 'image/jpeg',
+                'Cache-Control' => 'public, max-age=604800, immutable',
+            ]);
+        }
+
+        return response()->file(public_path('images/og-share.jpg'), [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'public, max-age=604800',
+        ]);
     }
 }

@@ -10,6 +10,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/categories', [HomeController::class, 'categories'])->name('categories');
 Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('category');
 Route::get('/app/{application:slug}', [HomeController::class, 'app'])->name('app');
+Route::get('/app/{application:slug}/og-image.jpg', [HomeController::class, 'ogImage'])->name('app.og-image');
 Route::post('/app/{application:slug}/review', [HomeController::class, 'storeReview'])->name('app.review');
 Route::post('/review/{review}/vote', [HomeController::class, 'voteReview'])->name('review.vote');
 Route::get('/search', [HomeController::class, 'search'])->name('search');
