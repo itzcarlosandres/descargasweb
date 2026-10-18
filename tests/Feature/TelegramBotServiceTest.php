@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Application;
 use App\Models\Category;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -171,5 +172,32 @@ class TelegramBotServiceTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'image/jpeg');
+    }
+
+    public function test_admin_can_publish_application_to_telegram_endpoint(): void
+    {
+        $user = User::factory()->create();
+        $app = $this->createTestApp();
+
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response([
+                'ok' => true,
+                'result' => [
+                    'message_id' => 9999,
+                    'chat' => ['id' => -1001234567890],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('admin.applications.publish-telegram', $app));
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'telegram_sent' => true,
+        ]);
+
+        $this->assertTrue($app->fresh()->telegram_sent);
+        $this->assertNotNull($app->fresh()->telegram_sent_at);
     }
 }

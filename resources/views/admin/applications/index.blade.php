@@ -336,6 +336,60 @@
                                         </button>
                                     </form>
 
+                                    <!-- Publish to Telegram Action Button -->
+                                    <div x-data="{
+                                        loading: false,
+                                        telegramSent: {{ $app->telegram_sent ? 'true' : 'false' }},
+                                        async publishTelegram() {
+                                            if (this.loading) return;
+                                            const confirmMsg = this.telegramSent
+                                                ? '«{{ addslashes($app->name) }}» ya fue publicada en Telegram. ¿Deseas volver a publicarla?'
+                                                : '¿Publicar «{{ addslashes($app->name) }}» en el canal de Telegram ahora?';
+                                            if (!confirm(confirmMsg)) return;
+
+                                            this.loading = true;
+                                            try {
+                                                const res = await fetch('{{ route('admin.applications.publish-telegram', $app) }}', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                        'Accept': 'application/json',
+                                                        'X-Requested-With': 'XMLHttpRequest'
+                                                    }
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    this.telegramSent = true;
+                                                    $dispatch('show-toast', { message: data.message, success: true });
+                                                } else {
+                                                    $dispatch('show-toast', { message: data.message || 'Error al publicar en Telegram', success: false });
+                                                }
+                                            } catch (e) {
+                                                $dispatch('show-toast', { message: 'Error de conexión con el servidor', success: false });
+                                            } finally {
+                                                this.loading = false;
+                                            }
+                                        }
+                                    }">
+                                        <button type="button"
+                                                @click="publishTelegram()"
+                                                :disabled="loading"
+                                                :title="telegramSent ? 'Publicado en Telegram (Clic para volver a publicar)' : 'Publicar en Telegram'"
+                                                class="p-1.5 rounded-lg transition-all duration-200 relative group flex items-center justify-center border cursor-pointer"
+                                                :class="telegramSent 
+                                                    ? 'text-[#229ED9] bg-[#0088CC]/10 hover:bg-[#0088CC]/20 border-[#0088CC]/30' 
+                                                    : 'text-[#8C847A] hover:text-[#229ED9] hover:bg-[#241F1A] border-transparent'">
+                                            <svg x-show="loading" class="w-4 h-4 animate-spin text-[#229ED9]" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                            </svg>
+                                            <svg x-show="!loading" class="w-4 h-4 transition-transform group-hover:scale-110 fill-current" viewBox="0 0 24 24">
+                                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                                            </svg>
+                                            <span x-show="telegramSent && !loading" class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#0088CC] ring-2 ring-[#181410]" title="Publicado en Telegram"></span>
+                                        </button>
+                                    </div>
+
                                     <!-- View Live App -->
                                     <a href="{{ route('app', $app->slug) }}" target="_blank"
                                        title="Ver en portal"

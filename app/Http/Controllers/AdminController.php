@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -204,6 +205,14 @@ class AdminController extends Controller
             ]);
         }
 
+        if ($request->boolean('publish_to_telegram')) {
+            try {
+                app(TelegramBotService::class)->sendApplication($app);
+            } catch (\Throwable $e) {
+                Log::error('Error publishing to Telegram on store: '.$e->getMessage());
+            }
+        }
+
         return redirect()->route('admin.applications')->with('success', '¡Programa publicado exitosamente!');
     }
 
@@ -325,6 +334,14 @@ class AdminController extends Controller
             }
         }
 
+        if ($request->boolean('publish_to_telegram')) {
+            try {
+                app(TelegramBotService::class)->sendApplication($application);
+            } catch (\Throwable $e) {
+                Log::error('Error publishing to Telegram on update: '.$e->getMessage());
+            }
+        }
+
         return redirect()->route('admin.applications')->with('success', '¡Programa actualizado correctamente!');
     }
 
@@ -364,6 +381,22 @@ class AdminController extends Controller
         return back()->with('success', $application->featured
             ? "«{$application->name}» se agregó a Destacados (Featured)."
             : "«{$application->name}» se quitó de Destacados (Featured).");
+    }
+
+    /**
+     * Publish a single application directly to Telegram channel
+     */
+    public function publishToTelegram(Application $application, TelegramBotService $telegramService): JsonResponse
+    {
+        $result = $telegramService->sendApplication($application);
+        $fresh = $application->fresh();
+
+        return response()->json([
+            'success' => (bool) ($result['success'] ?? false),
+            'message' => $result['message'] ?? ($result['success'] ? "«{$application->name}» se publicó en Telegram exitosamente." : 'No se pudo publicar en Telegram.'),
+            'telegram_sent' => (bool) $fresh->telegram_sent,
+            'telegram_sent_at' => $fresh->telegram_sent_at?->format('d/m/Y H:i'),
+        ]);
     }
 
     public function resetDownloads(Request $request): RedirectResponse

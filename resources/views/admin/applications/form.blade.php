@@ -18,6 +18,54 @@
         published: {{ old('published', (isset($app) && $app->exists) ? ($app->published ? 'true' : 'false') : 'true') }},
         featured: {{ old('featured', ($app->featured ?? false) ? 'true' : 'false') }},
         popular: {{ old('popular', ($app->popular ?? false) ? 'true' : 'false') }},
+        publishToTelegram: false,
+        publishingTelegram: false,
+        telegramSent: {{ (isset($app) && $app->exists && $app->telegram_sent) ? 'true' : 'false' }},
+        telegramSentAt: '{{ (isset($app) && $app->exists && $app->telegram_sent_at) ? $app->telegram_sent_at->format('d/m/Y H:i') : '' }}',
+        toast: { show: false, message: '', success: true },
+        showToast(msg, success = true) {
+            this.toast = { show: true, message: msg, success };
+            setTimeout(() => { this.toast.show = false; }, 4000);
+        },
+        async publishTelegramNow() {
+            @if(isset($app) && $app->exists)
+                if (this.publishingTelegram) return;
+                const confirmMsg = this.telegramSent
+                    ? 'Este programa ya fue publicado en Telegram' + (this.telegramSentAt ? ' (' + this.telegramSentAt + ')' : '') + '. ¿Deseas volver a publicarlo ahora?'
+                    : '¿Publicar este programa en el canal de Telegram ahora?';
+                if (!confirm(confirmMsg)) return;
+
+                this.publishingTelegram = true;
+                try {
+                    const res = await fetch('{{ route('admin.applications.publish-telegram', $app) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.telegramSent = true;
+                        if (data.telegram_sent_at) this.telegramSentAt = data.telegram_sent_at;
+                        this.showToast(data.message || '¡Publicado en Telegram exitosamente!', true);
+                    } else {
+                        this.showToast(data.message || 'Error al publicar en Telegram', false);
+                    }
+                } catch (e) {
+                    this.showToast('Error de red: ' + e.message, false);
+                } finally {
+                    this.publishingTelegram = false;
+                }
+            @else
+                this.publishToTelegram = true;
+                const form = document.getElementById('application-form');
+                if (form.reportValidity()) {
+                    form.submit();
+                }
+            @endif
+        },
         mirrors: @js(old('download_mirrors', $app->download_mirrors ?? [])),
         addMirror() {
             this.mirrors.push({ name: '', url: '' });
@@ -139,7 +187,25 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Blue pill button: Publicar en Telegram -->
+                <button type="button"
+                        @click="publishTelegramNow()"
+                        :disabled="publishingTelegram"
+                        title="Publicar esta aplicación con imagen y botones en el canal oficial de Telegram"
+                        class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#0088CC] hover:bg-[#0077B5] active:scale-95 text-white font-bold text-xs shadow-lg shadow-[#0088CC]/30 transition-all duration-200 cursor-pointer disabled:opacity-50">
+                    <span class="w-5 h-5 rounded-full bg-white flex items-center justify-center text-[#0088CC] shadow-sm flex-shrink-0">
+                        <svg x-show="publishingTelegram" class="w-3 h-3 animate-spin text-[#0088CC]" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <svg x-show="!publishingTelegram" class="w-3 h-3 fill-current transform -translate-x-0.2" viewBox="0 0 24 24">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                        </svg>
+                    </span>
+                    <span class="font-bold tracking-wide text-white">Publicar en Telegram</span>
+                </button>
+
                 <a href="{{ route('admin.applications') }}" class="btn-secondary text-xs px-4 py-2">
                     Cancelar
                 </a>
@@ -788,6 +854,36 @@
                                 </label>
                             </div>
 
+                            <!-- Telegram Channel Status & Auto-publish toggle -->
+                            <div class="p-3 rounded-xl bg-[#1A1612] border border-[#2B241C] space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-[#0088CC] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-white">Canal de Telegram</p>
+                                            <p class="text-[10px] text-[#8C847A]" x-text="telegramSent ? ('Publicado' + (telegramSentAt ? ' (' + telegramSentAt + ')' : '')) : 'Sin publicar en canal'"></p>
+                                        </div>
+                                    </div>
+                                    <span x-show="telegramSent" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0088CC]/20 text-[#229ED9] border border-[#0088CC]/30">
+                                        ✓ Publicado
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-1 border-t border-[#26211B]">
+                                    <label for="publish_to_telegram_toggle" class="text-[11px] text-[#B8B0A6] cursor-pointer">
+                                        Publicar en Telegram al guardar
+                                    </label>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="publish_to_telegram_toggle" name="publish_to_telegram" value="1" x-model="publishToTelegram" class="sr-only peer">
+                                        <div class="w-8 h-4 bg-[#2B241C] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#0088CC]"></div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <!-- Action Buttons -->
                             <div class="pt-3 border-t border-[#26211B] flex flex-col gap-2">
                                 <button type="submit"
@@ -945,6 +1041,39 @@
                 </div>
             </div>
         </form>
+
+        <!-- Floating Toast Notification for Real-Time Actions -->
+        <div x-show="toast.show"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-4"
+             class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md"
+             :class="toast.success ? 'bg-[#181410]/95 border-[#0088CC]/40 text-[#229ED9] shadow-[#0088CC]/10' : 'bg-[#181410]/95 border-danger/30 text-danger shadow-danger/10'"
+             style="display: none;">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                 :class="toast.success ? 'bg-[#0088CC]/20 text-[#229ED9]' : 'bg-danger/20 text-danger'">
+                <template x-if="toast.success">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
+                    </svg>
+                </template>
+                <template x-if="!toast.success">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </template>
+            </div>
+            <span class="text-xs font-semibold text-white pr-2" x-text="toast.message"></span>
+            <button type="button" @click="toast.show = false" class="text-[#8C847A] hover:text-white transition-colors p-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
     </div>
 
     @push('styles')

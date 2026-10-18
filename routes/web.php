@@ -88,6 +88,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::put('/applications/{application}', [AdminController::class, 'updateApplication'])->name('applications.update');
     Route::delete('/applications/{application}', [AdminController::class, 'destroyApplication'])->name('applications.destroy');
     Route::post('/applications/{application}/toggle-featured', [AdminController::class, 'toggleFeatured'])->name('applications.toggle-featured');
+    Route::post('/applications/{application}/publish-telegram', [AdminController::class, 'publishToTelegram'])->name('applications.publish-telegram');
     Route::post('/applications/reset-downloads', [AdminController::class, 'resetDownloads'])->name('applications.reset-downloads');
     Route::post('/applications/bulk-action', [AdminController::class, 'bulkAction'])->name('applications.bulk-action');
 
