@@ -993,6 +993,69 @@ class AdminController extends Controller
     }
 
     /**
+     * Live Scanner: check a batch of published applications for broken links
+     */
+    public function scanBatchHealth(Request $request, LinkHealthCheckerService $checker): JsonResponse
+    {
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = min(15, max(3, (int) $request->input('per_page', 6)));
+
+        $query = Application::published()->with('category')->latest();
+
+        $totalApps = $query->count();
+        $apps = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        $results = [];
+        $deadFound = 0;
+
+        foreach ($apps as $app) {
+            $health = $checker->checkApplication($app);
+            $isBroken = ! $health['has_working_link'] && $health['checked_count'] > 0;
+            if ($isBroken) {
+                $deadFound++;
+            }
+
+            $results[] = [
+                'id' => $app->id,
+                'name' => $app->name,
+                'version' => $app->version ?? 'N/A',
+                'category' => $app->category?->name ?? 'General',
+                'icon_url' => $app->icon_url,
+                'edit_url' => route('admin.applications.edit', $app),
+                'live_url' => route('app', $app->slug),
+                'is_broken' => $isBroken,
+                'checked_count' => $health['checked_count'],
+                'dead_count' => $health['dead_count'],
+                'links' => $health['results'],
+            ];
+        }
+
+        $processedSoFar = min($totalApps, $page * $perPage);
+        $hasMore = $processedSoFar < $totalApps;
+
+        return response()->json([
+            'success' => true,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_apps' => $totalApps,
+            'processed_count' => $processedSoFar,
+            'has_more' => $hasMore,
+            'dead_in_batch' => $deadFound,
+            'apps' => $results,
+        ]);
+    }
+
+    /**
+     * Auto-repair an application directly from the Live Scanner monitor
+     */
+    public function autoRepairApp(Application $application, AutoLinkHealerService $healer): JsonResponse
+    {
+        $result = $healer->healApplication($application);
+
+        return response()->json($result);
+    }
+
+    /**
      * Test Telegram notification channel
      */
     public function testTelegram(Request $request, TelegramBotService $telegramService): JsonResponse

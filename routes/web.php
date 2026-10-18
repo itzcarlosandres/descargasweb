@@ -99,6 +99,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/reports/{report}/auto-repair', [AdminController::class, 'autoRepairReport'])->name('reports.auto-repair');
     Route::post('/reports/{report}/apply-replacement', [AdminController::class, 'applyReportReplacement'])->name('reports.apply-replacement');
     Route::post('/reports/{report}/check-health', [AdminController::class, 'checkReportHealth'])->name('reports.check-health');
+    Route::post('/reports/scan-batch', [AdminController::class, 'scanBatchHealth'])->name('reports.scan-batch');
+    Route::post('/reports/heal-app/{application}', [AdminController::class, 'autoRepairApp'])->name('reports.heal-app');
 
     Route::get('/categories', [AdminController::class, 'categories'])->name('categories');
     Route::get('/categories/create', [AdminController::class, 'createCategory'])->name('categories.create');

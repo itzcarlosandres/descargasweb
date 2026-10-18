@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Services\LinkHealth\AutoLinkHealerService;
 use App\Services\LinkHealth\LinkHealthCheckerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LinkHealthAndAutoRepairTest extends TestCase
@@ -18,17 +20,22 @@ class LinkHealthAndAutoRepairTest extends TestCase
 
     private function createTestApp(array $attributes = []): Application
     {
-        $category = Category::create([
-            'name' => 'Design & Graphics',
-            'slug' => 'design-graphics',
-            'is_active' => true,
-            'sort_order' => 1,
-        ]);
+        $category = Category::firstOrCreate(
+            ['slug' => 'design-graphics'],
+            [
+                'name' => 'Design & Graphics',
+                'is_active' => true,
+                'sort_order' => 1,
+            ]
+        );
+
+        $name = $attributes['name'] ?? 'CleanMyMac X';
+        $slug = $attributes['slug'] ?? Str::slug($name).'-'.uniqid();
 
         return Application::create(array_merge([
             'category_id' => $category->id,
-            'name' => 'CleanMyMac X',
-            'slug' => 'cleanmymac-x',
+            'name' => $name,
+            'slug' => $slug,
             'version' => '4.15.0',
             'download_url' => 'https://example.com/dead-link.dmg',
             'published' => true,
@@ -169,5 +176,58 @@ class LinkHealthAndAutoRepairTest extends TestCase
                 'has_working_link' => true,
             ],
         ]);
+    }
+
+    public function test_admin_can_scan_batch_application_health(): void
+    {
+        $user = User::factory()->create();
+        $this->createTestApp([
+            'download_url' => 'https://example.com/app1.dmg',
+        ]);
+        $this->createTestApp([
+            'download_url' => 'https://example.com/app2.dmg',
+        ]);
+
+        Http::fake([
+            'https://example.com/app1.dmg' => Http::response('ok', 200),
+            'https://example.com/app2.dmg' => Http::response('dead', 404),
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('admin.reports.scan-batch'), [
+            'page' => 1,
+            'per_page' => 5,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'page' => 1,
+        ]);
+        $this->assertArrayHasKey('apps', $response->json());
+        $this->assertCount(2, $response->json()['apps']);
+    }
+
+    public function test_admin_can_auto_heal_app_directly_from_scanner(): void
+    {
+        $user = User::factory()->create();
+        $app = $this->createTestApp([
+            'name' => 'CleanMyMac X',
+            'version' => '4.15.0',
+            'download_url' => 'https://example.com/dead.dmg',
+        ]);
+
+        Http::fake([
+            'https://torrentmac.net/?s=*' => Http::response('<html><body><article class="post"><h2 class="entry-title"><a href="https://torrentmac.net/cleanmymac-x-4-15-2/">CleanMyMac X 4.15.2</a></h2></article></body></html>', 200),
+            'https://torrentmac.net/cleanmymac-x-4-15-2/' => Http::response('<html><body><h1 class="entry-title">CleanMyMac X 4.15.2</h1><a href="magnet:?xt=urn:btih:d6b055375c3db1184a4413e1176b5d9202167d4a&dn=CleanMyMac">Magnet</a></body></html>', 200),
+            'https://haxmac.to/?s=*' => Http::response('<html><body></body></html>', 200),
+        ]);
+
+        Cache::flush();
+        $response = $this->actingAs($user)->postJson(route('admin.reports.heal-app', $app));
+
+        $response->assertStatus(200);
+        $this->assertTrue($response->json()['success']);
+        $this->assertNotNull($app->fresh()->version);
+        $this->assertTrue($app->fresh()->has_torrent);
     }
 }
