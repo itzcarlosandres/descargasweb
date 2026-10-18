@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\Application;
+use App\Models\BrokenLinkReport;
 use App\Models\Category;
 use App\Models\Setting;
+use App\Services\LinkHealth\AutoLinkHealerService;
+use App\Services\LinkHealth\LinkHealthCheckerService;
 use App\Services\Scraper\HaxmacImporter;
 use App\Services\Scraper\TorrentmacImporter;
 use App\Services\Telegram\TelegramBotService;
@@ -205,3 +208,70 @@ Artisan::command('telegram:dispatch {--force : Despacha incluso si el piloto aut
 
     return 1;
 })->purpose('Despacha 1 aplicación pendiente hacia el canal de Telegram');
+
+Artisan::command('links:auto-repair {--limit=10 : Máximo de reportes a procesar}', function (AutoLinkHealerService $healer) {
+    $limit = (int) $this->option('limit');
+    $reports = BrokenLinkReport::with('application')
+        ->where('status', 'pending')
+        ->latest()
+        ->limit($limit)
+        ->get();
+
+    if ($reports->isEmpty()) {
+        $this->info('No hay reportes de enlaces caídos pendientes.');
+
+        return 0;
+    }
+
+    $this->info("Iniciando auto-reparación inteligente para {$reports->count()} reportes...");
+    $repaired = 0;
+
+    foreach ($reports as $report) {
+        if (! $report->application) {
+            continue;
+        }
+
+        $this->line("Procesando: {$report->application->name} (v{$report->application->version})...");
+        $result = $healer->healApplication($report->application, $report);
+
+        if (! empty($result['success'])) {
+            $this->info("✓ {$result['message']}");
+            $repaired++;
+        } else {
+            $this->warn("✕ {$result['message']}");
+        }
+    }
+
+    $this->info("Finalizado: {$repaired} de {$reports->count()} enlaces reparados automáticamente.");
+
+    return 0;
+})->purpose('Rastrea y auto-repara enlaces caídos reportados buscando en Torrentmac y Haxmac');
+
+Artisan::command('links:check-health {--limit=20 : Número de aplicaciones a comprobar}', function (LinkHealthCheckerService $checker) {
+    $limit = (int) $this->option('limit');
+    $apps = Application::where('published', true)->inRandomOrder()->limit($limit)->get();
+
+    $this->info("Comprobando salud de enlaces en {$apps->count()} aplicaciones...");
+    $deadFound = 0;
+
+    foreach ($apps as $app) {
+        $health = $checker->checkApplication($app);
+        if (! $health['has_working_link'] && $health['checked_count'] > 0) {
+            $this->error("✕ Enlace caído detectado en: {$app->name}");
+            BrokenLinkReport::create([
+                'application_id' => $app->id,
+                'type' => 'broken_link',
+                'notes' => 'Detector automático: ningún servidor de descarga responde correctamente.',
+                'ip_address' => '127.0.0.1 (Health-Checker)',
+                'status' => 'pending',
+            ]);
+            $deadFound++;
+        } else {
+            $this->line("✓ {$app->name} - OK ({$health['checked_count']} enlaces)");
+        }
+    }
+
+    $this->info("Diagnóstico finalizado: {$deadFound} enlaces caídos registrados en reportes.");
+
+    return 0;
+})->purpose('Comprueba la salud de los enlaces de descarga y registra reportes automáticos si están caídos');

@@ -95,6 +95,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::post('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
     Route::delete('/reports/{report}', [AdminController::class, 'destroyReport'])->name('reports.destroy');
+    Route::post('/reports/{report}/search-replacement', [AdminController::class, 'searchReportReplacement'])->name('reports.search-replacement');
+    Route::post('/reports/{report}/auto-repair', [AdminController::class, 'autoRepairReport'])->name('reports.auto-repair');
+    Route::post('/reports/{report}/apply-replacement', [AdminController::class, 'applyReportReplacement'])->name('reports.apply-replacement');
+    Route::post('/reports/{report}/check-health', [AdminController::class, 'checkReportHealth'])->name('reports.check-health');
 
     Route::get('/categories', [AdminController::class, 'categories'])->name('categories');
     Route::get('/categories/create', [AdminController::class, 'createCategory'])->name('categories.create');

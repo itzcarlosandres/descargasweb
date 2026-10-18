@@ -10,6 +10,8 @@ use App\Models\SearchLog;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AI\GeminiService;
+use App\Services\LinkHealth\AutoLinkHealerService;
+use App\Services\LinkHealth\LinkHealthCheckerService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Storage\CloudflareR2Service;
 use App\Services\Telegram\TelegramBotService;
@@ -855,6 +857,139 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'Reporte eliminado.');
+    }
+
+    /**
+     * Search live link candidates from Haxmac and Torrentmac for a reported broken application
+     */
+    public function searchReportReplacement(int $reportId, AutoLinkHealerService $healer): JsonResponse
+    {
+        $report = BrokenLinkReport::with('application')->findOrFail($reportId);
+
+        if (! $report->application) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La aplicación asociada a este reporte ya no existe en el catálogo.',
+                'candidates' => [],
+            ], 404);
+        }
+
+        $candidates = $healer->searchCandidates($report->application->name, $report->application->version);
+
+        return response()->json([
+            'success' => true,
+            'application' => [
+                'id' => $report->application->id,
+                'name' => $report->application->name,
+                'version' => $report->application->version,
+                'current_download_url' => $report->application->download_url,
+                'current_magnet' => $report->application->magnet_link,
+            ],
+            'candidates' => $candidates,
+        ]);
+    }
+
+    /**
+     * Auto-repair a reported application using the best scraped candidate
+     */
+    public function autoRepairReport(int $reportId, AutoLinkHealerService $healer): JsonResponse
+    {
+        $report = BrokenLinkReport::with('application')->findOrFail($reportId);
+
+        if (! $report->application) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La aplicación asociada a este reporte ya no existe.',
+            ], 404);
+        }
+
+        $result = $healer->healApplication($report->application, $report);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Apply selected candidate or manual link input to the reported application
+     */
+    public function applyReportReplacement(Request $request, int $reportId, AutoLinkHealerService $healer): JsonResponse
+    {
+        $report = BrokenLinkReport::with('application')->findOrFail($reportId);
+
+        if (! $report->application) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La aplicación asociada a este reporte ya no existe.',
+            ], 404);
+        }
+
+        // If candidate object is provided
+        if ($request->has('candidate') && is_array($request->input('candidate'))) {
+            $candidate = $request->input('candidate');
+            $healer->applyCandidate($report->application, $candidate, $report);
+
+            return response()->json([
+                'success' => true,
+                'message' => '¡Enlace de reemplazo aplicado con éxito desde '.($candidate['source'] ?? 'scraper').'!',
+            ]);
+        }
+
+        // Manual replacement
+        $downloadUrl = trim($request->input('download_url', ''));
+        $magnetLink = trim($request->input('magnet_link', ''));
+        $version = trim($request->input('version', ''));
+
+        if (empty($downloadUrl) && empty($magnetLink)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debes proporcionar al menos una URL de descarga o un enlace Magnet.',
+            ], 422);
+        }
+
+        $updates = [];
+        if (! empty($downloadUrl)) {
+            $updates['download_url'] = $downloadUrl;
+        }
+        if (! empty($magnetLink)) {
+            $updates['magnet_link'] = $magnetLink;
+            $updates['has_torrent'] = true;
+        }
+        if (! empty($version)) {
+            $updates['version'] = $version;
+        }
+
+        $report->application->update($updates);
+
+        $report->update([
+            'status' => 'resolved',
+            'notes' => trim(($report->notes ? $report->notes."\n" : '').'✓ Enlace reparado manualmente el '.now()->format('d/m/Y H:i')),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '¡Enlace actualizado y reporte marcado como solucionado!',
+        ]);
+    }
+
+    /**
+     * Diagnose health of an application associated with a report
+     */
+    public function checkReportHealth(int $reportId, LinkHealthCheckerService $checker): JsonResponse
+    {
+        $report = BrokenLinkReport::with('application')->findOrFail($reportId);
+
+        if (! $report->application) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La aplicación ya no existe.',
+            ], 404);
+        }
+
+        $health = $checker->checkApplication($report->application);
+
+        return response()->json([
+            'success' => true,
+            'health' => $health,
+        ]);
     }
 
     /**

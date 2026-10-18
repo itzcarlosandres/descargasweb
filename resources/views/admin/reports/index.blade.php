@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Reportes de Enlaces Caídos')
+@section('title', 'Reportes de Enlaces Caídos & Auto-Reparación')
 @section('page-title', 'Reportes de Enlaces')
 
 @section('content')
-<div class="space-y-6 max-w-[1600px] mx-auto w-full">
+<div x-data="reportsManager()" class="space-y-6 max-w-[1600px] mx-auto w-full">
 
     <!-- Header Panel macOS Banner -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14110E] border border-[#2B241C] p-5 rounded-2xl shadow-xl">
@@ -18,14 +18,14 @@
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="text-lg font-bold text-white tracking-tight">Reportes de Enlaces Caídos</h1>
+                    <h1 class="text-lg font-bold text-white tracking-tight">Reportes de Enlaces &amp; Auto-Reparación</h1>
                     @if($totalPending > 0)
                         <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-danger/20 text-danger border border-danger/30 animate-pulse">
                             {{ $totalPending }} PENDIENTES
                         </span>
                     @endif
                 </div>
-                <p class="text-xs text-[#8C847A]">Reportes generados por usuarios que detectaron enlaces caídos, archivos dañados o mirrors sin conexión.</p>
+                <p class="text-xs text-[#8C847A]">Rastrea enlaces rotos y repáralos automáticamente con un clic buscando en Torrentmac y Haxmac.</p>
             </div>
         </div>
 
@@ -67,12 +67,13 @@
                         <th class="py-3 px-4">Detalles del Usuario</th>
                         <th class="py-3 px-4">IP &amp; Fecha</th>
                         <th class="py-3 px-4">Estado</th>
-                        <th class="py-3 px-4 text-right">Acciones</th>
+                        <th class="py-3 px-4 text-right">Acciones &amp; Reparación</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#211B15] text-[#D8CFBE]">
                     @forelse($reports as $rep)
-                        <tr class="hover:bg-[#1A1612] transition-colors {{ $rep->status === 'pending' ? 'bg-[#181210]/40' : '' }}">
+                        <tr class="hover:bg-[#1A1612] transition-colors {{ $rep->status === 'pending' ? 'bg-[#181210]/40' : '' }}"
+                            id="report-row-{{ $rep->id }}">
                             <!-- App -->
                             <td class="py-3.5 px-4">
                                 <div class="flex items-center gap-3">
@@ -98,24 +99,19 @@
                             <td class="py-3.5 px-4 whitespace-nowrap">
                                 @php
                                     $typeStyles = [
-                                        'ddl' => 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-                                        'torrent' => 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-                                        'mirror' => 'bg-sky-500/15 text-sky-400 border-sky-500/30',
-                                        'other' => 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+                                        'broken_link' => ['bg' => 'bg-danger/10', 'text' => 'text-danger', 'border' => 'border-danger/30', 'label' => 'Enlace Caído'],
+                                        'wrong_version' => ['bg' => 'bg-amber-500/10', 'text' => 'text-amber-400', 'border' => 'border-amber-500/30', 'label' => 'Versión Incorrecta'],
+                                        'file_corrupted' => ['bg' => 'bg-purple-500/10', 'text' => 'text-purple-400', 'border' => 'border-purple-500/30', 'label' => 'Archivo Dañado'],
+                                        'other' => ['bg' => 'bg-[#262019]', 'text' => 'text-[#8C847A]', 'border' => 'border-[#3D3224]', 'label' => 'Otro Problema'],
                                     ];
-                                    $typeLabels = [
-                                        'ddl' => 'Enlace DDL Caído',
-                                        'torrent' => 'Torrent / Magnet',
-                                        'mirror' => 'Servidor Espejo',
-                                        'other' => 'Problema General',
-                                    ];
+                                    $curStyle = $typeStyles[$rep->type] ?? $typeStyles['broken_link'];
                                 @endphp
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $typeStyles[$rep->type] ?? 'bg-[#2B241C] text-[#8C847A]' }}">
-                                    {{ $typeLabels[$rep->type] ?? ucfirst($rep->type) }}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border {{ $curStyle['bg'] }} {{ $curStyle['text'] }} {{ $curStyle['border'] }}">
+                                    {{ $curStyle['label'] }}
                                 </span>
                             </td>
 
-                            <!-- Notes -->
+                            <!-- User Notes -->
                             <td class="py-3.5 px-4 max-w-xs">
                                 <p class="text-xs text-[#D8CFBE] truncate" title="{{ $rep->notes }}">
                                     {{ $rep->notes ?: 'Sin comentarios adicionales del usuario.' }}
@@ -130,39 +126,81 @@
 
                             <!-- Status -->
                             <td class="py-3.5 px-4 whitespace-nowrap">
-                                @if($rep->status === 'pending')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-danger/20 text-danger border border-danger/30">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
-                                        Pendiente
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-success/20 text-success border border-success/30">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-                                        Solucionado
-                                    </span>
-                                @endif
+                                <span id="status-badge-{{ $rep->id }}">
+                                    @if($rep->status === 'pending')
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-danger/20 text-danger border border-danger/30">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+                                            Pendiente
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-success/20 text-success border border-success/30">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                            Solucionado
+                                        </span>
+                                    @endif
+                                </span>
                             </td>
 
                             <!-- Actions -->
                             <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end gap-1.5">
+                                <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                    @if($rep->application && $rep->status === 'pending')
+                                        <!-- 1. Auto-Repair Button -->
+                                        <button type="button"
+                                                @click="autoRepair({{ $rep->id }}, '{{ addslashes($rep->application->name) }}')"
+                                                :disabled="repairingId === {{ $rep->id }}"
+                                                class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 text-[11px] font-bold border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                                                title="Intentar reparar automáticamente desde Torrentmac o Haxmac">
+                                            <svg x-show="repairingId !== {{ $rep->id }}" class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                                            </svg>
+                                            <svg x-show="repairingId === {{ $rep->id }}" class="w-3.5 h-3.5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                            </svg>
+                                            <span x-text="repairingId === {{ $rep->id }} ? 'Buscando...' : '⚡ Auto-Reparar'"></span>
+                                        </button>
+
+                                        <!-- 2. Search Replacement (1-Click Fix Modal) -->
+                                        <button type="button"
+                                                @click="openSearchModal({{ json_encode([
+                                                    'id' => $rep->id,
+                                                    'status' => $rep->status,
+                                                    'notes' => $rep->notes,
+                                                    'type' => $rep->type,
+                                                    'app_id' => $rep->application->id,
+                                                    'name' => $rep->application->name,
+                                                    'version' => $rep->application->version,
+                                                    'download_url' => $rep->application->download_url,
+                                                    'magnet_link' => $rep->application->magnet_link,
+                                                ]) }})"
+                                                class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 hover:text-sky-300 text-[11px] font-bold border border-sky-500/30 transition-all cursor-pointer flex items-center gap-1"
+                                                title="Buscar reemplazos en vivo en Torrentmac y Haxmac con 1-Click">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                            </svg>
+                                            <span>Asistente</span>
+                                        </button>
+                                    @endif
+
                                     @if($rep->status === 'pending')
                                         <form method="POST" action="{{ route('admin.reports.resolve', $rep->id) }}">
                                             @csrf
                                             <button type="submit"
-                                                    class="px-2.5 py-1 rounded-lg bg-success/15 hover:bg-success/25 text-success text-[11px] font-bold border border-success/30 transition-all cursor-pointer flex items-center gap-1"
-                                                    title="Marcar este reporte como solucionado">
+                                                    class="px-2 py-1 rounded-lg bg-success/15 hover:bg-success/25 text-success text-[11px] font-bold border border-success/30 transition-all cursor-pointer flex items-center gap-1"
+                                                    title="Marcar este reporte como solucionado manualmente">
                                                 <span>✓</span>
-                                                <span>Resolver</span>
                                             </button>
                                         </form>
                                     @endif
 
                                     @if($rep->application)
                                         <a href="{{ route('admin.applications.edit', $rep->application) }}"
-                                           class="px-2.5 py-1 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold border border-primary/30 transition-all cursor-pointer"
-                                           title="Editar la aplicación para cambiar el enlace">
-                                            Editar App
+                                           class="p-1.5 rounded-lg text-primary hover:text-white hover:bg-primary/20 transition-colors border border-transparent"
+                                           title="Editar aplicación completa">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
                                         </a>
                                     @endif
 
@@ -170,7 +208,7 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="p-1 rounded-lg text-[#8C847A] hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                                                class="p-1.5 rounded-lg text-[#8C847A] hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                                                 title="Eliminar reporte">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -201,5 +239,441 @@
             </div>
         @endif
     </div>
+
+    <!-- ================= 1-CLICK FIX & SEARCH MODAL ================= -->
+    <div x-show="modalOpen"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+             @click="modalOpen = false"></div>
+
+        <div class="min-h-full flex items-center justify-center p-4">
+            <div class="relative w-full max-w-3xl bg-[#141210] border border-[#2F271E] rounded-2xl shadow-2xl p-6 text-left overflow-hidden space-y-5">
+                
+                <!-- Modal Header -->
+                <div class="flex items-start justify-between pb-4 border-b border-[#262019]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
+                                <span x-text="currentReport ? currentReport.name : 'Asistente de Enlaces'"></span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-[#241F1A] text-primary" x-text="currentReport ? ('v' + (currentReport.version || '1.0')) : ''"></span>
+                            </h3>
+                            <p class="text-xs text-[#8C847A]">Asistente de diagnóstico y reemplazo automático de enlaces caídos.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="modalOpen = false" class="text-[#8C847A] hover:text-white p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Navigation Tabs inside Modal -->
+                <div class="flex items-center gap-2 border-b border-[#262019] pb-2 text-xs">
+                    <button type="button"
+                            @click="activeTab = 'scraped'"
+                            class="px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer"
+                            :class="activeTab === 'scraped' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-[#8C847A] hover:text-white'">
+                        🔍 Opciones Scraped (Torrentmac &amp; Haxmac)
+                    </button>
+                    <button type="button"
+                            @click="activeTab = 'health'; diagnoseHealth()"
+                            class="px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                            :class="activeTab === 'health' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-[#8C847A] hover:text-white'">
+                        <span>🩺 Diagnóstico de Salud</span>
+                    </button>
+                    <button type="button"
+                            @click="activeTab = 'manual'"
+                            class="px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer"
+                            :class="activeTab === 'manual' ? 'bg-[#2B241C] text-white border border-[#3E3428]' : 'text-[#8C847A] hover:text-white'">
+                        ✏️ Ingreso Manual Rápido
+                    </button>
+                </div>
+
+                <!-- TAB 1: SCRAPED CANDIDATES -->
+                <div x-show="activeTab === 'scraped'" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-[#A39B91]">Resultados encontrados en vivo listos para aplicar con 1-Click:</p>
+                        <button type="button"
+                                @click="searchCandidates()"
+                                :disabled="searching"
+                                class="text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': searching }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span>Volver a buscar</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="searching" class="py-12 text-center space-y-3">
+                        <div class="w-8 h-8 mx-auto border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-xs text-white font-medium">Buscando enlaces en Torrentmac y Haxmac...</p>
+                    </div>
+
+                    <!-- Candidates List -->
+                    <div x-show="!searching" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                        <template x-for="(cand, idx) in candidates" :key="idx">
+                            <div class="p-3.5 rounded-xl bg-[#1A1612] border border-[#2B241C] hover:border-primary/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="space-y-1.5 flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <!-- Source Badge -->
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                              :class="cand.source === 'Torrentmac' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'"
+                                              x-text="cand.source"></span>
+                                        <span class="text-xs font-bold text-white truncate" x-text="cand.title"></span>
+                                        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#241F1A] text-[#C4BCB3]" x-text="'v' + (cand.version || '1.0')"></span>
+                                    </div>
+
+                                    <!-- Score Bar & Links Summary -->
+                                    <div class="flex items-center gap-3 text-[11px] text-[#8C847A]">
+                                        <span class="flex items-center gap-1 font-semibold"
+                                              :class="cand.score >= 80 ? 'text-success' : (cand.score >= 60 ? 'text-amber-400' : 'text-[#8C847A]')">
+                                            <span>Coincidencia:</span>
+                                            <span x-text="cand.score + '%'"></span>
+                                        </span>
+                                        <span x-show="cand.magnet_link" class="text-purple-400 font-mono">🧲 Magnet disponible</span>
+                                        <span x-show="cand.torrent_url" class="text-amber-400 font-mono">⚡ .torrent</span>
+                                        <span x-show="cand.mirrors && cand.mirrors.length > 0" class="text-sky-400 font-mono" x-text="cand.mirrors.length + ' Mirror(s)'"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Button: Apply Candidate -->
+                                <button type="button"
+                                        @click="applyCandidate(cand)"
+                                        class="btn-primary text-xs py-2 px-3.5 font-bold flex items-center justify-center gap-1.5 whitespace-nowrap shadow-md cursor-pointer flex-shrink-0">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Aplicar este Enlace</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <div x-show="candidates.length === 0" class="py-8 text-center text-[#736B63] space-y-2">
+                            <span class="text-2xl block">🔍</span>
+                            <p class="text-xs text-white font-medium">No se encontraron resultados automáticos coincidentes.</p>
+                            <p class="text-[11px] text-[#8C847A]">Puedes ingresar el nuevo enlace de forma manual en la pestaña correspondiente.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: HEALTH DIAGNOSTIC -->
+                <div x-show="activeTab === 'health'" class="space-y-4">
+                    <div class="p-3.5 rounded-xl bg-[#1A1612] border border-[#2B241C] space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Estado de los Enlaces Actuales de la App</h4>
+                            <button type="button" @click="diagnoseHealth()" class="text-xs text-primary hover:underline cursor-pointer">
+                                Re-verificar ahora
+                            </button>
+                        </div>
+
+                        <div x-show="checkingHealth" class="py-6 text-center text-xs text-white">
+                            <div class="w-6 h-6 mx-auto border-2 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+                            <span>Comprobando respuesta HTTP de los servidores de descarga...</span>
+                        </div>
+
+                        <div x-show="!checkingHealth && healthData" class="space-y-2">
+                            <template x-for="(res, i) in healthData ? healthData.results : []" :key="i">
+                                <div class="p-2.5 rounded-lg bg-[#14110E] border border-[#241F1A] flex items-center justify-between gap-2 text-xs">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2 h-2 rounded-full" :class="res.alive ? 'bg-success' : 'bg-danger'"></span>
+                                            <span class="font-bold text-white" x-text="res.name"></span>
+                                            <span class="text-[10px] font-mono px-1 rounded bg-[#201C18]" :class="res.alive ? 'text-success' : 'text-danger'" x-text="res.reason"></span>
+                                        </div>
+                                        <p class="text-[10px] text-[#736B63] font-mono truncate mt-0.5" x-text="res.url"></p>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                          :class="res.alive ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'"
+                                          x-text="res.alive ? 'Activo' : 'Caído'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: MANUAL INPUT -->
+                <div x-show="activeTab === 'manual'" class="space-y-4">
+                    <form @submit.prevent="applyManual()" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-[#A39B91] mb-1">
+                                Nueva URL de Descarga Directa (Mega, Drive, Qiwi, etc.)
+                            </label>
+                            <input type="url"
+                                   x-model="manualForm.download_url"
+                                   placeholder="https://servidor.com/archivo.dmg"
+                                   class="input w-full text-xs font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-[#A39B91] mb-1">
+                                Enlace Magnet (Opcional)
+                            </label>
+                            <input type="text"
+                                   x-model="manualForm.magnet_link"
+                                   placeholder="magnet:?xt=urn:btih:..."
+                                   class="input w-full text-xs font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-[#A39B91] mb-1">
+                                Versión del Programa (Opcional)
+                            </label>
+                            <input type="text"
+                                   x-model="manualForm.version"
+                                   placeholder="Ej: v2.5"
+                                   class="input w-full text-xs font-mono">
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-2">
+                            <button type="button" @click="modalOpen = false" class="btn-secondary text-xs px-4 py-2">
+                                Cancelar
+                            </button>
+                            <button type="submit"
+                                    :disabled="submittingManual"
+                                    class="btn-primary text-xs px-5 py-2 font-bold cursor-pointer">
+                                <span x-text="submittingManual ? 'Guardando...' : 'Guardar y Resolver Reporte'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300 transform"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200 transform"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md"
+         :class="toast.success ? 'bg-[#181410]/95 border-success/40 text-success shadow-success/10' : 'bg-[#181410]/95 border-danger/30 text-danger shadow-danger/10'"
+         style="display: none;">
+        <span class="text-xs font-semibold text-white pr-2" x-text="toast.message"></span>
+        <button type="button" @click="toast.show = false" class="text-[#8C847A] hover:text-white transition-colors p-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
 </div>
+
+@push('scripts')
+<script>
+function reportsManager() {
+    return {
+        repairingId: null,
+        modalOpen: false,
+        activeTab: 'scraped',
+        currentReport: null,
+        searching: false,
+        candidates: [],
+        checkingHealth: false,
+        healthData: null,
+        submittingManual: false,
+        manualForm: {
+            download_url: '',
+            magnet_link: '',
+            version: ''
+        },
+        toast: {
+            show: false,
+            message: '',
+            success: true
+        },
+
+        showToast(message, success = true) {
+            this.toast = { show: true, message, success };
+            setTimeout(() => { this.toast.show = false; }, 4000);
+        },
+
+        // 1. One-click Auto Repair from row button
+        async autoRepair(reportId, appName) {
+            if (this.repairingId) return;
+            if (!confirm(`¿Iniciar búsqueda y auto-reparación inteligente en Torrentmac y Haxmac para «${appName}»?`)) return;
+
+            this.repairingId = reportId;
+            try {
+                const res = await fetch(`/admin/reports/${reportId}/auto-repair`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast(data.message, true);
+                    this.markRowResolved(reportId);
+                } else {
+                    this.showToast(data.message || 'No se pudo auto-reparar con certeza. Abriendo asistente...', false);
+                    if (data.candidates && data.candidates.length > 0) {
+                        // Open modal with candidates pre-loaded
+                        this.openSearchModal({
+                            id: reportId,
+                            name: appName,
+                            version: ''
+                        }, data.candidates);
+                    }
+                }
+            } catch (e) {
+                this.showToast('Error de conexión: ' + e.message, false);
+            } finally {
+                this.repairingId = null;
+            }
+        },
+
+        // 2. Open Modal to inspect candidates
+        async openSearchModal(report, preloadedCandidates = null) {
+            this.currentReport = report;
+            this.activeTab = 'scraped';
+            this.modalOpen = true;
+            this.manualForm = {
+                download_url: report.download_url || '',
+                magnet_link: report.magnet_link || '',
+                version: report.version || ''
+            };
+
+            if (preloadedCandidates) {
+                this.candidates = preloadedCandidates;
+            } else {
+                await this.searchCandidates();
+            }
+        },
+
+        // 3. Search candidates via API
+        async searchCandidates() {
+            if (!this.currentReport) return;
+            this.searching = true;
+            try {
+                const res = await fetch(`/admin/reports/${this.currentReport.id}/search-replacement`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.candidates = data.candidates || [];
+                } else {
+                    this.showToast(data.message || 'Error al buscar reemplazos', false);
+                }
+            } catch (e) {
+                this.showToast('Error de red: ' + e.message, false);
+            } finally {
+                this.searching = false;
+            }
+        },
+
+        // 4. Apply chosen candidate with 1-Click
+        async applyCandidate(candidate) {
+            if (!this.currentReport) return;
+            if (!confirm(`¿Confirmas aplicar los enlaces de «${candidate.title}» (${candidate.source})?`)) return;
+
+            try {
+                const res = await fetch(`/admin/reports/${this.currentReport.id}/apply-replacement`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ candidate })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast(data.message, true);
+                    this.markRowResolved(this.currentReport.id);
+                    this.modalOpen = false;
+                } else {
+                    this.showToast(data.message || 'Error al aplicar reemplazo', false);
+                }
+            } catch (e) {
+                this.showToast('Error: ' + e.message, false);
+            }
+        },
+
+        // 5. Apply Manual Input
+        async applyManual() {
+            if (!this.currentReport) return;
+            this.submittingManual = true;
+            try {
+                const res = await fetch(`/admin/reports/${this.currentReport.id}/apply-replacement`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(this.manualForm)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast(data.message, true);
+                    this.markRowResolved(this.currentReport.id);
+                    this.modalOpen = false;
+                } else {
+                    this.showToast(data.message || 'Error al guardar enlace', false);
+                }
+            } catch (e) {
+                this.showToast('Error: ' + e.message, false);
+            } finally {
+                this.submittingManual = false;
+            }
+        },
+
+        // 6. Diagnose Health
+        async diagnoseHealth() {
+            if (!this.currentReport) return;
+            this.checkingHealth = true;
+            try {
+                const res = await fetch(`/admin/reports/${this.currentReport.id}/check-health`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.healthData = data.health;
+                }
+            } catch (e) {
+                this.showToast('No se pudo completar el diagnóstico', false);
+            } finally {
+                this.checkingHealth = false;
+            }
+        },
+
+        // Update row DOM visually to Solucionado
+        markRowResolved(reportId) {
+            const badge = document.getElementById(`status-badge-${reportId}`);
+            if (badge) {
+                badge.innerHTML = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-success/20 text-success border border-success/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                        Solucionado
+                    </span>
+                `;
+            }
+        }
+    };
+}
+</script>
+@endpush
 @endsection
