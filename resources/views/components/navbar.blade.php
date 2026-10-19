@@ -39,8 +39,11 @@
                 <!-- Top Downloads -->
                 <li id="menu-item-6907" class="menu-item">
                     <a href="{{ route('popular') }}"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors cursor-pointer {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        Top Downloads
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
+                        <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.157 2.158-1.157 3.597 0 .395.04.773.11 1.134a6.993 6.993 0 00-2.072 1.349 7.02 7.02 0 00-1.782 2.708 7.001 7.001 0 001.218 7.032A7.004 7.004 0 0012 21a6.985 6.985 0 005.474-2.656 7.03 7.03 0 001.076-7.032 6.992 6.992 0 00-1.782-2.708 7.03 7.03 0 00-2.072-1.35 6.002 6.002 0 00.11-1.133c0-1.44-.63-2.776-1.157-3.598a2.977 2.977 0 00-.822-.88zM8.5 12a3.5 3.5 0 117 0c0 1.258-.667 2.36-1.667 2.976a1 1 0 01-1.166-.142l-1.002-1.002a1 1 0 01-.293-.707V12a1 1 0 00-2 0v1.125a1 1 0 01-.293.707l-1.002 1.002a1 1 0 01-1.166.142A3.49 3.49 0 018.5 12z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Top Downloads</span>
                     </a>
                 </li>
 
@@ -49,9 +52,12 @@
                     <a href="{{ route('categories') }}"
                        @mouseenter="open = true"
                        @click.prevent="open = !open"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors flex items-center gap-1.5 py-2 cursor-pointer focus:outline-none {{ request()->routeIs('categories') || request()->routeIs('category') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}"
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer focus:outline-none {{ request()->routeIs('categories') || request()->routeIs('category') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}"
                        aria-expanded="false"
                        :aria-expanded="open">
+                        <svg class="w-4 h-4 text-[#0071E3] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                        </svg>
                         <span>Application</span>
                         <svg class="w-3 h-3 text-[#38322B]/60 dark:text-[#F6F3EC]/60 group-hover:text-[#0071E3] dark:group-hover:text-white transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -70,7 +76,7 @@
 
                         <li id="menu-item-3070">
                             <a href="{{ route('category', 'developer-tools') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-[#0071E3]/10 dark:bg-[#0071E3]/20 flex items-center justify-center text-[#0071E3] flex-shrink-0">
                                     <x-category-icon icon="code" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">Developer Tools</span>
@@ -78,7 +84,7 @@
                         </li>
                         <li id="menu-item-34">
                             <a href="{{ route('category', 'media-design') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-pink-500/10 dark:bg-pink-500/20 flex items-center justify-center text-pink-500 flex-shrink-0">
                                     <x-category-icon icon="palette" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">Media &amp; Design</span>
@@ -86,7 +92,7 @@
                         </li>
                         <li id="menu-item-7860">
                             <a href="{{ route('category', 'lifestyle-everyday') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-500 flex-shrink-0">
                                     <x-category-icon icon="app" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">Lifestyle &amp; Everyday</span>
@@ -94,7 +100,7 @@
                         </li>
                         <li id="menu-item-35">
                             <a href="{{ route('category', 'mobile-tools') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-cyan-500/10 dark:bg-cyan-500/20 flex items-center justify-center text-cyan-500 flex-shrink-0">
                                     <x-category-icon icon="globe" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">Mobile Tools</span>
@@ -102,7 +108,7 @@
                         </li>
                         <li id="menu-item-2722">
                             <a href="{{ route('category', 'productivity-business') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-violet-500/10 dark:bg-violet-500/20 flex items-center justify-center text-violet-500 flex-shrink-0">
                                     <x-category-icon icon="briefcase" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">Productivity &amp; Business</span>
@@ -110,7 +116,7 @@
                         </li>
                         <li id="menu-item-38">
                             <a href="{{ route('category', 'system-utilities') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
-                                <div class="w-5 h-5 rounded flex items-center justify-center text-[#0071E3] flex-shrink-0">
+                                <div class="w-6 h-6 rounded-md bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 flex-shrink-0">
                                     <x-category-icon icon="wrench" class="w-3.5 h-3.5" />
                                 </div>
                                 <span class="flex-1 truncate">System Utilities</span>
@@ -119,7 +125,8 @@
                         <li class="border-t border-[#E5E7EB] dark:border-[#27272A] my-1"></li>
                         <li>
                             <a href="{{ route('categories') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] text-[#0071E3] dark:text-[#38BDF8] font-semibold hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] transition-colors">
-                                <span>All Applications &rarr;</span>
+                                <span>All Applications</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
                             </a>
                         </li>
                     </ul>
@@ -130,10 +137,13 @@
                     <a href="{{ route('search', ['q' => 'Adobe']) }}"
                        @mouseenter="open = true"
                        @click.prevent="open = !open"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors flex items-center gap-1.5 py-2 cursor-pointer focus:outline-none"
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer focus:outline-none"
                        :class="open ? 'text-[#0071E3] dark:text-white' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90'"
                        aria-expanded="false"
                        :aria-expanded="open">
+                        <svg class="w-4 h-4 text-[#FA0F00] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M14.545 3H24v18h-4.471l-4.984-12.753zm-5.09 0H0v18h4.471l4.984-12.753zm2.545 7.618l3.968 10.382h-3.082l-1.22-3.32h-3.75l2.42-7.062h1.664z"/>
+                        </svg>
                         <span>Adobe Collection</span>
                         <svg class="w-3 h-3 text-[#38322B]/60 dark:text-[#F6F3EC]/60 group-hover:text-[#0071E3] dark:group-hover:text-white transition-transform" :class="open ? 'rotate-180 text-[#0071E3] dark:text-white' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -141,7 +151,7 @@
                     </a>
 
                     <!-- Sub Menu -->
-                    <ul class="sub-menu absolute left-0 top-full w-60 bg-white dark:bg-[#16171A] backdrop-blur-xl border border-[#E5E7EB] dark:border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 space-y-0.5"
+                    <ul class="sub-menu absolute left-0 top-full w-64 bg-white dark:bg-[#16171A] backdrop-blur-xl border border-[#E5E7EB] dark:border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 space-y-0.5"
                         x-show="open" x-cloak
                         x-transition:enter="transition ease-out duration-150"
                         x-transition:enter-start="opacity-0 translate-y-1"
@@ -150,23 +160,46 @@
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1">
                         <li id="menu-item-31084">
-                            <a href="{{ route('search', ['q' => 'Photoshop']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Adobe Photoshop</span>
+                            <a href="{{ route('search', ['q' => 'Photoshop']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-[#001E36] text-[#31A8FF] text-[10.5px] font-black flex items-center justify-center border border-[#31A8FF]/30 shadow-sm flex-shrink-0">Ps</div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Adobe Photoshop</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Photo &amp; Design</span>
+                                </div>
                             </a>
                         </li>
                         <li id="menu-item-31085">
-                            <a href="{{ route('search', ['q' => 'Lightroom']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Adobe Lightroom</span>
+                            <a href="{{ route('search', ['q' => 'Lightroom']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-[#001E36] text-[#31A8FF] text-[10.5px] font-black flex items-center justify-center border border-[#31A8FF]/30 shadow-sm flex-shrink-0">Lr</div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Adobe Lightroom</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Raw Photography</span>
+                                </div>
                             </a>
                         </li>
                         <li id="menu-item-31086">
-                            <a href="{{ route('search', ['q' => 'Premiere']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Adobe Premiere Pro</span>
+                            <a href="{{ route('search', ['q' => 'Premiere']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-[#00005B] text-[#9999FF] text-[10.5px] font-black flex items-center justify-center border border-[#9999FF]/30 shadow-sm flex-shrink-0">Pr</div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Adobe Premiere Pro</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Video Editing</span>
+                                </div>
                             </a>
                         </li>
                         <li id="menu-item-31087">
-                            <a href="{{ route('search', ['q' => 'Illustrator']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Adobe Illustrator</span>
+                            <a href="{{ route('search', ['q' => 'Illustrator']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-[#330000] text-[#FF9A00] text-[10.5px] font-black flex items-center justify-center border border-[#FF9A00]/30 shadow-sm flex-shrink-0">Ai</div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Adobe Illustrator</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Vector Graphics</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="border-t border-[#E5E7EB] dark:border-[#27272A] my-1"></li>
+                        <li>
+                            <a href="{{ route('search', ['q' => 'Adobe']) }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] text-[#FA0F00] font-semibold hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] transition-colors">
+                                <span>All Adobe Suite</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
                             </a>
                         </li>
                     </ul>
@@ -177,10 +210,14 @@
                     <a href="{{ route('category', 'games') }}"
                        @mouseenter="open = true"
                        @click.prevent="open = !open"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-colors flex items-center gap-1.5 py-2 cursor-pointer focus:outline-none {{ request()->is('category/games') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}"
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer focus:outline-none {{ request()->is('category/games') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}"
                        :class="open ? 'text-[#0071E3] dark:text-white' : ''"
                        aria-expanded="false"
                        :aria-expanded="open">
+                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="2" y="6" width="20" height="12" rx="6" />
+                            <path stroke-linecap="round" d="M6 12h4m-2-2v4m8-2h.01m2.99-2h.01" stroke-width="2.5" />
+                        </svg>
                         <span>Games</span>
                         <svg class="w-3 h-3 text-[#38322B]/60 dark:text-[#F6F3EC]/60 group-hover:text-[#0071E3] dark:group-hover:text-white transition-transform" :class="open ? 'rotate-180 text-[#0071E3] dark:text-white' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -188,7 +225,7 @@
                     </a>
 
                     <!-- Sub Menu -->
-                    <ul class="sub-menu absolute left-0 top-full w-60 bg-white dark:bg-[#16171A] backdrop-blur-xl border border-[#E5E7EB] dark:border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 space-y-0.5"
+                    <ul class="sub-menu absolute left-0 top-full w-64 bg-white dark:bg-[#16171A] backdrop-blur-xl border border-[#E5E7EB] dark:border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 space-y-0.5"
                         x-show="open" x-cloak
                         x-transition:enter="transition ease-out duration-150"
                         x-transition:enter-start="opacity-0 translate-y-1"
@@ -197,18 +234,49 @@
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1">
                         <li id="menu-item-22102">
-                            <a href="{{ route('search', ['q' => 'Apple Arcade']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Apple Arcade</span>
+                            <a href="{{ route('search', ['q' => 'Apple Arcade']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-rose-500/10 text-rose-500 dark:bg-rose-500/20 border border-rose-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.003 0H9.497m5.003 0a6.75 6.75 0 0 0-5.003 0" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Apple Arcade</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Curated Mac Games</span>
+                                </div>
                             </a>
                         </li>
                         <li id="menu-item-47013">
-                            <a href="{{ route('search', ['q' => 'Assassin']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>Assassin’s Creed</span>
+                            <a href="{{ route('search', ['q' => 'Assassin']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">Assassin’s Creed</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Action &amp; Stealth</span>
+                                </div>
                             </a>
                         </li>
                         <li id="menu-item-48402">
-                            <a href="{{ route('search', ['q' => 'GTA']) }}" class="flex items-center justify-between px-3.5 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors">
-                                <span>GTA: Grand Theft Auto</span>
+                            <a href="{{ route('search', ['q' => 'GTA']) }}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] font-medium hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] text-[#374151] dark:text-[#E4E4E7] hover:text-[#0071E3] dark:hover:text-white transition-colors group/item">
+                                <div class="w-6 h-6 rounded-md bg-violet-500/10 text-violet-500 dark:bg-violet-500/20 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block leading-tight font-medium truncate">GTA Series</span>
+                                    <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA] truncate">Open World Action</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="border-t border-[#E5E7EB] dark:border-[#27272A] my-1"></li>
+                        <li>
+                            <a href="{{ route('category', 'games') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] text-emerald-500 font-semibold hover:bg-[#F3F4F6] dark:hover:bg-[#1E293B] transition-colors">
+                                <span>All Mac Games</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
                             </a>
                         </li>
                     </ul>
@@ -358,16 +426,82 @@
             <form action="{{ route('search') }}" method="GET">
                 <input type="text" name="q" placeholder="Search apps & games..." value="{{ request('q') }}" class="input w-full text-xs">
             </form>
-            <nav class="flex flex-col gap-1 text-sm text-[#38322B] dark:text-[#F6F3EC]/90">
-                <a href="{{ route('popular') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Top Downloads</a>
-                <a href="{{ route('categories') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Application</a>
-                <a href="{{ route('search', ['q' => 'Adobe']) }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Adobe Collection</a>
-                <a href="{{ route('category', 'games') }}" class="py-2 hover:text-[#0071E3] dark:hover:text-white border-b border-[#E5DFD7] dark:border-[#222938]">Games</a>
+            <nav class="flex flex-col gap-1.5 text-sm text-[#38322B] dark:text-[#F6F3EC]">
+                <a href="{{ route('popular') }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.157 2.158-1.157 3.597 0 .395.04.773.11 1.134a6.993 6.993 0 00-2.072 1.349 7.02 7.02 0 00-1.782 2.708 7.001 7.001 0 001.218 7.032A7.004 7.004 0 0012 21a6.985 6.985 0 005.474-2.656 7.03 7.03 0 001.076-7.032 6.992 6.992 0 00-1.782-2.708 7.03 7.03 0 00-2.072-1.35 6.002 6.002 0 00.11-1.133c0-1.44-.63-2.776-1.157-3.598a2.977 2.977 0 00-.822-.88zM8.5 12a3.5 3.5 0 117 0c0 1.258-.667 2.36-1.667 2.976a1 1 0 01-1.166-.142l-1.002-1.002a1 1 0 01-.293-.707V12a1 1 0 00-2 0v1.125a1 1 0 01-.293.707l-1.002 1.002a1 1 0 01-1.166.142A3.49 3.49 0 018.5 12z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Top Downloads</span>
+                            <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Trending &amp; Most Popular</span>
+                        </div>
+                    </div>
+                    <svg class="w-4 h-4 text-[#8C847A] group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+                </a>
+
+                <a href="{{ route('categories') }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-[#0071E3]/10 text-[#0071E3] dark:bg-[#0071E3]/20 border border-[#0071E3]/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Applications</span>
+                            <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Categories &amp; Tools</span>
+                        </div>
+                    </div>
+                    <svg class="w-4 h-4 text-[#8C847A] group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+                </a>
+
+                <a href="{{ route('search', ['q' => 'Adobe']) }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 text-[#FA0F00] dark:bg-red-500/20 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M14.545 3H24v18h-4.471l-4.984-12.753zm-5.09 0H0v18h4.471l4.984-12.753zm2.545 7.618l3.968 10.382h-3.082l-1.22-3.32h-3.75l2.42-7.062h1.664z"/>
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Adobe Collection</span>
+                            <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Photoshop, Illustrator, Premiere</span>
+                        </div>
+                    </div>
+                    <svg class="w-4 h-4 text-[#8C847A] group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+                </a>
+
+                <a href="{{ route('category', 'games') }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="2" y="6" width="20" height="12" rx="6" />
+                                <path stroke-linecap="round" d="M6 12h4m-2-2v4m8-2h.01m2.99-2h.01" stroke-width="2.5" />
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Games</span>
+                            <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Arcade, Assassin's Creed &amp; GTA</span>
+                        </div>
+                    </div>
+                    <svg class="w-4 h-4 text-[#8C847A] group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+                </a>
+
                 @auth
-                    <a href="{{ route('admin.dashboard') }}" class="py-2 text-[#0071E3] font-medium">Admin Panel</a>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <div class="border-t border-[#E5DFD7] dark:border-[#222938] my-1"></div>
+                    <a href="{{ route('admin.dashboard') }}" class="flex items-center justify-between p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </div>
+                            <span class="font-bold text-xs">Admin Panel</span>
+                        </div>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/30">PRO</span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="pt-1">
                         @csrf
-                        <button type="submit" class="py-2 text-xs text-danger text-left">Log Out</button>
+                        <button type="submit" class="w-full text-left px-3 py-2 text-xs text-rose-500 hover:text-rose-600 font-medium cursor-pointer">Cerrar Sesión</button>
                     </form>
                 @endauth
             </nav>
