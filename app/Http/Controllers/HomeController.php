@@ -759,9 +759,19 @@ class HomeController extends Controller
             ]);
         }
 
-        return response()->file(public_path('images/og-share.jpg'), [
-            'Content-Type' => 'image/jpeg',
-            'Cache-Control' => 'public, max-age=604800',
-        ]);
+        $generated = $telegramService->generateFeaturedCard($application);
+        if ($generated) {
+            try {
+                Storage::disk('public')->put($cacheFilename, $generated);
+            } catch (\Throwable $e) {
+            }
+
+            return response($generated, 200, [
+                'Content-Type' => 'image/jpeg',
+                'Cache-Control' => 'public, max-age=604800, immutable',
+            ]);
+        }
+
+        abort(404);
     }
 }

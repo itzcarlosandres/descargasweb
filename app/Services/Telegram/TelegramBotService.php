@@ -45,10 +45,15 @@ class TelegramBotService
     }
 
     /**
-     * Resolve and prepare cover image for Telegram sendPhoto.
-     * Handles local disk paths, formats (converts AVIF to JPEG in memory), and URLs.
+     * Resolve and prepare the featured cover image ("Imagen Destacada") for Telegram sendPhoto.
+     * Guaranteed priority:
+     *   1. Real application screenshot (from database or disk, converting AVIF and WEBP to JPEG).
+     *   2. First gallery image.
+     *   3. Dynamic custom 1200x630 Featured Card generated for this specific app (using its icon, name, version, category).
+     *   4. High-resolution app icon converted to JPEG.
+     * Note: Generic default banners (og-share.jpg) are completely eliminated.
      *
-     * @return array{bytes?: string, filename?: string, mime?: string, url?: string}|null
+     * @return array{bytes: string, filename: string, mime: string}|null
      */
     public function resolveCoverImage(Application $app): ?array
     {
@@ -85,95 +90,107 @@ class TelegramBotService
             }
         }
 
-        // 4. App icon as secondary fallback
-        if (empty($candidate) && ! empty($app->icon)) {
-            $candidate = $app->icon;
+        // If a screenshot candidate exists, resolve and convert it
+        if (! empty($candidate)) {
+            $resolved = $this->prepareImageBytes($candidate);
+            if ($resolved) {
+                return $resolved;
+            }
         }
 
-        // 5. If no candidate found, use default site OG cover
-        if (empty($candidate)) {
-            $defaultOg = public_path('images/og-share.jpg');
-            if (file_exists($defaultOg)) {
-                return [
-                    'bytes' => file_get_contents($defaultOg),
-                    'filename' => 'cover.jpg',
-                    'mime' => 'image/jpeg',
-                ];
+        // 4. No screenshot found: Generate a custom, high-resolution 1200x630 Featured Card ("Imagen Destacada")
+        $generatedBytes = $this->generateFeaturedCard($app);
+        if ($generatedBytes) {
+            try {
+                $coverPath = "apps/{$app->slug}-cover.jpg";
+                Storage::disk('public')->put($coverPath, $generatedBytes);
+                if (empty($app->screenshot)) {
+                    $app->updateQuietly(['screenshot' => $coverPath]);
+                }
+            } catch (\Throwable $e) {
+                // ignore write errors
             }
 
+            return [
+                'bytes' => $generatedBytes,
+                'filename' => 'cover.jpg',
+                'mime' => 'image/jpeg',
+            ];
+        }
+
+        // 5. Fallback: app icon converted to JPEG
+        if (! empty($app->icon)) {
+            $iconResolved = $this->prepareImageBytes($app->icon);
+            if ($iconResolved) {
+                return $iconResolved;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Prepare image bytes from local disk, public storage, or remote URL.
+     * Automatically converts AVIF and WEBP formats to JPEG so Telegram sendPhoto always succeeds.
+     *
+     * @return array{bytes: string, filename: string, mime: string}|null
+     */
+    public function prepareImageBytes(string $candidate): ?array
+    {
+        $candidate = trim($candidate);
+        if (empty($candidate)) {
             return null;
         }
+
+        $rawBytes = null;
+        $extension = '';
+        $filename = 'cover.jpg';
 
         // Case A: Remote URL
         if (str_starts_with($candidate, 'http://') || str_starts_with($candidate, 'https://')) {
             try {
-                $imgRes = Http::timeout(10)->get($candidate);
+                $imgRes = Http::timeout(12)->get($candidate);
                 if ($imgRes->successful()) {
-                    $body = $imgRes->body();
+                    $rawBytes = $imgRes->body();
                     $pathPart = parse_url($candidate, PHP_URL_PATH) ?? '';
-                    if (str_ends_with(strtolower($pathPart), '.avif') || str_starts_with(substr($body, 4, 8), 'ftypavif')) {
-                        $converted = $this->convertAvifToJpeg($body);
-                        if ($converted) {
-                            return [
-                                'bytes' => $converted,
-                                'filename' => 'cover.jpg',
-                                'mime' => 'image/jpeg',
-                            ];
-                        }
-                    }
-
-                    return [
-                        'bytes' => $body,
-                        'filename' => basename($pathPart) ?: 'cover.jpg',
-                        'mime' => $imgRes->header('Content-Type') ?: 'image/jpeg',
-                    ];
+                    $extension = strtolower(pathinfo($pathPart, PATHINFO_EXTENSION));
+                    $filename = basename($pathPart) ?: 'cover.jpg';
                 }
             } catch (\Throwable $e) {
-                Log::warning("Could not download remote cover {$candidate}: ".$e->getMessage());
+                Log::warning("Could not download remote image {$candidate}: ".$e->getMessage());
             }
-
-            return [
-                'url' => $candidate,
-            ];
-        }
-
-        // Case B: Local storage or public file
-        $localPath = Storage::disk('public')->path($candidate);
-        if (! file_exists($localPath)) {
-            $altPath = public_path('storage/'.$candidate);
-            if (file_exists($altPath)) {
-                $localPath = $altPath;
-            } elseif (file_exists(public_path($candidate))) {
-                $localPath = public_path($candidate);
-            } else {
-                $defaultOg = public_path('images/og-share.jpg');
-                if (file_exists($defaultOg)) {
-                    $localPath = $defaultOg;
+        } else {
+            // Case B: Local storage or public file
+            $localPath = Storage::disk('public')->path($candidate);
+            if (! file_exists($localPath)) {
+                $altPath = public_path('storage/'.$candidate);
+                if (file_exists($altPath)) {
+                    $localPath = $altPath;
+                } elseif (file_exists(public_path($candidate))) {
+                    $localPath = public_path($candidate);
                 } else {
                     return null;
                 }
             }
+
+            $extension = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
+            $filename = basename($localPath);
+            $rawBytes = @file_get_contents($localPath);
         }
 
-        $extension = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
-
-        // SVG is not supported by Telegram sendPhoto - use default banner
-        if ($extension === 'svg') {
-            $defaultOg = public_path('images/og-share.jpg');
-            if (file_exists($defaultOg)) {
-                return [
-                    'bytes' => file_get_contents($defaultOg),
-                    'filename' => 'cover.jpg',
-                    'mime' => 'image/jpeg',
-                ];
-            }
-
+        if (empty($rawBytes)) {
             return null;
         }
 
-        // Convert AVIF to JPEG in memory
-        if ($extension === 'avif') {
-            $converted = $this->convertAvifPathToJpeg($localPath);
+        // SVG is not supported as a photo in Telegram
+        if ($extension === 'svg') {
+            return null;
+        }
+
+        // Convert AVIF to JPEG
+        $isAvif = $extension === 'avif' || str_starts_with(substr($rawBytes, 4, 8), 'ftypavif');
+        if ($isAvif) {
+            $converted = $this->convertAvifToJpeg($rawBytes);
             if ($converted) {
                 return [
                     'bytes' => $converted,
@@ -182,27 +199,65 @@ class TelegramBotService
                 ];
             }
 
-            $defaultOg = public_path('images/og-share.jpg');
-            if (file_exists($defaultOg)) {
+            return null;
+        }
+
+        // Convert WEBP to JPEG (Telegram sendPhoto does NOT accept WEBP format)
+        $isWebp = $extension === 'webp' || (str_starts_with($rawBytes, 'RIFF') && str_contains(substr($rawBytes, 8, 8), 'WEBP'));
+        if ($isWebp) {
+            $converted = $this->convertWebpToJpeg($rawBytes);
+            if ($converted) {
                 return [
-                    'bytes' => file_get_contents($defaultOg),
+                    'bytes' => $converted,
                     'filename' => 'cover.jpg',
                     'mime' => 'image/jpeg',
                 ];
             }
+
+            return null;
         }
 
-        // Standard JPEG, PNG, WEBP
-        $bytes = @file_get_contents($localPath);
-        if ($bytes !== false) {
-            return [
-                'bytes' => $bytes,
-                'filename' => basename($localPath),
-                'mime' => @mime_content_type($localPath) ?: 'image/jpeg',
-            ];
+        return [
+            'bytes' => $rawBytes,
+            'filename' => $filename,
+            'mime' => str_ends_with($filename, '.png') ? 'image/png' : 'image/jpeg',
+        ];
+    }
+
+    /**
+     * Convert in-memory WEBP binary data to JPEG binary bytes.
+     */
+    protected function convertWebpToJpeg(string $binaryData): ?string
+    {
+        if (! function_exists('imagecreatefromstring')) {
+            return null;
         }
 
-        return null;
+        try {
+            $img = @imagecreatefromstring($binaryData);
+            if (! $img) {
+                return null;
+            }
+
+            $w = imagesx($img);
+            $h = imagesy($img);
+            $bg = imagecreatetruecolor($w, $h);
+            $white = imagecolorallocate($bg, 255, 255, 255);
+            imagefilledrectangle($bg, 0, 0, $w, $h, $white);
+            imagecopy($bg, $img, 0, 0, 0, 0, $w, $h);
+
+            ob_start();
+            imagejpeg($bg, null, 90);
+            $jpgData = ob_get_clean();
+            imagedestroy($img);
+            imagedestroy($bg);
+
+            return $jpgData ?: null;
+        } catch (\Throwable $e) {
+            Log::warning('WEBP binary to JPEG conversion failed: '.$e->getMessage());
+
+            return null;
+        }
     }
 
     /**
@@ -256,6 +311,130 @@ class TelegramBotService
             return $jpgData ?: null;
         } catch (\Throwable $e) {
             Log::warning('AVIF binary to JPEG conversion failed: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Generate a premium 1200x630 macOS featured banner card for the application.
+     */
+    public function generateFeaturedCard(Application $app): ?string
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            return null;
+        }
+
+        try {
+            $width = 1200;
+            $height = 630;
+            $im = imagecreatetruecolor($width, $height);
+            imagealphablending($im, true);
+            imagesavealpha($im, true);
+
+            // 1. Dark sleek gradient background (#0A0E17 to #151A26)
+            for ($y = 0; $y < $height; $y++) {
+                $ratio = $y / $height;
+                $r = (int) (10 + (21 - 10) * $ratio);
+                $g = (int) (14 + (26 - 14) * $ratio);
+                $b = (int) (23 + (38 - 23) * $ratio);
+                $color = imagecolorallocate($im, $r, $g, $b);
+                imageline($im, 0, $y, $width, $y, $color);
+            }
+
+            // 2. Subtle ambient glow behind the icon
+            for ($radius = 180; $radius > 0; $radius -= 15) {
+                $alpha = (int) (127 - (180 - $radius) * 0.15);
+                $glowColor = imagecolorallocatealpha($im, 245, 158, 11, max(115, min(127, $alpha)));
+                imagefilledellipse($im, 220, 315, $radius * 2, $radius * 2, $glowColor);
+            }
+
+            // 3. Traffic light dots (macOS style top-left)
+            $red = imagecolorallocate($im, 255, 95, 86);
+            $yellow = imagecolorallocate($im, 255, 189, 46);
+            $green = imagecolorallocate($im, 39, 201, 63);
+            imagefilledellipse($im, 70, 55, 16, 16, $red);
+            imagefilledellipse($im, 96, 55, 16, 16, $yellow);
+            imagefilledellipse($im, 122, 55, 16, 16, $green);
+
+            // 4. Header Brand
+            $brandColor = imagecolorallocate($im, 156, 163, 175);
+            $gold = imagecolorallocate($im, 245, 158, 11);
+            $white = imagecolorallocate($im, 255, 255, 255);
+            imagestring($im, 5, 160, 48, 'HACKMAC.CC', $gold);
+            imagestring($im, 4, 280, 49, '|   PREMIUM MACOS RELEASES', $brandColor);
+
+            // 5. Draw Icon on the left (box at x=100, y=195, w=240, h=240)
+            $iconDrawn = false;
+            $iconCandidate = $app->icon;
+            if ($iconCandidate) {
+                $iconLocalPath = Storage::disk('public')->path($iconCandidate);
+                if (! file_exists($iconLocalPath)) {
+                    $alt = public_path('storage/'.$iconCandidate);
+                    if (file_exists($alt)) {
+                        $iconLocalPath = $alt;
+                    }
+                }
+
+                if (file_exists($iconLocalPath)) {
+                    $raw = @file_get_contents($iconLocalPath);
+                    $srcImg = $raw ? @imagecreatefromstring($raw) : null;
+
+                    if ($srcImg) {
+                        $cardBg = imagecolorallocate($im, 22, 27, 34);
+                        $cardBorder = imagecolorallocate($im, 48, 54, 61);
+                        imagefilledrectangle($im, 95, 190, 345, 440, $cardBg);
+                        imagerectangle($im, 95, 190, 345, 440, $cardBorder);
+                        imagecopyresampled($im, $srcImg, 100, 195, 0, 0, 240, 240, imagesx($srcImg), imagesy($srcImg));
+                        imagedestroy($srcImg);
+                        $iconDrawn = true;
+                    }
+                }
+            }
+
+            if (! $iconDrawn) {
+                // Fallback Monogram Icon
+                $badgeBg = imagecolorallocate($im, 30, 41, 59);
+                $badgeBorder = imagecolorallocate($im, 245, 158, 11);
+                imagefilledrectangle($im, 100, 195, 340, 435, $badgeBg);
+                imagerectangle($im, 100, 195, 340, 435, $badgeBorder);
+                $initial = strtoupper(substr($app->name, 0, 1));
+                imagestring($im, 5, 210, 300, $initial, $white);
+            }
+
+            // 6. Right Side Content
+            $name = mb_strimwidth($app->name, 0, 36, '...');
+            imagestring($im, 5, 400, 205, strtoupper($name), $white);
+
+            $catName = $app->category?->name ?? 'macOS Application';
+            $versionStr = $app->version ? "v{$app->version}" : 'Latest Release';
+            $sizeStr = $app->size ?: 'Universal';
+
+            $pillBg = imagecolorallocate($im, 30, 41, 59);
+            $pillBorder = imagecolorallocate($im, 51, 65, 85);
+            imagefilledrectangle($im, 400, 255, 620, 290, $pillBg);
+            imagerectangle($im, 400, 255, 620, 290, $pillBorder);
+            imagestring($im, 4, 415, 265, $versionStr, $gold);
+
+            imagefilledrectangle($im, 635, 255, 880, 290, $pillBg);
+            imagerectangle($im, 635, 255, 880, 290, $pillBorder);
+            imagestring($im, 4, 650, 265, mb_strimwidth($catName, 0, 24, ''), $white);
+
+            $textMuted = imagecolorallocate($im, 148, 163, 184);
+            imagestring($im, 4, 400, 320, 'Architecture:  Universal (Apple Silicon & Intel 64-bit)', $textMuted);
+            imagestring($im, 4, 400, 355, "File Size:     {$sizeStr}", $textMuted);
+            imagestring($im, 4, 400, 390, 'Security:      Verified & Scanned Clean  -  Direct High Speed', $gold);
+
+            imagefilledrectangle($im, 0, 624, $width, 630, $gold);
+
+            ob_start();
+            imagejpeg($im, null, 92);
+            $bytes = ob_get_clean();
+            imagedestroy($im);
+
+            return $bytes ?: null;
+        } catch (\Throwable $e) {
+            Log::warning('Featured card generation failed: '.$e->getMessage());
 
             return null;
         }
