@@ -141,8 +141,8 @@
                        :class="open ? 'text-[#0071E3] dark:text-white' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90'"
                        aria-expanded="false"
                        :aria-expanded="open">
-                        <svg class="w-4 h-4 text-[#FA0F00] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M14.545 3H24v18h-4.471l-4.984-12.753zm-5.09 0H0v18h4.471l4.984-12.753zm2.545 7.618l3.968 10.382h-3.082l-1.22-3.32h-3.75l2.42-7.062h1.664z"/>
+                        <svg class="w-4 h-4 text-[#FA0F00] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.5 10.5 4.5 2.25-9 4.5-9-4.5 4.5-2.25m9 4.5 4.5 2.25-9 4.5-9-4.5 4.5-2.25m9-9 4.5 2.25-9 4.5-9-4.5 4.5-2.25" />
                         </svg>
                         <span>Adobe Collection</span>
                         <svg class="w-3 h-3 text-[#38322B]/60 dark:text-[#F6F3EC]/60 group-hover:text-[#0071E3] dark:group-hover:text-white transition-transform" :class="open ? 'rotate-180 text-[#0071E3] dark:text-white' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -460,8 +460,8 @@
                 <a href="{{ route('search', ['q' => 'Adobe']) }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-8 h-8 rounded-lg bg-red-500/10 text-[#FA0F00] dark:bg-red-500/20 border border-red-500/20 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M14.545 3H24v18h-4.471l-4.984-12.753zm-5.09 0H0v18h4.471l4.984-12.753zm2.545 7.618l3.968 10.382h-3.082l-1.22-3.32h-3.75l2.42-7.062h1.664z"/>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.5 10.5 4.5 2.25-9 4.5-9-4.5 4.5-2.25m9 4.5 4.5 2.25-9 4.5-9-4.5 4.5-2.25m9-9 4.5 2.25-9 4.5-9-4.5 4.5-2.25" />
                             </svg>
                         </div>
                         <div class="truncate">
