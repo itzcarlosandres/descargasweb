@@ -210,43 +210,97 @@
                                 </div>
                             </div>
 
-                            <!-- sah-specs: 4 columns grid -->
-                            <dl class="sah-specs" style="--sah-cols: 4">
-                                <div class="sah-spec">
-                                    <dt>Size</dt>
-                                    <dd>{{ $application->formatted_size }}</dd>
+                            <!-- Redesigned Specs Bar: Apple macOS Hardware Specs Card Grid -->
+                            <div class="sah-specs !p-3 sm:!p-4 !bg-[#F6F5F2]/80 dark:!bg-[#151619]/90 !border-[#E5DFD7] dark:!border-[#27282F] !rounded-2xl !gap-2.5 sm:!gap-3 backdrop-blur-xl shadow-sm my-5" style="--sah-cols: 4">
+                                <!-- Spec 1: Size -->
+                                <div class="p-3 sm:p-3.5 rounded-xl bg-white/80 dark:bg-[#1B1C22]/80 border border-[#E8E2D9] dark:border-[#2A2B33] hover:border-[#0071E3]/40 dark:hover:border-[#0071E3]/40 transition-all duration-200 group">
+                                    <div class="flex items-center gap-1.5 sm:gap-2 mb-1.5">
+                                        <div class="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 border border-blue-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#8C847A] dark:text-[#A1A1AA]">Size</span>
+                                    </div>
+                                    <div class="text-[15px] sm:text-base font-extrabold text-[#1C1814] dark:text-white tracking-tight leading-snug">
+                                        {{ $application->formatted_size }}
+                                    </div>
+                                    <span class="text-[10px] text-[#8C847A] dark:text-[#807B73] font-medium block mt-0.5 truncate">Free Space Required</span>
                                 </div>
-                                <div class="sah-spec">
-                                    <dt>Requires</dt>
-                                    <dd>{{ $application->platform ?? 'macOS 14' }}</dd>
+
+                                <!-- Spec 2: Requires / Platform -->
+                                <div class="p-3 sm:p-3.5 rounded-xl bg-white/80 dark:bg-[#1B1C22]/80 border border-[#E8E2D9] dark:border-[#2A2B33] hover:border-purple-500/40 dark:hover:border-purple-500/40 transition-all duration-200 group">
+                                    <div class="flex items-center gap-1.5 sm:gap-2 mb-1.5">
+                                        <div class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 dark:bg-purple-500/20 border border-purple-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#8C847A] dark:text-[#A1A1AA]">Requires</span>
+                                    </div>
+                                    <div class="text-[13.5px] sm:text-[14.5px] font-bold text-[#1C1814] dark:text-white tracking-tight leading-snug truncate" title="{{ $application->platform ?? 'macOS 12.0 or later' }}">
+                                        {{ $application->platform ?? 'macOS 12.0 or later' }}
+                                    </div>
+                                    <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold block mt-0.5 truncate">Apple Silicon &amp; Intel</span>
                                 </div>
-                                <div class="sah-spec">
-                                    <dt>Architecture</dt>
-                                    <dd>Universal</dd>
+
+                                <!-- Spec 3: Architecture -->
+                                <div class="p-3 sm:p-3.5 rounded-xl bg-white/80 dark:bg-[#1B1C22]/80 border border-[#E8E2D9] dark:border-[#2A2B33] hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 group">
+                                    <div class="flex items-center gap-1.5 sm:gap-2 mb-1.5">
+                                        <div class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#8C847A] dark:text-[#A1A1AA]">Architecture</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 pt-0.5">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shadow-xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Universal
+                                        </span>
+                                    </div>
+                                    <span class="text-[10px] text-[#8C847A] dark:text-[#807B73] font-medium block mt-0.5 truncate">ARM64 &amp; x86_64</span>
                                 </div>
-                                <div class="sah-spec sah-spec-rate"
+
+                                <!-- Spec 4: Your Rating -->
+                                <div class="p-3 sm:p-3.5 rounded-xl bg-white/80 dark:bg-[#1B1C22]/80 border border-[#E8E2D9] dark:border-[#2A2B33] hover:border-amber-500/40 dark:hover:border-amber-500/40 transition-all duration-200 group"
                                      x-data="{ 
                                          currentRating: {{ $userRating ?? (session('rated_app_' . $application->id) ?? 0) }},
                                          hoverRating: 0 
                                      }"
                                      @rating-updated.window="currentRating = $event.detail">
-                                    <dt>Your rating</dt>
-                                    <dd>
-                                        <a href="#respond" class="cp-rate-stars" title="Rate this app" @mouseleave="hoverRating = 0">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5 sm:gap-2">
+                                            <div class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                                <svg class="w-3.5 h-3.5 fill-amber-500" viewBox="0 0 24 24">
+                                                    <path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.1-6.46-4.7-4.58 6.5-.94z"/>
+                                                </svg>
+                                            </div>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-[#8C847A] dark:text-[#A1A1AA]">Your Rating</span>
+                                        </div>
+                                        <span class="text-[11px] font-extrabold text-amber-500 dark:text-amber-400"
+                                              x-text="hoverRating > 0 ? (hoverRating + '.0') : (currentRating > 0 ? (currentRating + '.0') : '5.0')"></span>
+                                    </div>
+                                    <div class="flex items-center pt-0.5">
+                                        <div class="cp-rate-stars inline-flex items-center gap-0.5" title="Rate this app" @mouseleave="hoverRating = 0">
                                             @for($i = 1; $i <= 5; $i++)
-                                                <span class="cp-star" aria-label="{{ $i }} star{{ $i > 1 ? 's' : '' }}"
+                                                <button type="button" class="cp-star p-0 bg-transparent border-0 cursor-pointer transition-transform hover:scale-125 focus:outline-none"
+                                                      aria-label="{{ $i }} star{{ $i > 1 ? 's' : '' }}"
                                                       @mouseenter="hoverRating = {{ $i }}"
                                                       @click="window.dispatchEvent(new CustomEvent('select-form-rating', { detail: {{ $i }} }))"
-                                                      :class="(hoverRating > 0 ? {{ $i }} <= hoverRating : (currentRating > 0 && {{ $i }} <= currentRating)) ? '!text-[#FBBF24] is-active' : '!text-[#484036] dark:!text-[#484036] text-[#D1C9BE]'">
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                                      :class="(hoverRating > 0 ? {{ $i }} <= hoverRating : (currentRating > 0 && {{ $i }} <= currentRating)) ? '!text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]' : '!text-[#D1C9BE] dark:!text-[#3A3835] hover:!text-amber-400/60'">
+                                                    <svg class="w-4 h-4 sm:w-[17px] sm:h-[17px]" viewBox="0 0 24 24" fill="currentColor">
                                                         <path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.1-6.46-4.7-4.58 6.5-.94z"/>
                                                     </svg>
-                                                </span>
+                                                </button>
                                             @endfor
-                                        </a>
-                                    </dd>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] text-amber-600/90 dark:text-amber-400/80 font-medium block mt-0.5 truncate"
+                                          x-text="currentRating > 0 ? 'Your rating saved' : 'Click stars to rate'"></span>
                                 </div>
-                            </dl>
+                            </div>
                         </header>
 
                         <!-- Entry Content -->
