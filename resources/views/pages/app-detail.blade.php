@@ -80,7 +80,7 @@
 
     <div class="site-container layout-with-sidebar py-6 sm:py-8">
         <!-- Main Article Column (864px equivalent in desktop grid) -->
-        <article id="post-{{ $application->id }}" class="post-{{ $application->id }} post type-post status-publish format-standard has-post-thumbnail hentry category-{{ $application->category->slug }} min-w-0">
+        <article id="post-{{ $application->id }}" class="post-{{ $application->id }} post type-post status-publish format-standard has-post-thumbnail hentry category-{{ $application->category?->slug ?? 'uncategorized' }} min-w-0">
             <div class="single-shell has-sidebar">
                 <!-- macOS Window Shell -->
                 <div class="single-window">
@@ -97,7 +97,7 @@
                                 <span class="mx-1 text-[#A1A1A6]">»</span>
                                 <span><a href="{{ route('categories') }}">Application</a></span>
                                 <span class="mx-1 text-[#A1A1A6]">»</span>
-                                <span><a href="{{ route('category', $application->category->slug) }}">{{ $application->category->name }}</a></span>
+                                <span><a href="{{ route('category', $application->category?->slug ?? 'applications') }}">{{ $application->category?->name ?? 'Application' }}</a></span>
                                 <span class="mx-1 text-[#A1A1A6]">»</span>
                                 <span class="breadcrumb_last" aria-current="page">{{ $application->name }}</span>
                             </span>
@@ -128,7 +128,7 @@
                                     <!-- Badges Row: Version & Category -->
                                     <div class="flex items-center gap-2 flex-wrap mb-2">
                                         <span class="sah-ver font-mono font-bold">v{{ $application->version }}</span>
-                                        <a class="sah-cat" href="{{ route('category', $application->category->slug) }}">{{ $application->category->name }}</a>
+                                        <a class="sah-cat" href="{{ route('category', $application->category?->slug ?? 'applications') }}">{{ $application->category?->name ?? 'Application' }}</a>
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#262019] text-[#A8A199] border border-[#3D3224]">
                                             {{ strtoupper($application->license ?? 'Free') }}
                                         </span>
@@ -990,13 +990,14 @@
                             Similar Alternatives to {{ $application->name }}
                         </h3>
                     </div>
-                    <a href="{{ route('category', $application->category->slug) }}" class="text-[11px] text-primary hover:underline font-semibold">
-                        View All in {{ $application->category->name }} →
+                    <a href="{{ route('category', $application->category?->slug ?? 'applications') }}" class="text-[11px] text-primary hover:underline font-semibold">
+                        View All in {{ $application->category?->name ?? 'Applications' }} →
                     </a>
                 </div>
                 <div class="p-4 sm:p-5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         @foreach($moreApps->take(6) as $altApp)
+                        @continue(!is_object($altApp) || empty($altApp->slug))
                         <a href="{{ route('app', $altApp->slug) }}" class="p-3 rounded-2xl bg-[#14110E] hover:bg-[#1C1814] border border-[#2D251D] hover:border-primary/40 transition-all flex items-center gap-3 group shadow-sm">
                             <div class="w-12 h-12 rounded-xl bg-[#1C1814] border border-[#2D251D] p-1 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <img src="{{ $altApp->icon_url }}" alt="{{ $altApp->name }}" class="w-full h-full object-contain rounded-lg" loading="lazy"
@@ -1037,6 +1038,7 @@
                 </div>
                 <div class="divide-y divide-[#E5E7EB] dark:divide-[#333336] px-3">
                     @foreach($topPosts as $topApp)
+                    @continue(!is_object($topApp) || empty($topApp->slug))
                     <a href="{{ route('app', $topApp->slug) }}" class="flex items-center gap-3.5 py-3 px-1 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2F] transition-colors group">
                         <!-- Number Rank Badge -->
                         <span class="w-6 h-6 rounded-md {{ $loop->iteration <= 3 ? 'bg-[#0071E3] text-white font-extrabold shadow-sm' : 'bg-[#F5F5F7] dark:bg-[#242426] text-[#6B7280] dark:text-[#A1A1A6] font-bold border border-[#E5E7EB] dark:border-[#333336]' }} text-[11px] flex items-center justify-center flex-shrink-0">
@@ -1088,6 +1090,7 @@
                 </div>
                 <div class="divide-y divide-[#E5E7EB] dark:divide-[#333336] px-3">
                     @foreach($recentPosts as $recentApp)
+                    @continue(!is_object($recentApp) || empty($recentApp->slug))
                     <a href="{{ route('app', $recentApp->slug) }}" class="flex items-center gap-3.5 py-3 px-1 rounded-xl hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2F] transition-colors group">
                         <!-- App Icon (48px squircle) -->
                         <div class="w-12 h-12 rounded-xl bg-[#F5F5F7] dark:bg-[#161617] border border-[#E5E7EB] dark:border-[#333336] p-1 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-105 transition-transform">

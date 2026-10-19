@@ -131,21 +131,17 @@ class HomeController extends Controller
                 ->limit(6)
                 ->get();
 
-        $topPosts = Cache::remember('app_detail_top_posts', 600, function () {
-            return Application::published()
-                ->with('category')
-                ->orderBy('downloads', 'desc')
-                ->limit(10)
-                ->get();
-        });
+        $topPosts = Application::published()
+            ->with('category')
+            ->orderBy('downloads', 'desc')
+            ->limit(10)
+            ->get();
 
-        $recentPosts = Cache::remember('app_detail_recent_posts', 600, function () {
-            return Application::published()
-                ->with('category')
-                ->orderBy('released_at', 'desc')
-                ->limit(8)
-                ->get();
-        });
+        $recentPosts = Application::published()
+            ->with('category')
+            ->orderBy('released_at', 'desc')
+            ->limit(8)
+            ->get();
 
         $userRating = auth()->check()
             ? ($application->approvedReviews()->where('user_id', auth()->id())->value('rating') ?? (int) session('rated_app_'.$application->id, 0))
