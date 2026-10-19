@@ -55,15 +55,18 @@
        rel="noopener noreferrer"
        @mouseenter="if (!dismissed) openTooltip = true"
        aria-label="Únete a nuestro canal de Telegram"
-       class="pointer-events-auto relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#0088CC] via-[#1DA1F2] to-[#229ED9] text-white shadow-[0_8px_25px_rgba(0,136,204,0.45)] hover:shadow-[0_12px_32px_rgba(0,136,204,0.65)] hover:scale-108 active:scale-95 transition-all duration-300 flex items-center justify-center cursor-pointer group focus:outline-none">
+       class="pointer-events-auto relative w-14 h-14 rounded-full bg-gradient-to-tr from-[#0088CC] via-[#1DA1F2] to-[#229ED9] shadow-[0_8px_25px_rgba(0,136,204,0.45)] hover:shadow-[0_12px_32px_rgba(0,136,204,0.65)] hover:scale-108 active:scale-95 transition-all duration-300 flex items-center justify-center cursor-pointer group focus:outline-none">
 
         <!-- Pulse Ring Animation -->
         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0088CC] opacity-35 pointer-events-none [animation-duration:2.5s]"></span>
 
-        <!-- Telegram Icon -->
-        <svg class="w-6 h-6 sm:w-7 sm:h-7 fill-current transform -translate-x-0.5 translate-y-0.5 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" viewBox="0 0 24 24">
-            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.536-.195 1.006.128.832.969z"/>
-        </svg>
+        <!-- White Inner Disc (Concentric & Perfectly Centered) -->
+        <div class="relative w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform duration-300">
+            <!-- Telegram Paper Plane (Optically Balanced) -->
+            <svg class="w-4.5 h-4.5 text-[#0088CC] fill-current -ml-0.5 mt-0.5 group-hover:-rotate-6 transition-transform duration-300" viewBox="0 0 24 24">
+                <path d="M18.384 5.221 3.518 10.963c-1.016.408-.999 1.189.173 1.545l3.817 1.191 1.446 4.436c.16.494.38.68.79.68.324 0 .54-.15.75-.36l2.115-2.057 4.394 3.246c.808.445 1.39.215 1.591-.749l2.883-13.582c.294-1.182-.453-1.716-1.094-1.347z"/>
+            </svg>
+        </div>
     </a>
 </div>
 @endif
