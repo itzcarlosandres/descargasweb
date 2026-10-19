@@ -115,6 +115,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     Route::post('/settings/test-gemini', [AdminController::class, 'testGemini'])->name('settings.test-gemini');
     Route::post('/settings/test-r2', [AdminController::class, 'testR2'])->name('settings.test-r2');
+    Route::get('/settings/r2/stats', [AdminController::class, 'r2Stats'])->name('settings.r2.stats');
+    Route::post('/settings/r2/toggle', [AdminController::class, 'toggleR2'])->name('settings.r2.toggle');
+    Route::post('/settings/r2/migrate-batch', [AdminController::class, 'migrateR2Batch'])->name('settings.r2.migrate-batch');
     Route::post('/settings/test-telegram', [AdminController::class, 'testTelegram'])->name('settings.test-telegram');
     Route::post('/settings/telegram/dispatch-one', [AdminController::class, 'dispatchTelegramOne'])->name('settings.telegram.dispatch-one');
     Route::post('/settings/telegram/toggle-auto-pilot', [AdminController::class, 'toggleTelegramAutoPilot'])->name('settings.telegram.toggle-auto-pilot');

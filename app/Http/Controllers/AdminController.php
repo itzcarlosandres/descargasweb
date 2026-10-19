@@ -14,6 +14,7 @@ use App\Services\LinkHealth\AutoLinkHealerService;
 use App\Services\LinkHealth\LinkHealthCheckerService;
 use App\Services\Notification\NotificationDispatcher;
 use App\Services\Storage\CloudflareR2Service;
+use App\Services\Storage\TorrentStorageService;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -742,6 +743,145 @@ class AdminController extends Controller
         $result = $r2Service->testConnection($accountId, $accessKey, $secretKey, $bucket);
 
         return response()->json($result);
+    }
+
+    /**
+     * Get real-time stats for Cloudflare R2 and Torrent storage
+     */
+    public function r2Stats(CloudflareR2Service $r2Service): JsonResponse
+    {
+        $isConfigured = $r2Service->isConfigured();
+        $r2Enabled = (bool) Setting::get('r2_enabled', Setting::get('torrentmac_storage_disk') === 'r2');
+        $currentDisk = Setting::get('torrentmac_storage_disk', 'local');
+
+        $totalTorrents = Application::where('has_torrent', true)->count();
+
+        // Stored on Cloudflare R2 (URL contains r2.cloudflarestorage.com or custom domain)
+        $inR2 = Application::where('has_torrent', true)
+            ->where(function ($q) {
+                $q->where('torrent_url', 'like', '%r2.cloudflarestorage.com%')
+                    ->orWhere('torrent_url', 'like', '%r2.dev%');
+            })->count();
+
+        // Stored locally on public disk
+        $inLocal = Application::where('has_torrent', true)
+            ->whereNotNull('torrent_file_path')
+            ->where('torrent_url', 'not like', '%r2%')
+            ->count();
+
+        // Still external (e.g. torrentmac) or missing localized file
+        $pendingExternal = Application::where('has_torrent', true)
+            ->where(function ($q) {
+                $q->whereNull('torrent_file_path')
+                    ->orWhere('torrent_url', 'like', '%torrentmac%')
+                    ->orWhere('torrent_file_path', 'not like', '%HackMac.cc%');
+            })->count();
+
+        // Fallback magnet available
+        $fallbackMagnet = Application::where('has_torrent', true)
+            ->whereNotNull('magnet_link')
+            ->where(function ($q) {
+                $q->whereNull('torrent_file_path')
+                    ->orWhere('torrent_url', 'like', '%torrentmac%');
+            })->count();
+
+        return response()->json([
+            'success' => true,
+            'is_configured' => $isConfigured,
+            'r2_enabled' => $r2Enabled,
+            'current_disk' => $currentDisk,
+            'total_torrents' => $totalTorrents,
+            'in_r2' => $inR2,
+            'in_local' => $inLocal,
+            'pending_external' => $pendingExternal,
+            'fallback_magnet' => $fallbackMagnet,
+        ]);
+    }
+
+    /**
+     * Toggle Cloudflare R2 master switch ON / OFF
+     */
+    public function toggleR2(Request $request): JsonResponse
+    {
+        $enabled = $request->boolean('enabled');
+
+        Setting::set('r2_enabled', $enabled ? '1' : '0', 'storage');
+        Setting::set('torrentmac_storage_disk', $enabled ? 'r2' : 'local', 'storage');
+        Setting::clearCache();
+
+        return response()->json([
+            'success' => true,
+            'r2_enabled' => $enabled,
+            'current_disk' => $enabled ? 'r2' : 'local',
+            'message' => $enabled
+                ? 'Cloudflare R2 ha sido ACTIVADO como destino principal de almacenamiento.'
+                : 'Cloudflare R2 ha sido DESACTIVADO. El sistema usará almacenamiento local.',
+        ]);
+    }
+
+    /**
+     * Migrate a batch of torrents to Cloudflare R2
+     */
+    public function migrateR2Batch(Request $request, TorrentStorageService $storageService, CloudflareR2Service $r2Service): JsonResponse
+    {
+        if (! $r2Service->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare R2 no está configurado. Por favor completa y prueba tus credenciales antes de migrar.',
+            ], 422);
+        }
+
+        // Ensure R2 is active during migration
+        Setting::set('torrentmac_storage_disk', 'r2', 'storage');
+
+        $mode = $request->input('mode', 'pending_only');
+        $limit = min(25, max(1, (int) $request->input('limit', 10)));
+
+        $query = Application::query()->where('has_torrent', true);
+
+        if ($mode === 'pending_only') {
+            $query->where(function ($q) {
+                $q->whereNull('torrent_file_path')
+                    ->orWhere('torrent_url', 'like', '%torrentmac%')
+                    ->orWhere('torrent_file_path', 'not like', '%HackMac.cc%');
+            });
+        } elseif ($mode === 'all') {
+            // All torrents not yet in R2
+            $query->where(function ($q) {
+                $q->where('torrent_url', 'not like', '%r2.cloudflarestorage.com%')
+                    ->where('torrent_url', 'not like', '%r2.dev%');
+            });
+        }
+
+        $totalRemaining = (clone $query)->count();
+        $apps = $query->orderBy('id', 'desc')->limit($limit)->get();
+
+        $processed = [];
+
+        foreach ($apps as $app) {
+            $result = $storageService->localizeApplicationTorrent($app, null, false);
+
+            $processed[] = [
+                'id' => $app->id,
+                'name' => $app->name,
+                'version' => $app->version,
+                'success' => $result['success'] ?? false,
+                'filename' => $result['filename'] ?? basename($app->torrent_file_path ?? ''),
+                'driver' => $result['storage_driver'] ?? 'local',
+                'fallback_magnet' => ! empty($result['fallback_magnet']),
+                'error' => $result['error'] ?? null,
+            ];
+        }
+
+        $remainingAfter = max(0, $totalRemaining - count($processed));
+
+        return response()->json([
+            'success' => true,
+            'processed' => $processed,
+            'count' => count($processed),
+            'remaining' => $remainingAfter,
+            'done' => $remainingAfter === 0,
+        ]);
     }
 
     /**

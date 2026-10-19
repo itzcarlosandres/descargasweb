@@ -173,27 +173,45 @@ class TorrentStorageService
         $brandedFilename = $this->generateBrandedFilename($appName, $verString, $remoteUrl);
         $expectedRelativePath = "torrents/{$application->slug}/{$brandedFilename}";
 
-        // If file already exists and not forced, verify if it already has HackMac branding
+        // If file already exists and not forced, check its storage location
         if (! $force && ! empty($existingPath)) {
             $alreadyBranded = str_contains($existingPath, 'HackMac.cc');
 
-            if ($alreadyBranded && Storage::disk('public')->exists($existingPath)) {
-                return [
-                    'success' => true,
-                    'file_path' => $existingPath,
-                    'public_url' => Storage::disk('public')->url($existingPath),
-                    'filename' => basename($existingPath),
-                    'magnet_link' => $target->magnet_link,
-                ];
-            }
-
+            // If already on R2, return existing
             if ($alreadyBranded && $this->r2Service->isConfigured() && $this->r2Service->objectExists($existingPath)) {
                 $creds = $this->r2Service->getCredentials();
 
                 return [
                     'success' => true,
+                    'storage_driver' => 'r2',
                     'file_path' => $existingPath,
                     'public_url' => $this->r2Service->buildPublicUrl($existingPath, $creds),
+                    'filename' => basename($existingPath),
+                    'magnet_link' => $target->magnet_link,
+                ];
+            }
+
+            // If R2 is active and file is only on local storage, upload it to R2 now
+            if ($useR2 && Storage::disk('public')->exists($existingPath)) {
+                $binary = Storage::disk('public')->get($existingPath);
+                if (! empty($binary)) {
+                    $stored = $this->storeTorrentBinary($binary, $brandedFilename, $application->slug, "{$appName} {$verString}");
+                    $target->update([
+                        'torrent_file_path' => $stored['file_path'],
+                        'torrent_url' => $stored['public_url'],
+                    ]);
+
+                    return array_merge(['success' => true, 'binary' => $binary], $stored);
+                }
+            }
+
+            // If local storage is desired and file exists with HackMac branding
+            if ($alreadyBranded && Storage::disk('public')->exists($existingPath)) {
+                return [
+                    'success' => true,
+                    'storage_driver' => 'public',
+                    'file_path' => $existingPath,
+                    'public_url' => Storage::disk('public')->url($existingPath),
                     'filename' => basename($existingPath),
                     'magnet_link' => $target->magnet_link,
                 ];

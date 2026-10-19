@@ -235,6 +235,164 @@
         } finally {
             this.testingR2 = false;
         }
+    },
+
+    // Cloudflare R2 State & Migration Center Methods
+    r2Enabled: {{ old('r2_enabled', (bool) ($settings['r2_enabled'] ?? (($settings['torrentmac_storage_disk'] ?? 'local') === 'r2'))) ? 'true' : 'false' }},
+    r2Stats: {
+        total_torrents: 0,
+        in_r2: 0,
+        in_local: 0,
+        pending_external: 0,
+        fallback_magnet: 0,
+        loading: false
+    },
+    togglingR2: false,
+    isMigratingR2: false,
+    migrationMode: 'pending_only',
+    migrationProgress: 0,
+    migrationTotalToProcess: 0,
+    migrationProcessedCount: 0,
+    migrationRemaining: 0,
+    migrationLogs: [],
+    migrationCancelled: false,
+
+    async fetchR2Stats() {
+        this.r2Stats.loading = true;
+        try {
+            const res = await fetch('{{ route('admin.settings.r2.stats') }}');
+            const data = await res.json();
+            if (data.success) {
+                this.r2Stats.total_torrents = data.total_torrents;
+                this.r2Stats.in_r2 = data.in_r2;
+                this.r2Stats.in_local = data.in_local;
+                this.r2Stats.pending_external = data.pending_external;
+                this.r2Stats.fallback_magnet = data.fallback_magnet;
+                this.r2Enabled = data.r2_enabled;
+                this.torrentDisk = data.current_disk;
+            }
+        } catch (e) {
+            console.error('Error fetching R2 stats:', e);
+        } finally {
+            this.r2Stats.loading = false;
+        }
+    },
+
+    async toggleR2Master(enable) {
+        this.togglingR2 = true;
+        try {
+            const res = await fetch('{{ route('admin.settings.r2.toggle') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ enabled: enable })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.r2Enabled = data.r2_enabled;
+                this.torrentDisk = data.current_disk;
+                await this.fetchR2Stats();
+            }
+        } catch (e) {
+            alert('Error al cambiar el estado de Cloudflare R2: ' + e.message);
+        } finally {
+            this.togglingR2 = false;
+        }
+    },
+
+    async startR2Migration(mode) {
+        if (!this.r2AccountId || !this.r2AccessKeyId || !this.r2SecretAccessKey || !this.r2Bucket) {
+            alert('Completa y prueba tus credenciales de Cloudflare R2 antes de iniciar la migración.');
+            return;
+        }
+
+        const confirmMsg = mode === 'all'
+            ? '¿Deseas migrar TODOS los torrents al bucket de Cloudflare R2? Los archivos locales y externos se renombrarán con la marca HackMac.cc.'
+            : '¿Deseas migrar únicamente los torrents externos o pendientes de localizar a Cloudflare R2?';
+
+        if (!confirm(confirmMsg)) return;
+
+        this.isMigratingR2 = true;
+        this.migrationCancelled = false;
+        this.migrationMode = mode;
+        this.migrationLogs = [];
+        this.migrationProcessedCount = 0;
+        this.migrationProgress = 0;
+
+        // Auto-enable R2 if not enabled
+        if (!this.r2Enabled) {
+            await this.toggleR2Master(true);
+        }
+
+        await this.fetchR2Stats();
+        this.migrationTotalToProcess = mode === 'all' 
+            ? (this.r2Stats.total_torrents - this.r2Stats.in_r2)
+            : this.r2Stats.pending_external;
+
+        if (this.migrationTotalToProcess <= 0) {
+            this.migrationTotalToProcess = this.r2Stats.total_torrents || 1;
+        }
+
+        this.runR2MigrationBatch();
+    },
+
+    async runR2MigrationBatch() {
+        if (this.migrationCancelled || !this.isMigratingR2) return;
+
+        try {
+            const res = await fetch('{{ route('admin.settings.r2.migrate-batch') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    mode: this.migrationMode,
+                    limit: 10
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                alert('Error durante la migración: ' + (data.message || 'Error desconocido'));
+                this.isMigratingR2 = false;
+                return;
+            }
+
+            if (data.processed && data.processed.length > 0) {
+                for (const item of data.processed) {
+                    this.migrationLogs.unshift(item);
+                    if (this.migrationLogs.length > 50) this.migrationLogs.pop();
+                    this.migrationProcessedCount++;
+                }
+
+                this.migrationRemaining = data.remaining;
+                const total = this.migrationProcessedCount + data.remaining;
+                this.migrationProgress = total > 0 ? Math.min(100, Math.round((this.migrationProcessedCount / total) * 100)) : 100;
+            }
+
+            if (data.done || data.remaining === 0 || (data.processed && data.processed.length === 0)) {
+                this.isMigratingR2 = false;
+                this.migrationProgress = 100;
+                await this.fetchR2Stats();
+                return;
+            }
+
+            // Continue next batch
+            setTimeout(() => this.runR2MigrationBatch(), 400);
+        } catch (e) {
+            console.error('Error in batch migration:', e);
+            this.isMigratingR2 = false;
+            alert('Se interrumpió la conexión del lote: ' + e.message);
+        }
+    },
+
+    cancelR2Migration() {
+        this.migrationCancelled = true;
+        this.isMigratingR2 = false;
     }
 }">
     <!-- Header with Traffic Lights & Action -->
@@ -990,46 +1148,62 @@
         </div>
 
         <!-- TAB 5: CLOUDFLARE R2 & ALMACENAMIENTO -->
-        <div x-show="tab === 'storage'" x-cloak class="space-y-6">
+        <div x-show="tab === 'storage'" x-cloak x-init="fetchR2Stats()" class="space-y-6">
             <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-6">
-                <!-- Tab Title & Description -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#241E18]">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-[#F38020]/15 border border-[#F38020]/30 flex items-center justify-center text-[#F38020]">
+                <!-- Tab Title & Master Activation Switch -->
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#241E18]">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-[#F38020]/15 border border-[#F38020]/30 flex items-center justify-center text-[#F38020] shadow-inner shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
                             </svg>
                         </div>
                         <div>
                             <h2 class="text-base font-bold text-white flex items-center gap-2">
-                                <span>Cloudflare R2 Storage (Torrents & Media)</span>
+                                <span>Cloudflare R2 Storage (Torrents &amp; Media)</span>
                                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#F38020]/20 text-[#F38020] border border-[#F38020]/30">Zero Egress Fees</span>
                             </h2>
-                            <p class="text-xs text-[#8C847A]">Configura tu Bucket R2 para almacenar archivos .torrent e imágenes en la nube de alta velocidad con 10 GB gratis.</p>
+                            <p class="text-xs text-[#8C847A] mt-0.5">Almacena archivos .torrent e imágenes en la nube global de Cloudflare con 10 GB gratuitos y tráfico ilimitado.</p>
                         </div>
                     </div>
 
-                    <!-- Test Connection Button -->
-                    <button type="button" @click="testR2Connection()" :disabled="testingR2"
-                            class="px-4 py-2 rounded-xl bg-[#F38020]/15 hover:bg-[#F38020]/25 text-[#F38020] border border-[#F38020]/40 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
-                        <template x-if="!testingR2">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
-                                Probar Conexión R2
-                            </span>
-                        </template>
-                        <template x-if="testingR2">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Probando bucket...
-                            </span>
-                        </template>
-                    </button>
+                    <!-- Master Switch and Test Button Group -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Master ON / OFF Toggle Button -->
+                        <button type="button" @click="toggleR2Master(!r2Enabled)" :disabled="togglingR2"
+                                :class="r2Enabled ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25' : 'bg-white/5 border-white/10 text-[#8C847A] hover:text-white hover:bg-white/10'"
+                                class="px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                                title="Activar o desactivar Cloudflare R2 como almacenamiento principal">
+                            <span class="w-2.5 h-2.5 rounded-full" :class="r2Enabled ? 'bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400' : 'bg-[#736B63]'"></span>
+                            <span x-text="r2Enabled ? 'R2 ACTIVADO' : 'R2 DESACTIVADO'"></span>
+                            <svg x-show="togglingR2" class="w-3.5 h-3.5 animate-spin ml-1" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Test Connection Button -->
+                        <button type="button" @click="testR2Connection()" :disabled="testingR2"
+                                class="px-3.5 py-2 rounded-xl bg-[#F38020]/15 hover:bg-[#F38020]/25 text-[#F38020] border border-[#F38020]/40 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm">
+                            <template x-if="!testingR2">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    </svg>
+                                    Probar Conexión R2
+                                </span>
+                            </template>
+                            <template x-if="testingR2">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Probando bucket...
+                                </span>
+                            </template>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Test Result Banner -->
@@ -1049,6 +1223,160 @@
                     <div class="flex-1">
                         <span class="font-bold block" x-text="testR2Result?.success ? '¡Conexión Exitosa con Cloudflare R2!' : 'Error de Conexión'"></span>
                         <span class="text-[11px] opacity-90" x-text="testR2Result?.message"></span>
+                    </div>
+                </div>
+
+                <!-- 1. LIVE STORAGE DIAGNOSTICS CARDS -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-[#A8A199] uppercase tracking-wider flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            Diagnóstico de Torrents en Vivo
+                        </span>
+                        <button type="button" @click="fetchR2Stats()" :disabled="r2Stats.loading"
+                                class="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                            <svg class="w-3 h-3" :class="r2Stats.loading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span>Refrescar Diagnóstico</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <!-- Total Torrents -->
+                        <div class="p-3.5 rounded-xl bg-[#12100E] border border-[#262019] space-y-1">
+                            <div class="flex items-center justify-between text-[#8C847A] text-[11px] font-medium">
+                                <span>Total con Torrent</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/></svg>
+                            </div>
+                            <div class="text-xl font-bold text-white font-mono" x-text="r2Stats.total_torrents">0</div>
+                            <div class="text-[10px] text-[#736B63]">Apps en catálogo</div>
+                        </div>
+
+                        <!-- In Cloudflare R2 -->
+                        <div class="p-3.5 rounded-xl bg-[#12100E] border border-[#F38020]/30 space-y-1">
+                            <div class="flex items-center justify-between text-[#F38020] text-[11px] font-medium">
+                                <span>En Cloudflare R2</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                            </div>
+                            <div class="text-xl font-bold text-white font-mono" x-text="r2Stats.in_r2">0</div>
+                            <div class="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Almacenados en la nube</span>
+                            </div>
+                        </div>
+
+                        <!-- In Local Storage -->
+                        <div class="p-3.5 rounded-xl bg-[#12100E] border border-[#262019] space-y-1">
+                            <div class="flex items-center justify-between text-sky-400 text-[11px] font-medium">
+                                <span>En Servidor Local</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            </div>
+                            <div class="text-xl font-bold text-white font-mono" x-text="r2Stats.in_local">0</div>
+                            <div class="text-[10px] text-[#736B63]">storage/app/public</div>
+                        </div>
+
+                        <!-- Pending / External -->
+                        <div class="p-3.5 rounded-xl bg-[#12100E] border border-[#262019] space-y-1">
+                            <div class="flex items-center justify-between text-amber-400 text-[11px] font-medium">
+                                <span>Pendientes / Externos</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                            <div class="text-xl font-bold text-white font-mono" x-text="r2Stats.pending_external">0</div>
+                            <div class="text-[10px] text-amber-400/80">Por migrar a R2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. R2 MIGRATION & BACKUP ACTION CENTER -->
+                <div class="p-5 rounded-2xl bg-gradient-to-br from-[#1C1611] via-[#14110E] to-[#100D0B] border border-[#F38020]/30 space-y-4 shadow-xl">
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#F38020]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            <span>Centro de Migración y Respaldo a Cloudflare R2</span>
+                        </h3>
+                        <p class="text-xs text-[#8C847A]">Localiza los enlaces externos a archivos .torrent oficiales de HackMac.cc y transfiérelos a Cloudflare R2.</p>
+                    </div>
+
+                    <!-- Action Buttons Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <!-- Option 1: Pending / External only -->
+                        <button type="button" @click="startR2Migration('pending_only')" :disabled="isMigratingR2"
+                                class="p-4 rounded-xl border border-[#3A2E22] hover:border-[#F38020] bg-[#16120E] hover:bg-[#1E1712] text-left transition-all group cursor-pointer disabled:opacity-50">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    <span>Subir solo Pendientes / Externos a R2</span>
+                                </span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">RECOMENDADO</span>
+                            </div>
+                            <p class="text-[11px] text-[#8C847A] leading-relaxed">
+                                Descarga únicamente los torrents que están en TorrentMac o externos, los renombra con <strong class="text-white">_HackMac.cc.torrent</strong> y los sube a R2.
+                            </p>
+                        </button>
+
+                        <!-- Option 2: Upload ALL to R2 -->
+                        <button type="button" @click="startR2Migration('all')" :disabled="isMigratingR2"
+                                class="p-4 rounded-xl border border-[#3A2E22] hover:border-[#F38020] bg-[#16120E] hover:bg-[#1E1712] text-left transition-all group cursor-pointer disabled:opacity-50">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-[#F38020]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                    </svg>
+                                    <span>Subir TODOS los Torrents a R2</span>
+                                </span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#F38020]/15 text-[#F38020] border border-[#F38020]/30">MIGRACIÓN COMPLETA</span>
+                            </div>
+                            <p class="text-[11px] text-[#8C847A] leading-relaxed">
+                                Transfiere todo tu catálogo (archivos locales y externos) al bucket de Cloudflare R2 para liberar espacio del servidor local.
+                            </p>
+                        </button>
+                    </div>
+
+                    <!-- Live Progress Bar & Status (Visible during migration or when completed) -->
+                    <div x-show="isMigratingR2 || migrationProgress > 0" x-cloak class="pt-3 border-t border-[#2B231B] space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span x-show="isMigratingR2" class="w-2.5 h-2.5 rounded-full bg-[#F38020] animate-ping"></span>
+                                <span class="font-bold text-white" x-text="isMigratingR2 ? 'Migrando lotes hacia Cloudflare R2...' : 'Migración Finalizada'"></span>
+                                <span class="text-[11px] text-[#8C847A]" x-text="'(' + migrationProcessedCount + ' procesados' + (migrationRemaining > 0 ? ', ' + migrationRemaining + ' restantes' : '') + ')'"></span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="font-mono font-bold text-[#F38020]" x-text="migrationProgress + '%'"></span>
+                                <button x-show="isMigratingR2" type="button" @click="cancelR2Migration()"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-colors cursor-pointer">
+                                    Detener
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Animated Progress Bar -->
+                        <div class="w-full bg-[#120F0D] rounded-full h-2.5 overflow-hidden border border-[#2B241C] p-0.5 shadow-inner">
+                            <div class="bg-gradient-to-r from-primary via-[#F38020] to-emerald-400 h-full rounded-full transition-all duration-300"
+                                 :style="'width: ' + migrationProgress + '%'"></div>
+                        </div>
+
+                        <!-- Live Terminal / Logs Box -->
+                        <div class="bg-[#0B0908] border border-[#241E18] rounded-xl p-3 max-h-44 overflow-y-auto font-mono text-[11px] space-y-1.5 scrollbar-thin">
+                            <template x-for="(log, idx) in migrationLogs" :key="idx">
+                                <div class="flex items-center gap-2">
+                                    <span x-show="log.success" class="text-emerald-400 font-bold shrink-0">✓</span>
+                                    <span x-show="!log.success && log.fallback_magnet" class="text-amber-400 font-bold shrink-0">!</span>
+                                    <span x-show="!log.success && !log.fallback_magnet" class="text-danger font-bold shrink-0">✗</span>
+                                    <span class="text-white font-sans truncate font-medium" x-text="log.name"></span>
+                                    <span class="text-[#8C847A] truncate font-mono text-[10px]" x-text="'(' + log.filename + ')'"></span>
+                                    <span x-show="log.driver === 'r2'" class="text-[9px] px-1 rounded bg-[#F38020]/20 text-[#F38020] border border-[#F38020]/30 ml-auto shrink-0">R2</span>
+                                    <span x-show="log.driver === 'local' || log.driver === 'public'" class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-auto shrink-0">Local</span>
+                                    <span x-show="log.fallback_magnet" class="text-[9px] px-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-auto shrink-0">Magnet Fallback</span>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 

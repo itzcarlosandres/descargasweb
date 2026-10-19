@@ -114,4 +114,95 @@ class SettingsTest extends TestCase
         $relativeDiskPath = str_replace('/storage/', '', $savedPath);
         Storage::disk('public')->assertExists($relativeDiskPath);
     }
+
+    public function test_admin_can_fetch_r2_stats(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)->get(route('admin.settings.r2.stats'));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'is_configured',
+            'r2_enabled',
+            'current_disk',
+            'total_torrents',
+            'in_r2',
+            'in_local',
+            'pending_external',
+            'fallback_magnet',
+        ]);
+    }
+
+    public function test_admin_can_toggle_r2_master_switch(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.r2.toggle'), [
+            'enabled' => true,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'r2_enabled' => true,
+            'current_disk' => 'r2',
+        ]);
+        $this->assertEquals('1', Setting::get('r2_enabled'));
+        $this->assertEquals('r2', Setting::get('torrentmac_storage_disk'));
+
+        // Toggle OFF
+        $responseOff = $this->actingAs($admin)->post(route('admin.settings.r2.toggle'), [
+            'enabled' => false,
+        ]);
+
+        $responseOff->assertStatus(200);
+        $responseOff->assertJson([
+            'success' => true,
+            'r2_enabled' => false,
+            'current_disk' => 'local',
+        ]);
+        $this->assertEquals('0', Setting::get('r2_enabled'));
+        $this->assertEquals('local', Setting::get('torrentmac_storage_disk'));
+    }
+
+    public function test_admin_cannot_migrate_r2_batch_when_unconfigured(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.r2.migrate-batch'), [
+            'mode' => 'pending_only',
+            'limit' => 5,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+        ]);
+    }
+
+    public function test_admin_can_migrate_r2_batch_when_configured(): void
+    {
+        $admin = $this->createAdminUser();
+
+        Setting::set('r2_account_id', 'test_account', 'storage');
+        Setting::set('r2_access_key_id', 'test_key', 'storage');
+        Setting::set('r2_secret_access_key', 'test_secret', 'storage');
+        Setting::set('r2_bucket', 'test_bucket', 'storage');
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.r2.migrate-batch'), [
+            'mode' => 'pending_only',
+            'limit' => 5,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'processed',
+            'count',
+            'remaining',
+            'done',
+        ]);
+    }
 }
