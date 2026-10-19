@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\ApplicationVersion;
 use App\Models\BrokenLinkReport;
 use App\Models\Category;
 use App\Models\Download;
@@ -10,6 +11,7 @@ use App\Models\Favorite;
 use App\Models\Review;
 use App\Models\SearchLog;
 use App\Services\Notification\NotificationDispatcher;
+use App\Services\Storage\TorrentStorageService;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,6 +24,10 @@ use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
+    public function __construct(
+        protected TorrentStorageService $torrentStorage
+    ) {}
+
     public function index()
     {
         $stats = Cache::remember('home_stats', 3600, function () {
@@ -353,35 +359,19 @@ class HomeController extends Controller
             'downloaded_at' => now(),
         ]);
 
-        // Specific Version Download (Older Version)
-        if ($targetVersion) {
-            if ($isTorrentRequest) {
-                if ($targetVersion->torrent_url) {
-                    return redirect()->away($targetVersion->torrent_url);
-                }
-                if ($targetVersion->torrent_file_path && Storage::disk('public')->exists($targetVersion->torrent_file_path)) {
-                    return Storage::disk('public')->download($targetVersion->torrent_file_path);
-                }
-            }
-
-            if ($targetVersion->download_url) {
-                return redirect()->away($targetVersion->download_url);
-            }
+        // Specific Version Torrent Download
+        if ($targetVersion && $isTorrentRequest) {
+            return $this->handleTorrentDownload($application, $targetVersion);
         }
 
-        // Torrent Download
+        // Specific Version Direct Download
+        if ($targetVersion && $targetVersion->download_url) {
+            return redirect()->away($targetVersion->download_url);
+        }
+
+        // Main Application Torrent Download
         if ($isTorrentRequest && $application->has_torrent) {
-            if ($application->torrent_url) {
-                return redirect()->away($application->torrent_url);
-            }
-
-            if ($application->torrent_file_path && Storage::disk('public')->exists($application->torrent_file_path)) {
-                return Storage::disk('public')->download($application->torrent_file_path);
-            }
-
-            if ($application->magnet_link) {
-                return redirect()->away($application->magnet_link);
-            }
+            return $this->handleTorrentDownload($application);
         }
 
         // Direct Download (DDL)
@@ -394,11 +384,65 @@ class HomeController extends Controller
         }
 
         // Fallback to torrent if no DDL is available
-        if ($application->has_torrent && $application->torrent_url) {
-            return redirect()->away($application->torrent_url);
+        if ($application->has_torrent && ($application->torrent_url || $application->torrent_file_path || $application->magnet_link)) {
+            return $this->handleTorrentDownload($application);
         }
 
         return redirect()->back()->with('error', 'Download link not available.');
+    }
+
+    /**
+     * Handle torrent downloads with auto-localization, HackMac.cc rebranding, and magnet fallback
+     */
+    protected function handleTorrentDownload(Application $application, ?ApplicationVersion $targetVersion = null)
+    {
+        $target = $targetVersion ?? $application;
+
+        // 1. Attempt to localize/brand the torrent via TorrentStorageService
+        try {
+            $localized = $this->torrentStorage->localizeApplicationTorrent($application, $targetVersion);
+
+            if (! empty($localized['success'])) {
+                // If stored in Cloudflare R2 and public URL is accessible
+                if (($localized['storage_driver'] ?? null) === 'r2' && ! empty($localized['public_url'])) {
+                    return redirect()->away($localized['public_url']);
+                }
+
+                // If stored locally on public disk, download with the exact HackMac branded filename
+                if (! empty($localized['file_path']) && Storage::disk('public')->exists($localized['file_path'])) {
+                    return Storage::disk('public')->download($localized['file_path'], $localized['filename']);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error("HomeController: Error localizing torrent for {$application->slug}: {$e->getMessage()}");
+        }
+
+        // 2. Check if a pre-existing local file is present on disk
+        if ($target->torrent_file_path && Storage::disk('public')->exists($target->torrent_file_path)) {
+            $filename = $this->torrentStorage->generateBrandedFilename(
+                $application->name,
+                $targetVersion?->version ?: $application->version,
+                $target->torrent_file_path
+            );
+
+            return Storage::disk('public')->download($target->torrent_file_path, $filename);
+        }
+
+        // 3. Fallback to Magnet Link if external source is dead or unavailable
+        if (! empty($target->magnet_link)) {
+            return redirect()->away($target->magnet_link);
+        }
+
+        // 4. Fallback to DDL if available
+        if ($application->download_url_external) {
+            return redirect()->away($application->download_url_external);
+        }
+
+        if ($application->download_url) {
+            return redirect()->to($application->download_url);
+        }
+
+        return redirect()->back()->with('error', 'The requested torrent or download is temporarily unavailable.');
     }
 
     public function storeReview(Request $request, Application $application)

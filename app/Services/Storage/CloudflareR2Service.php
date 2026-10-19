@@ -199,6 +199,147 @@ class CloudflareR2Service
     }
 
     /**
+     * Download an object from Cloudflare R2 bucket
+     */
+    public function getObject(string $key): ?string
+    {
+        $creds = $this->getCredentials();
+        if (! $this->isConfigured($creds['account_id'], $creds['access_key_id'], $creds['secret_access_key'], $creds['bucket'])) {
+            return null;
+        }
+
+        $cleanKey = ltrim($key, '/');
+        $bucket = $creds['bucket'];
+        $accountId = $creds['account_id'];
+        $host = "{$accountId}.r2.cloudflarestorage.com";
+        $endpoint = "https://{$host}";
+
+        $canonicalUri = "/{$bucket}/{$cleanKey}";
+        $url = "{$endpoint}{$canonicalUri}";
+
+        $payloadHash = hash('sha256', '');
+        $now = gmdate('Ymd\THis\Z');
+        $dateOnly = gmdate('Ymd');
+
+        $headers = [
+            'host' => $host,
+            'x-amz-content-sha256' => $payloadHash,
+            'x-amz-date' => $now,
+        ];
+        ksort($headers);
+
+        $canonicalHeaders = '';
+        $signedHeadersList = [];
+        foreach ($headers as $hKey => $hVal) {
+            $canonicalHeaders .= strtolower($hKey).':'.trim((string) $hVal)."\n";
+            $signedHeadersList[] = strtolower($hKey);
+        }
+        $signedHeaders = implode(';', $signedHeadersList);
+
+        $canonicalRequest = "GET\n{$canonicalUri}\n\n{$canonicalHeaders}\n{$signedHeaders}\n{$payloadHash}";
+        $scope = "{$dateOnly}/{$this->region}/{$this->service}/aws4_request";
+        $stringToSign = "AWS4-HMAC-SHA256\n{$now}\n{$scope}\n".hash('sha256', $canonicalRequest);
+
+        $signingKey = $this->deriveSigningKey($creds['secret_access_key'], $dateOnly, $this->region, $this->service);
+        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+
+        $authHeader = "AWS4-HMAC-SHA256 Credential={$creds['access_key_id']}/{$scope}, SignedHeaders={$signedHeaders}, Signature={$signature}";
+
+        $requestHeaders = [
+            "Host: {$host}",
+            "x-amz-date: {$now}",
+            "x-amz-content-sha256: {$payloadHash}",
+            "Authorization: {$authHeader}",
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300 && is_string($response)) {
+            return $response;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if an object exists in Cloudflare R2 bucket
+     */
+    public function objectExists(string $key): bool
+    {
+        $creds = $this->getCredentials();
+        if (! $this->isConfigured($creds['account_id'], $creds['access_key_id'], $creds['secret_access_key'], $creds['bucket'])) {
+            return false;
+        }
+
+        $cleanKey = ltrim($key, '/');
+        $bucket = $creds['bucket'];
+        $accountId = $creds['account_id'];
+        $host = "{$accountId}.r2.cloudflarestorage.com";
+        $endpoint = "https://{$host}";
+
+        $canonicalUri = "/{$bucket}/{$cleanKey}";
+        $url = "{$endpoint}{$canonicalUri}";
+
+        $payloadHash = hash('sha256', '');
+        $now = gmdate('Ymd\THis\Z');
+        $dateOnly = gmdate('Ymd');
+
+        $headers = [
+            'host' => $host,
+            'x-amz-content-sha256' => $payloadHash,
+            'x-amz-date' => $now,
+        ];
+        ksort($headers);
+
+        $canonicalHeaders = '';
+        $signedHeadersList = [];
+        foreach ($headers as $hKey => $hVal) {
+            $canonicalHeaders .= strtolower($hKey).':'.trim((string) $hVal)."\n";
+            $signedHeadersList[] = strtolower($hKey);
+        }
+        $signedHeaders = implode(';', $signedHeadersList);
+
+        $canonicalRequest = "HEAD\n{$canonicalUri}\n\n{$canonicalHeaders}\n{$signedHeaders}\n{$payloadHash}";
+        $scope = "{$dateOnly}/{$this->region}/{$this->service}/aws4_request";
+        $stringToSign = "AWS4-HMAC-SHA256\n{$now}\n{$scope}\n".hash('sha256', $canonicalRequest);
+
+        $signingKey = $this->deriveSigningKey($creds['secret_access_key'], $dateOnly, $this->region, $this->service);
+        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+
+        $authHeader = "AWS4-HMAC-SHA256 Credential={$creds['access_key_id']}/{$scope}, SignedHeaders={$signedHeaders}, Signature={$signature}";
+
+        $requestHeaders = [
+            "Host: {$host}",
+            "x-amz-date: {$now}",
+            "x-amz-content-sha256: {$payloadHash}",
+            "Authorization: {$authHeader}",
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_NOBODY, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'HEAD');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode >= 200 && $httpCode < 300;
+    }
+
+    /**
      * Test connection to Cloudflare R2 bucket with explicit or stored credentials
      *
      * @return array{success: bool, message: string, http_code?: int}

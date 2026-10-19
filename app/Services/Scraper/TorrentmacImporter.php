@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Services\AI\GeminiService;
 use App\Services\Scraper\Traits\AppResolverTrait;
 use App\Services\Storage\CloudflareR2Service;
+use App\Services\Storage\TorrentStorageService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -21,9 +22,11 @@ class TorrentmacImporter
         protected TorrentmacClient $client,
         protected TorrentmacParser $parser,
         protected GeminiService $geminiService,
-        protected ?CloudflareR2Service $r2Service = null
+        protected ?CloudflareR2Service $r2Service = null,
+        protected ?TorrentStorageService $torrentStorage = null
     ) {
         $this->r2Service = $this->r2Service ?? app(CloudflareR2Service::class);
+        $this->torrentStorage = $this->torrentStorage ?? app(TorrentStorageService::class);
     }
 
     protected ?string $explicitDisk = null;
@@ -246,8 +249,13 @@ class TorrentmacImporter
         // 1. Resolve Application in Local DB via 4-tier deduplication engine
         $existing = $this->resolveExistingApplication($appData);
 
-        // 2. Download and Store .torrent file in Cloudflare R2 / Public disk
-        $torrentStorageData = $this->storeTorrentFile($appData['torrent_url'], $appData['slug'], $appData['version']);
+        // 2. Download and Store .torrent file in Cloudflare R2 / Public disk with HackMac.cc branding
+        $torrentStorageData = $this->storeTorrentFile(
+            $appData['torrent_url'],
+            $appData['slug'],
+            $appData['version'] ?? null,
+            $appData['clean_name'] ?: $appData['name']
+        );
 
         // 3. Resolve Category
         $category = $this->resolveCategory($appData['category']);
@@ -438,11 +446,11 @@ class TorrentmacImporter
     }
 
     /**
-     * Download the .torrent file and upload it to Cloudflare R2 / Public storage
+     * Download the .torrent file and upload it to Cloudflare R2 / Public storage with HackMac.cc branding
      *
-     * @return array{path: ?string, public_url: ?string}
+     * @return array{path: ?string, public_url: ?string, magnet_link?: ?string}
      */
-    public function storeTorrentFile(?string $torrentUrl, string $slug, ?string $version = null): array
+    public function storeTorrentFile(?string $torrentUrl, string $slug, ?string $version = null, ?string $appName = null): array
     {
         if (empty($torrentUrl)) {
             return ['path' => null, 'public_url' => null];
@@ -455,44 +463,14 @@ class TorrentmacImporter
             return ['path' => null, 'public_url' => $torrentUrl];
         }
 
-        $disk = $this->getStorageDisk();
-        $safeVersion = $version ? '-'.Str::slug($version) : '';
-        $relativePath = "torrents/{$slug}{$safeVersion}.torrent";
+        $brandedFilename = $this->torrentStorage->generateBrandedFilename($appName ?: $slug, $version, $torrentUrl);
+        $stored = $this->torrentStorage->storeTorrentBinary($binary, $brandedFilename, $slug, $appName ?: $slug);
 
-        $extractedMagnet = $this->extractMagnetFromTorrent($binary, $slug);
-
-        if ($disk === 'r2') {
-            $r2PublicUrl = $this->r2Service->putObject($relativePath, $binary, 'application/x-bittorrent');
-            if ($r2PublicUrl) {
-                return [
-                    'path' => $relativePath,
-                    'public_url' => $r2PublicUrl,
-                    'magnet_link' => $extractedMagnet,
-                ];
-            }
-            Log::warning("TorrentmacImporter: Cloudflare R2 upload failed, falling back to local public disk for {$relativePath}");
-            $disk = 'public';
-        }
-
-        try {
-            Storage::disk('public')->put($relativePath, $binary, 'public');
-
-            $publicUrl = Storage::disk('public')->url($relativePath);
-
-            return [
-                'path' => $relativePath,
-                'public_url' => $publicUrl,
-                'magnet_link' => $extractedMagnet,
-            ];
-        } catch (\Throwable $e) {
-            Log::error("TorrentmacImporter: Failed to store torrent on disk 'public': {$e->getMessage()}");
-
-            return [
-                'path' => null,
-                'public_url' => $torrentUrl,
-                'magnet_link' => $extractedMagnet,
-            ];
-        }
+        return [
+            'path' => $stored['file_path'],
+            'public_url' => $stored['public_url'],
+            'magnet_link' => $stored['magnet_link'],
+        ];
     }
 
     /**
@@ -778,7 +756,6 @@ class TorrentmacImporter
      *
      * @param  int  $limit  Number of new apps to import
      * @param  bool  $asDraft  Whether to save as draft (published = false)
-     * @param  bool  $downloadImages
      * @return array{imported: int, next_page: int, items: array}
      */
     public function importBacklogBatch(int $limit = 10, bool $asDraft = true, bool $downloadImages = true): array
