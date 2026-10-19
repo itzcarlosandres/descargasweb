@@ -19,7 +19,7 @@
                     <span>Centro de Salud de Enlaces</span>
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Sistema en línea"></span>
                 </h1>
-                <p class="text-xs text-[#8C847A]">Monitorea enlaces en vivo o revisa los reportes generados por usuarios.</p>
+                <p class="text-xs text-[#8C847A]">Reportes de Enlaces Caídos: monitorea enlaces en vivo o revisa los reportes generados por usuarios.</p>
             </div>
         </div>
 

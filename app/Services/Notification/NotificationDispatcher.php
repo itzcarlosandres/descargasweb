@@ -71,7 +71,7 @@ class NotificationDispatcher
                         ."🌐 *IP:* `{$report->ip_address}`\n\n"
                         ."👉 [Ver Ficha]({$appUrl}) · [Panel Admin](".route('admin.applications.edit', $app ?? 1).')';
 
-                    Http::timeout(10)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                    Http::connectTimeout(2)->timeout(3)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
                         'chat_id' => $chatId,
                         'text' => $caption,
                         'parse_mode' => 'Markdown',
@@ -124,7 +124,7 @@ class NotificationDispatcher
                         ],
                     ];
 
-                    Http::timeout(10)->post($webhookUrl, $payload);
+                    Http::connectTimeout(2)->timeout(3)->post($webhookUrl, $payload);
                 } catch (\Throwable $e) {
                     Log::warning("Discord broken link alert failed: {$e->getMessage()}");
                 }

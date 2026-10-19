@@ -59,10 +59,12 @@ class HomeController extends Controller
             ->limit(6)
             ->get();
 
-        $topCategories = Category::active()
-            ->ordered()
-            ->limit(7)
-            ->get();
+        $topCategories = Cache::remember('home_top_categories', 1800, function () {
+            return Category::active()
+                ->ordered()
+                ->limit(7)
+                ->get();
+        });
 
         return view('pages.home', compact('stats', 'featured', 'applications', 'recentlyUpdated', 'topCategories'));
     }
@@ -129,17 +131,21 @@ class HomeController extends Controller
                 ->limit(6)
                 ->get();
 
-        $topPosts = Application::published()
-            ->with('category')
-            ->orderBy('downloads', 'desc')
-            ->limit(10)
-            ->get();
+        $topPosts = Cache::remember('app_detail_top_posts', 600, function () {
+            return Application::published()
+                ->with('category')
+                ->orderBy('downloads', 'desc')
+                ->limit(10)
+                ->get();
+        });
 
-        $recentPosts = Application::published()
-            ->with('category')
-            ->orderBy('released_at', 'desc')
-            ->limit(8)
-            ->get();
+        $recentPosts = Cache::remember('app_detail_recent_posts', 600, function () {
+            return Application::published()
+                ->with('category')
+                ->orderBy('released_at', 'desc')
+                ->limit(8)
+                ->get();
+        });
 
         $userRating = auth()->check()
             ? ($application->approvedReviews()->where('user_id', auth()->id())->value('rating') ?? (int) session('rated_app_'.$application->id, 0))
@@ -216,11 +222,13 @@ class HomeController extends Controller
 
     public function popular()
     {
-        $topApplications = Application::published()
-            ->with('category')
-            ->orderBy('downloads', 'desc')
-            ->limit(25)
-            ->get();
+        $topApplications = Cache::remember('popular_top_applications', 600, function () {
+            return Application::published()
+                ->with('category')
+                ->orderBy('downloads', 'desc')
+                ->limit(25)
+                ->get();
+        });
 
         $topThree = $topApplications->take(3);
         $remainingApps = $topApplications->slice(3);
@@ -655,24 +663,29 @@ class HomeController extends Controller
             return response()->json([]);
         }
 
-        $results = Application::published()
-            ->with('category')
-            ->search($q)
-            ->limit(8)
-            ->get()
-            ->map(function ($app) {
-                return [
-                    'id' => $app->id,
-                    'name' => $app->name,
-                    'slug' => $app->slug,
-                    'url' => route('app', $app->slug),
-                    'version' => $app->version,
-                    'category' => $app->category?->name ?? 'Application',
-                    'icon_url' => $app->icon_url,
-                    'size' => $app->formatted_size,
-                    'downloads' => $app->formatted_downloads,
-                ];
-            });
+        $cacheKey = 'live_search_'.md5(mb_strtolower($q));
+
+        $results = Cache::remember($cacheKey, 180, function () use ($q) {
+            return Application::published()
+                ->with('category')
+                ->search($q)
+                ->limit(8)
+                ->get()
+                ->map(function ($app) {
+                    return [
+                        'id' => $app->id,
+                        'name' => $app->name,
+                        'slug' => $app->slug,
+                        'url' => route('app', $app->slug),
+                        'version' => $app->version,
+                        'category' => $app->category?->name ?? 'Application',
+                        'icon_url' => $app->icon_url,
+                        'size' => $app->formatted_size,
+                        'downloads' => $app->formatted_downloads,
+                    ];
+                })
+                ->all();
+        });
 
         return response()->json($results);
     }

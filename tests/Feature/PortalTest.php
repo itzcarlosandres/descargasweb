@@ -339,14 +339,18 @@ class PortalTest extends TestCase
         $robots->assertSee('Disallow: /admin/');
         $robots->assertSee('Sitemap: '.url('sitemap.xml'), false);
 
-        // 2. Sitemap.xml
+        // 2. Sitemap.xml & Sub-sitemaps
         [$category, $app] = $this->createCategoryAndApp(['published' => true]);
         $sitemap = $this->get('/sitemap.xml');
         $sitemap->assertStatus(200);
         $sitemap->assertHeader('Content-Type', 'application/xml; charset=utf-8');
-        $sitemap->assertSee('urlset');
-        $sitemap->assertSee(route('app', $app->slug), false);
-        $sitemap->assertSee(route('category', $category->slug), false);
+        $sitemap->assertSee('sitemapindex');
+        $sitemap->assertSee('sitemap-apps.xml');
+
+        $sitemapApps = $this->get('/sitemap-apps.xml');
+        $sitemapApps->assertStatus(200);
+        $sitemapApps->assertSee('urlset');
+        $sitemapApps->assertSee(route('app', $app->slug), false);
 
         // 3. Open Graph and Schema.org on App Detail
         $detail = $this->get(route('app', $app->slug));
@@ -457,7 +461,7 @@ class PortalTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Fresh Catalog App');
-        $response->assertSee('Added ' . now()->format('M j, Y'));
+        $response->assertSee('Added '.now()->format('M j, Y'));
         $response->assertDontSee('title="Programa actualizado"', false);
     }
 }
