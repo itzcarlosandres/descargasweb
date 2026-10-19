@@ -288,79 +288,81 @@
         </div>
     @endif
 
-    <!-- Navigation Pills / Tabs -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 p-1.5 bg-[#14110E] border border-[#262019] rounded-2xl">
-        <button type="button" @click="tab = 'logo'"
-                :class="tab === 'logo' ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span>Identidad & Logo</span>
-        </button>
+    <!-- Navigation Pills / Tabs (Estilo Deslizado / Slideable Pills) -->
+    <div class="relative w-full">
+        <div class="flex items-center gap-1.5 p-1.5 bg-[#14110E]/95 backdrop-blur-xl border border-[#262019] rounded-2xl overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] shadow-inner shadow-black/40">
+            <button type="button" @click="tab = 'logo'"
+                    :class="tab === 'logo' ? 'bg-[#221C16] text-white border border-primary/40 shadow-sm font-bold ring-1 ring-primary/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'logo' ? 'text-primary' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Identidad & Logo</span>
+            </button>
 
-        <button type="button" @click="tab = 'seo'"
-                :class="tab === 'seo' ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <span>SEO & Metadatos</span>
-        </button>
+            <button type="button" @click="tab = 'seo'"
+                    :class="tab === 'seo' ? 'bg-[#221C16] text-white border border-sky-500/40 shadow-sm font-bold ring-1 ring-sky-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'seo' ? 'text-sky-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span>SEO & Metadatos</span>
+            </button>
 
-        <button type="button" @click="tab = 'vip'"
-                :class="tab === 'vip' ? 'bg-[#F59E0B]/20 text-white border border-[#F59E0B]/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-[#F59E0B] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            <span>⚡ Botón VIP</span>
-        </button>
+            <button type="button" @click="tab = 'vip'"
+                    :class="tab === 'vip' ? 'bg-[#221C16] text-white border border-amber-500/40 shadow-sm font-bold ring-1 ring-amber-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'vip' ? 'text-amber-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span>Botón VIP</span>
+            </button>
 
-        <button type="button" @click="tab = 'scripts'"
-                :class="tab === 'scripts' ? 'bg-emerald-500/20 text-white border border-emerald-500/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
-            <span>Scripts & Analytics</span>
-        </button>
+            <button type="button" @click="tab = 'scripts'"
+                    :class="tab === 'scripts' ? 'bg-[#221C16] text-white border border-emerald-500/40 shadow-sm font-bold ring-1 ring-emerald-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'scripts' ? 'text-emerald-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                </svg>
+                <span>Scripts & Analytics</span>
+            </button>
 
-        <button type="button" @click="tab = 'general'"
-                :class="tab === 'general' ? 'bg-[#221C16] text-white border border-[#3A3025] shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span>Información & Textos</span>
-        </button>
+            <button type="button" @click="tab = 'general'"
+                    :class="tab === 'general' ? 'bg-[#221C16] text-white border border-purple-500/40 shadow-sm font-bold ring-1 ring-purple-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'general' ? 'text-purple-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Información & Textos</span>
+            </button>
 
-        <button type="button" @click="tab = 'gemini'"
-                :class="tab === 'gemini' ? 'bg-primary/20 text-white border border-primary/40 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            <span>🤖 IA Gemini 2.5</span>
-        </button>
+            <button type="button" @click="tab = 'gemini'"
+                    :class="tab === 'gemini' ? 'bg-[#221C16] text-white border border-fuchsia-500/40 shadow-sm font-bold ring-1 ring-fuchsia-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'gemini' ? 'text-fuchsia-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+                </svg>
+                <span>IA Gemini 2.5</span>
+            </button>
 
-        <button type="button" @click="tab = 'storage'"
-                :class="tab === 'storage' ? 'bg-[#F38020]/20 text-white border border-[#F38020]/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-[#F38020]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
-            </svg>
-            <span>☁️ Cloudflare R2</span>
-        </button>
+            <button type="button" @click="tab = 'storage'"
+                    :class="tab === 'storage' ? 'bg-[#221C16] text-white border border-[#F38020]/50 shadow-sm font-bold ring-1 ring-[#F38020]/25' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'storage' ? 'text-[#F38020]' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
+                </svg>
+                <span>Cloudflare R2</span>
+            </button>
 
-        <button type="button" @click="tab = 'notifications'"
-                :class="tab === 'notifications' ? 'bg-[#5865F2]/20 text-white border border-[#5865F2]/50 shadow-sm font-bold' : 'text-[#8C847A] hover:text-white'"
-                class="py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4 text-[#5865F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-            <span>🤖 Notificaciones &amp; Alertas</span>
-        </button>
+            <button type="button" @click="tab = 'notifications'"
+                    :class="tab === 'notifications' ? 'bg-[#221C16] text-white border border-indigo-500/40 shadow-sm font-bold ring-1 ring-indigo-500/20' : 'text-[#8C847A] hover:text-[#E0D8CE] hover:bg-[#1A1510] border border-transparent'"
+                    class="group flex-1 min-w-max py-2.5 px-3.5 rounded-xl text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap">
+                <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'notifications' ? 'text-indigo-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span>Notificaciones &amp; Alertas</span>
+            </button>
+        </div>
     </div>
 
     <!-- Main Settings Form -->
