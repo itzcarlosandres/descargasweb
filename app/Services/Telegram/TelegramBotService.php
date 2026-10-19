@@ -364,7 +364,7 @@ class TelegramBotService
             imagestring($im, 5, 160, 48, 'HACKMAC.CC', $gold);
             imagestring($im, 4, 280, 49, '|   PREMIUM MACOS RELEASES', $brandColor);
 
-            // 5. Draw Icon on the left (box at x=100, y=195, w=240, h=240)
+            // 5. Draw Icon on the left with macOS Squircle rounding, white-edge suppression, and drop shadow
             $iconDrawn = false;
             $iconCandidate = $app->icon;
             if ($iconCandidate) {
@@ -381,11 +381,7 @@ class TelegramBotService
                     $srcImg = $raw ? @imagecreatefromstring($raw) : null;
 
                     if ($srcImg) {
-                        $cardBg = imagecolorallocate($im, 22, 27, 34);
-                        $cardBorder = imagecolorallocate($im, 48, 54, 61);
-                        imagefilledrectangle($im, 95, 190, 345, 440, $cardBg);
-                        imagerectangle($im, 95, 190, 345, 440, $cardBorder);
-                        imagecopyresampled($im, $srcImg, 100, 195, 0, 0, 240, 240, imagesx($srcImg), imagesy($srcImg));
+                        $this->renderMacOsSquircleIcon($im, $srcImg, 100, 195, 240, 48);
                         imagedestroy($srcImg);
                         $iconDrawn = true;
                     }
@@ -393,13 +389,8 @@ class TelegramBotService
             }
 
             if (! $iconDrawn) {
-                // Fallback Monogram Icon
-                $badgeBg = imagecolorallocate($im, 30, 41, 59);
-                $badgeBorder = imagecolorallocate($im, 245, 158, 11);
-                imagefilledrectangle($im, 100, 195, 340, 435, $badgeBg);
-                imagerectangle($im, 100, 195, 340, 435, $badgeBorder);
-                $initial = strtoupper(substr($app->name, 0, 1));
-                imagestring($im, 5, 210, 300, $initial, $white);
+                // Fallback Monogram Icon with rounded squircle and drop shadow
+                $this->renderMonogramIcon($im, $app->name, 100, 195, 240, 48);
             }
 
             // 6. Right Side Content
@@ -438,6 +429,191 @@ class TelegramBotService
 
             return null;
         }
+    }
+
+    /**
+     * Render an application icon inside a native macOS rounded squircle with drop shadow and edge cleanup.
+     */
+    protected function renderMacOsSquircleIcon(\GdImage $dstCanvas, \GdImage $srcImg, int $destX, int $destY, int $size = 240, int $radius = 48): void
+    {
+        $srcW = imagesx($srcImg);
+        $srcH = imagesy($srcImg);
+
+        // Detect if icon has white/near-white corner pixels
+        $cornerSamples = [
+            imagecolorat($srcImg, 0, 0),
+            imagecolorat($srcImg, max(0, $srcW - 1), 0),
+            imagecolorat($srcImg, 0, max(0, $srcH - 1)),
+            imagecolorat($srcImg, max(0, $srcW - 1), max(0, $srcH - 1)),
+        ];
+        $whiteCorners = 0;
+        foreach ($cornerSamples as $c) {
+            $colors = imagecolorsforindex($srcImg, $c);
+            if ($colors['red'] > 238 && $colors['green'] > 238 && $colors['blue'] > 238 && $colors['alpha'] < 30) {
+                $whiteCorners++;
+            }
+        }
+        $hasWhiteCorners = ($whiteCorners >= 3);
+
+        $resized = imagecreatetruecolor($size, $size);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+        imagefilledrectangle($resized, 0, 0, $size, $size, $transparent);
+
+        imagecopyresampled($resized, $srcImg, 0, 0, 0, 0, $size, $size, $srcW, $srcH);
+
+        // If the source image had a white box/border, convert outer white margin to transparent
+        if ($hasWhiteCorners) {
+            for ($x = 0; $x < $size; $x++) {
+                for ($y = 0; $y < $size; $y++) {
+                    $c = imagecolorat($resized, $x, $y);
+                    $colors = imagecolorsforindex($resized, $c);
+                    if ($colors['red'] > 235 && $colors['green'] > 235 && $colors['blue'] > 235) {
+                        $distFromEdge = min($x, $y, $size - 1 - $x, $size - 1 - $y);
+                        if ($distFromEdge < $radius) {
+                            imagesetpixel($resized, $x, $y, $transparent);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply anti-aliased macOS Squircle corner mask
+        for ($x = 0; $x < $size; $x++) {
+            for ($y = 0; $y < $size; $y++) {
+                $inCorner = false;
+                $dx = 0;
+                $dy = 0;
+
+                if ($x < $radius && $y < $radius) {
+                    $dx = $radius - $x;
+                    $dy = $radius - $y;
+                    $inCorner = true;
+                } elseif ($x >= ($size - $radius) && $y < $radius) {
+                    $dx = $x - ($size - $radius);
+                    $dy = $radius - $y;
+                    $inCorner = true;
+                } elseif ($x < $radius && $y >= ($size - $radius)) {
+                    $dx = $radius - $x;
+                    $dy = $y - ($size - $radius);
+                    $inCorner = true;
+                } elseif ($x >= ($size - $radius) && $y >= ($size - $radius)) {
+                    $dx = $x - ($size - $radius);
+                    $dy = $y - ($size - $radius);
+                    $inCorner = true;
+                }
+
+                if ($inCorner) {
+                    $distSq = ($dx * $dx) + ($dy * $dy);
+                    $radSq = $radius * $radius;
+                    if ($distSq > $radSq) {
+                        imagesetpixel($resized, $x, $y, $transparent);
+                    } elseif ($distSq > (($radius - 2) * ($radius - 2))) {
+                        $edgeAlpha = (int) (127 * (($distSq - (($radius - 2) * ($radius - 2))) / ($radSq - (($radius - 2) * ($radius - 2)))));
+                        $origColor = imagecolorat($resized, $x, $y);
+                        $colors = imagecolorsforindex($resized, $origColor);
+                        $newAlpha = max($colors['alpha'], min(127, $edgeAlpha));
+                        $smoothed = imagecolorallocatealpha($resized, $colors['red'], $colors['green'], $colors['blue'], $newAlpha);
+                        imagesetpixel($resized, $x, $y, $smoothed);
+                    }
+                }
+            }
+        }
+
+        // Draw multi-layered soft drop shadow under the icon
+        imagealphablending($dstCanvas, true);
+        for ($i = 16; $i >= 2; $i -= 2) {
+            $shadowAlpha = (int) (127 - (18 - $i) * 2.2);
+            $shadowColor = imagecolorallocatealpha($dstCanvas, 0, 0, 0, max(112, min(127, $shadowAlpha)));
+            $sy = $destY + 8;
+            imagefilledrectangle($dstCanvas, $destX - $i + 4, $sy + $radius, $destX + $size + $i - 4, $sy + $size - $radius + $i, $shadowColor);
+            imagefilledrectangle($dstCanvas, $destX + $radius, $sy - $i + 4, $destX + $size - $radius, $sy + $size + $i, $shadowColor);
+            imagefilledellipse($dstCanvas, $destX + $radius, $sy + $radius, ($radius + $i) * 2, ($radius + $i) * 2, $shadowColor);
+            imagefilledellipse($dstCanvas, $destX + $size - $radius, $sy + $radius, ($radius + $i) * 2, ($radius + $i) * 2, $shadowColor);
+            imagefilledellipse($dstCanvas, $destX + $radius, $sy + $size - $radius, ($radius + $i) * 2, ($radius + $i) * 2, $shadowColor);
+            imagefilledellipse($dstCanvas, $destX + $size - $radius, $sy + $size - $radius, ($radius + $i) * 2, ($radius + $i) * 2, $shadowColor);
+        }
+
+        // Stamp the rounded icon
+        imagecopy($dstCanvas, $resized, $destX, $destY, 0, 0, $size, $size);
+
+        // Glass rim highlight on top and edges
+        $rimColor = imagecolorallocatealpha($dstCanvas, 255, 255, 255, 108);
+        imageline($dstCanvas, $destX + $radius, $destY, $destX + $size - $radius, $destY, $rimColor);
+        imageline($dstCanvas, $destX, $destY + $radius, $destX, $destY + $size - $radius, $rimColor);
+        imageline($dstCanvas, $destX + $size - 1, $destY + $radius, $destX + $size - 1, $destY + $size - $radius, $rimColor);
+
+        imagedestroy($resized);
+    }
+
+    /**
+     * Render a fallback monogram icon inside a sleek squircle.
+     */
+    protected function renderMonogramIcon(\GdImage $dstCanvas, string $appName, int $destX, int $destY, int $size = 240, int $radius = 48): void
+    {
+        $badge = imagecreatetruecolor($size, $size);
+        imagealphablending($badge, false);
+        imagesavealpha($badge, true);
+        $transparent = imagecolorallocatealpha($badge, 0, 0, 0, 127);
+        imagefilledrectangle($badge, 0, 0, $size, $size, $transparent);
+
+        // Dark slate gradient
+        for ($y = 0; $y < $size; $y++) {
+            $ratio = $y / $size;
+            $r = (int) (26 + (18 - 26) * $ratio);
+            $g = (int) (35 + (24 - 35) * $ratio);
+            $b = (int) (50 + (38 - 50) * $ratio);
+            $color = imagecolorallocate($badge, $r, $g, $b);
+            imageline($badge, 0, $y, $size, $y, $color);
+        }
+
+        // Mask squircle
+        for ($x = 0; $x < $size; $x++) {
+            for ($y = 0; $y < $size; $y++) {
+                $inCorner = false;
+                $dx = 0;
+                $dy = 0;
+                if ($x < $radius && $y < $radius) {
+                    $dx = $radius - $x;
+                    $dy = $radius - $y;
+                    $inCorner = true;
+                } elseif ($x >= ($size - $radius) && $y < $radius) {
+                    $dx = $x - ($size - $radius);
+                    $dy = $radius - $y;
+                    $inCorner = true;
+                } elseif ($x < $radius && $y >= ($size - $radius)) {
+                    $dx = $radius - $x;
+                    $dy = $y - ($size - $radius);
+                    $inCorner = true;
+                } elseif ($x >= ($size - $radius) && $y >= ($size - $radius)) {
+                    $dx = $x - ($size - $radius);
+                    $dy = $y - ($size - $radius);
+                    $inCorner = true;
+                }
+
+                if ($inCorner && (($dx * $dx) + ($dy * $dy)) > ($radius * $radius)) {
+                    imagesetpixel($badge, $x, $y, $transparent);
+                }
+            }
+        }
+
+        // Drop shadow on canvas
+        imagealphablending($dstCanvas, true);
+        for ($i = 14; $i >= 2; $i -= 2) {
+            $shadowColor = imagecolorallocatealpha($dstCanvas, 0, 0, 0, max(112, 127 - (16 - $i) * 2));
+            $sy = $destY + 6;
+            imagefilledrectangle($dstCanvas, $destX - $i + 4, $sy + $radius, $destX + $size + $i - 4, $sy + $size - $radius + $i, $shadowColor);
+            imagefilledrectangle($dstCanvas, $destX + $radius, $sy - $i + 4, $destX + $size - $radius, $sy + $size + $i, $shadowColor);
+        }
+
+        imagecopy($dstCanvas, $badge, $destX, $destY, 0, 0, $size, $size);
+
+        $initial = strtoupper(substr($appName, 0, 1));
+        $white = imagecolorallocate($dstCanvas, 255, 255, 255);
+        imagestring($dstCanvas, 5, $destX + (int) ($size / 2) - 5, $destY + (int) ($size / 2) - 8, $initial, $white);
+
+        imagedestroy($badge);
     }
 
     /**
