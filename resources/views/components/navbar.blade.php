@@ -39,12 +39,11 @@
                 <!-- Top Downloads -->
                 <li id="menu-item-6907" class="menu-item">
                     <a href="{{ route('popular') }}"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer group {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        <svg class="w-4 h-4 text-orange-500 dark:text-orange-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.5 7.5a.75.75 0 0 0-1.25.592c0 2.25 1.002 4.298 2.58 5.67A7.502 7.502 0 0 0 6 16.5c0 4.142 3.358 7.5 7.5 7.5 3.96 0 7.195-3.07 7.48-6.978.013-.174.02-.349.02-.522 0-3.957-2.73-7.275-6.505-8.214a10.592 10.592 0 0 0-1.532-6Zm-1.082 8.395A2.076 2.076 0 0 1 12 12.75c0 .323-.075.628-.209.9a1.25 1.25 0 0 0 1.83 1.508 4.75 4.75 0 0 0 1.879-3.758c0-.39-.052-.767-.15-1.124a6.25 6.25 0 0 1-3.469.405Z" clip-rule="evenodd" />
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
+                        <svg class="w-4 h-4 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
                         </svg>
                         <span>Top Downloads</span>
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-xs">HOT</span>
                     </a>
                 </li>
 
@@ -431,15 +430,12 @@
                 <a href="{{ route('popular') }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 dark:bg-orange-500/20 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.5 7.5a.75.75 0 0 0-1.25.592c0 2.25 1.002 4.298 2.58 5.67A7.502 7.502 0 0 0 6 16.5c0 4.142 3.358 7.5 7.5 7.5 3.96 0 7.195-3.07 7.48-6.978.013-.174.02-.349.02-.522 0-3.957-2.73-7.275-6.505-8.214a10.592 10.592 0 0 0-1.532-6Zm-1.082 8.395A2.076 2.076 0 0 1 12 12.75c0 .323-.075.628-.209.9a1.25 1.25 0 0 0 1.83 1.508 4.75 4.75 0 0 0 1.879-3.758c0-.39-.052-.767-.15-1.124a6.25 6.25 0 0 1-3.469.405Z" clip-rule="evenodd" />
+                            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
                             </svg>
                         </div>
                         <div class="truncate">
-                            <div class="flex items-center gap-1.5">
-                                <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Top Downloads</span>
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-xs">HOT</span>
-                            </div>
+                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Top Downloads</span>
                             <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Trending &amp; Most Popular</span>
                         </div>
                     </div>
