@@ -15,6 +15,7 @@ use App\Services\Storage\TorrentStorageService;
 use App\Services\Telegram\TelegramBotService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -71,6 +72,14 @@ class HomeController extends Controller
                 ->limit(7)
                 ->get();
         });
+
+        if (! ($topCategories instanceof Collection)) {
+            Cache::forget('home_top_categories');
+            $topCategories = Category::active()
+                ->ordered()
+                ->limit(7)
+                ->get();
+        }
 
         return view('pages.home', compact('stats', 'featured', 'applications', 'recentlyUpdated', 'topCategories'));
     }
@@ -231,6 +240,15 @@ class HomeController extends Controller
                 ->limit(25)
                 ->get();
         });
+
+        if (! ($topApplications instanceof Collection)) {
+            Cache::forget('popular_top_applications');
+            $topApplications = Application::published()
+                ->with('category')
+                ->orderBy('downloads', 'desc')
+                ->limit(25)
+                ->get();
+        }
 
         $topThree = $topApplications->take(3);
         $remainingApps = $topApplications->slice(3);
