@@ -39,11 +39,12 @@
                 <!-- Top Downloads -->
                 <li id="menu-item-6907" class="menu-item">
                     <a href="{{ route('popular') }}"
-                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
-                        <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.157 2.158-1.157 3.597 0 .395.04.773.11 1.134a6.993 6.993 0 00-2.072 1.349 7.02 7.02 0 00-1.782 2.708 7.001 7.001 0 001.218 7.032A7.004 7.004 0 0012 21a6.985 6.985 0 005.474-2.656 7.03 7.03 0 001.076-7.032 6.992 6.992 0 00-1.782-2.708 7.03 7.03 0 00-2.072-1.35 6.002 6.002 0 00.11-1.133c0-1.44-.63-2.776-1.157-3.598a2.977 2.977 0 00-.822-.88zM8.5 12a3.5 3.5 0 117 0c0 1.258-.667 2.36-1.667 2.976a1 1 0 01-1.166-.142l-1.002-1.002a1 1 0 01-.293-.707V12a1 1 0 00-2 0v1.125a1 1 0 01-.293.707l-1.002 1.002a1 1 0 01-1.166.142A3.49 3.49 0 018.5 12z" clip-rule="evenodd" />
+                       class="hover:text-[#0071E3] dark:hover:text-white transition-all flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer group {{ request()->routeIs('popular') ? 'text-[#0071E3] dark:text-white font-semibold' : 'text-[#38322B]/90 dark:text-[#F6F3EC]/90' }}">
+                        <svg class="w-4 h-4 text-orange-500 dark:text-orange-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.5 7.5a.75.75 0 0 0-1.25.592c0 2.25 1.002 4.298 2.58 5.67A7.502 7.502 0 0 0 6 16.5c0 4.142 3.358 7.5 7.5 7.5 3.96 0 7.195-3.07 7.48-6.978.013-.174.02-.349.02-.522 0-3.957-2.73-7.275-6.505-8.214a10.592 10.592 0 0 0-1.532-6Zm-1.082 8.395A2.076 2.076 0 0 1 12 12.75c0 .323-.075.628-.209.9a1.25 1.25 0 0 0 1.83 1.508 4.75 4.75 0 0 0 1.879-3.758c0-.39-.052-.767-.15-1.124a6.25 6.25 0 0 1-3.469.405Z" clip-rule="evenodd" />
                         </svg>
                         <span>Top Downloads</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-xs">HOT</span>
                     </a>
                 </li>
 
@@ -429,13 +430,16 @@
             <nav class="flex flex-col gap-1.5 text-sm text-[#38322B] dark:text-[#F6F3EC]">
                 <a href="{{ route('popular') }}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.157 2.158-1.157 3.597 0 .395.04.773.11 1.134a6.993 6.993 0 00-2.072 1.349 7.02 7.02 0 00-1.782 2.708 7.001 7.001 0 001.218 7.032A7.004 7.004 0 0012 21a6.985 6.985 0 005.474-2.656 7.03 7.03 0 001.076-7.032 6.992 6.992 0 00-1.782-2.708 7.03 7.03 0 00-2.072-1.35 6.002 6.002 0 00.11-1.133c0-1.44-.63-2.776-1.157-3.598a2.977 2.977 0 00-.822-.88zM8.5 12a3.5 3.5 0 117 0c0 1.258-.667 2.36-1.667 2.976a1 1 0 01-1.166-.142l-1.002-1.002a1 1 0 01-.293-.707V12a1 1 0 00-2 0v1.125a1 1 0 01-.293.707l-1.002 1.002a1 1 0 01-1.166.142A3.49 3.49 0 018.5 12z" clip-rule="evenodd" />
+                        <div class="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 dark:bg-orange-500/20 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.5 7.5a.75.75 0 0 0-1.25.592c0 2.25 1.002 4.298 2.58 5.67A7.502 7.502 0 0 0 6 16.5c0 4.142 3.358 7.5 7.5 7.5 3.96 0 7.195-3.07 7.48-6.978.013-.174.02-.349.02-.522 0-3.957-2.73-7.275-6.505-8.214a10.592 10.592 0 0 0-1.532-6Zm-1.082 8.395A2.076 2.076 0 0 1 12 12.75c0 .323-.075.628-.209.9a1.25 1.25 0 0 0 1.83 1.508 4.75 4.75 0 0 0 1.879-3.758c0-.39-.052-.767-.15-1.124a6.25 6.25 0 0 1-3.469.405Z" clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="truncate">
-                            <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Top Downloads</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="block font-semibold text-xs leading-tight group-hover:text-[#0071E3] dark:group-hover:text-white transition-colors">Top Downloads</span>
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-xs">HOT</span>
+                            </div>
                             <span class="block text-[10px] text-[#8C847A] dark:text-[#A1A1AA]">Trending &amp; Most Popular</span>
                         </div>
                     </div>
