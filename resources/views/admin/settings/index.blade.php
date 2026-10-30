@@ -13,6 +13,26 @@
     logoIcon: '{{ old('logo_icon', $settings['logo_icon'] ?? 'finder') }}',
     seoTitle: '{{ old('seo_meta_title', $settings['seo_meta_title'] ?? '') }}',
     seoDesc: '{{ old('seo_meta_description', $settings['seo_meta_description'] ?? '') }}',
+    seoAppTitleTemplate: '{{ old('seo_app_title_template', $settings['seo_app_title_template'] ?? '{title} for Mac - {site_name}') }}',
+    seoAppDescTemplate: '{{ old('seo_app_desc_template', $settings['seo_app_desc_template'] ?? '{title} for macOS. Safe, clean and verified software for Mac.') }}',
+    get previewAppTitle() {
+        const brand = (this.siteName || 'GigaMac') + (this.siteHighlight || '.site');
+        const tpl = this.seoAppTitleTemplate || '{title} for Mac - {site_name}';
+        return tpl
+            .replace('{title}', 'Roland Cloud AIRA Series 2025.04.18')
+            .replace('{version}', '2025.04.18')
+            .replace('{site_name}', brand)
+            .replace('{category}', 'Audio & Music');
+    },
+    get previewAppDesc() {
+        const brand = (this.siteName || 'GigaMac') + (this.siteHighlight || '.site');
+        const tpl = this.seoAppDescTemplate || '{title} for macOS. Safe, clean and verified software for Mac.';
+        return tpl
+            .replace('{title}', 'Roland Cloud AIRA Series 2025.04.18')
+            .replace('{version}', '2025.04.18')
+            .replace('{site_name}', brand)
+            .replace('{category}', 'Audio & Music');
+    },
     geminiApiKey: '{{ old('gemini_api_key', $settings['gemini_api_key'] ?? '') }}',
     geminiModel: '{{ old('gemini_model', $settings['gemini_model'] ?? 'gemini-2.5-flash') }}',
     showApiKey: false,
@@ -924,6 +944,90 @@
                     @endif
                     <input type="file" name="seo_og_image" accept="image/jpeg,image/png,image/webp"
                            class="w-full text-xs text-[#8C847A] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#201C18] file:text-white hover:file:bg-[#2A241F] file:cursor-pointer cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Plantilla SEO para Fichas de Programas / Apps -->
+            <div class="bg-[#14110E] border border-[#2B241C] rounded-2xl p-6 shadow-xl space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-[#241E18]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">SEO para Páginas de Programas / Apps</h3>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 font-mono font-bold">AUTOMATIZACIÓN</span>
+                </div>
+
+                <!-- Google Search Preview for Apps -->
+                <div class="p-4 rounded-xl bg-[#1A1612] border border-[#262019] space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#736B63]">Previsualización en Google (Ejemplo Real)</span>
+                        <span class="text-[10px] text-[#A8A199] font-mono">ficha individual</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-[#8C847A]">
+                        <span>{{ config('app.url') }}</span>
+                        <span>›</span>
+                        <span>app</span>
+                        <span>›</span>
+                        <span>roland-cloud-aira-series</span>
+                    </div>
+                    <h4 class="text-base font-bold text-[#8AB4F8] hover:underline cursor-pointer truncate"
+                        x-text="previewAppTitle">
+                    </h4>
+                    <p class="text-xs text-[#BDC1C6] leading-relaxed line-clamp-2"
+                        x-text="previewAppDesc">
+                    </p>
+                </div>
+
+                <!-- Title Template Input -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-[#A8A199] uppercase tracking-wider">Estructura del Título (&lt;title&gt;) de cada Programa</label>
+                        <span class="text-[11px] font-mono text-emerald-400 font-semibold">✓ Evita versiones repetidas automáticamente</span>
+                    </div>
+                    <input type="text" name="seo_app_title_template" x-model="seoAppTitleTemplate" value="{{ $settings['seo_app_title_template'] ?? '{title} for Mac - {site_name}' }}"
+                           class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors font-mono"
+                           placeholder="{title} for Mac - {site_name}">
+
+                    <!-- Variable Tags Helper -->
+                    <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                        <span class="text-[#736B63] text-[11px] font-medium mr-1">Variables disponibles (haz clic para insertar):</span>
+                        <button type="button" @click="seoAppTitleTemplate += ' {title}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {title}
+                        </button>
+                        <button type="button" @click="seoAppTitleTemplate += ' {version}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {version}
+                        </button>
+                        <button type="button" @click="seoAppTitleTemplate += ' - {site_name}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {site_name}
+                        </button>
+                        <button type="button" @click="seoAppTitleTemplate += ' {category}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {category}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fallback Meta Description Input -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-[#A8A199] uppercase tracking-wider">Plantilla de Meta Descripción de cada Programa</label>
+                        <span class="text-[11px] text-[#736B63]">Se usa cuando el programa no tiene descripción corta</span>
+                    </div>
+                    <textarea name="seo_app_desc_template" x-model="seoAppDescTemplate" rows="2"
+                              class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl p-3 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors resize-none font-mono"
+                              placeholder="{title} for macOS. Safe, clean and verified software for Mac.">{{ $settings['seo_app_desc_template'] ?? '{title} for macOS. Safe, clean and verified software for Mac.' }}</textarea>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-200/90">
+                    <svg class="w-4 h-4 shrink-0 text-amber-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>
+                        <strong>Consejo SEO para Google:</strong> Evita incluir la palabra <em>"Download"</em> al inicio del título. Google suele clasificar mejor títulos limpios como <code>{title} for Mac - {site_name}</code> o <code>{title} for macOS</code>. Además, nuestro motor limpiador detecta automáticamente si el nombre de la app ya trae la versión para no duplicarla jamás.
+                    </span>
                 </div>
             </div>
         </div>

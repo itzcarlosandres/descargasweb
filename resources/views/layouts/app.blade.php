@@ -22,9 +22,9 @@
     </script>
 
     @php
-        $siteTitle = setting('site_name', 'HackMac') . setting('site_name_highlight', '.cc');
-        $seoTitle = View::hasSection('title') ? trim(View::getSection('title')) : setting('seo_meta_title', $siteTitle . ' - Download Apps for macOS');
-        $seoDescription = View::hasSection('description') ? trim(View::getSection('description')) : setting('seo_meta_description', 'Discover and download verified applications and utilities for macOS.');
+        $siteTitle = setting('site_name', 'GigaMac') . setting('site_name_highlight', '.site');
+        $seoTitle = View::hasSection('title') ? trim(View::getSection('title')) : setting('seo_meta_title', $siteTitle . ' - Essential Apps for macOS');
+        $seoDescription = View::hasSection('description') ? trim(View::getSection('description')) : setting('seo_meta_description', 'Discover verified applications, utilities and software for macOS.');
         $seoImage = View::hasSection('og_image') 
             ? trim(View::getSection('og_image')) 
             : (setting('seo_og_image') ? asset(setting('seo_og_image')) : asset('images/og-share.jpg'));
@@ -34,7 +34,7 @@
 
     <title>{{ $seoTitle }}</title>
     <meta name="description" content="{{ $seoDescription }}">
-    <meta name="keywords" content="{{ setting('seo_keywords', 'mac apps, macos, apple silicon, software mac, dmg macos, hackmac, hackmac.cc') }}">
+    <meta name="keywords" content="{{ setting('seo_keywords', 'mac apps, macos, apple silicon, software mac, dmg macos, gigamac, gigamac.site') }}">
     <meta name="author" content="{{ $siteTitle }}">
     <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1')">
     <meta name="googlebot" content="@yield('googlebot', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1')">

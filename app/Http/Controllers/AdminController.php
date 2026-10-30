@@ -515,6 +515,8 @@ class AdminController extends Controller
             'favicon_image' => 'nullable|file|extensions:ico,png,svg,webp|max:2048',
             'seo_meta_title' => 'nullable|string|max:255',
             'seo_meta_description' => 'nullable|string|max:500',
+            'seo_app_title_template' => 'nullable|string|max:255',
+            'seo_app_desc_template' => 'nullable|string|max:500',
             'seo_keywords' => 'nullable|string|max:500',
             'seo_og_image' => 'nullable|image|max:3072',
             'site_tagline' => 'nullable|string|max:255',
@@ -595,6 +597,12 @@ class AdminController extends Controller
         }
         if ($request->has('seo_meta_description')) {
             Setting::set('seo_meta_description', $validated['seo_meta_description'] ?? null, 'seo');
+        }
+        if ($request->has('seo_app_title_template')) {
+            Setting::set('seo_app_title_template', $validated['seo_app_title_template'] ?? null, 'seo');
+        }
+        if ($request->has('seo_app_desc_template')) {
+            Setting::set('seo_app_desc_template', $validated['seo_app_desc_template'] ?? null, 'seo');
         }
         if ($request->has('seo_keywords')) {
             Setting::set('seo_keywords', $validated['seo_keywords'] ?? null, 'seo');

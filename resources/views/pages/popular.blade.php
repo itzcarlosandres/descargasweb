@@ -1,6 +1,10 @@
 <x-app-layout>
-    @section('title', 'Top 25 Most Downloaded Apps - ' . config('app.name'))
-    @section('description', 'Discover the 25 most downloaded Mac applications, developer tools, and games. Curated and updated for macOS.')
+    @php
+        $siteBrand = setting('site_name', config('app.name', 'GigaMac')) . setting('site_name_highlight', '');
+        $siteBrand = trim($siteBrand) ?: config('app.name', 'GigaMac');
+    @endphp
+    @section('title', "Top 25 Popular Apps for macOS - {$siteBrand}")
+    @section('description', 'Discover the 25 most popular Mac applications, developer tools, and games. Curated and updated for macOS.')
 
     <div class="container-app py-8 lg:py-12">
         <!-- Hero Header -->

@@ -4,8 +4,19 @@
         $selectedSize = $targetVersion && $targetVersion->size ? $targetVersion->size : $application->formatted_size;
         $downloadFormat = $isTorrent ? '.torrent File (P2P)' : 'macOS Installer (.dmg / .pkg)';
 
-        $pageTitle = "Downloading {$application->name} {$selectedVersion} for Mac - " . config('app.name');
-        $pageDesc = "Your download of {$application->name} {$selectedVersion} is ready. Safe, verified, and optimized software for Apple Silicon M1/M2/M3/M4 and Intel.";
+        $cleanName = trim($application->name);
+        $version = trim((string) $selectedVersion);
+        if (!empty($version) && !str_contains(strtolower($cleanName), strtolower($version))) {
+            $fullTitle = "{$cleanName} {$version}";
+        } else {
+            $fullTitle = $cleanName;
+        }
+
+        $siteBrand = setting('site_name', config('app.name', 'GigaMac')) . setting('site_name_highlight', '');
+        $siteBrand = trim($siteBrand) ?: config('app.name', 'GigaMac');
+
+        $pageTitle = "Get {$fullTitle} for Mac - {$siteBrand}";
+        $pageDesc = "{$fullTitle} for macOS is ready. Safe, verified, and optimized software for Apple Silicon M1/M2/M3/M4 and Intel.";
     @endphp
 
     @section('title', $pageTitle)

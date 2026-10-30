@@ -1,6 +1,10 @@
 <x-app-layout>
-    @section('title', "Download {$category->name} for macOS - " . config('app.name'))
-    @section('description', $category->description ?: "Explore and download the best {$category->name} apps for Mac. Safe, verified and direct downloads.")
+    @php
+        $siteBrand = setting('site_name', config('app.name', 'GigaMac')) . setting('site_name_highlight', '');
+        $siteBrand = trim($siteBrand) ?: config('app.name', 'GigaMac');
+    @endphp
+    @section('title', "{$category->name} Apps for macOS - {$siteBrand}")
+    @section('description', $category->description ?: "Explore the best {$category->name} software for Mac. Verified, curated and safe applications.")
     @section('canonical', route('category', $category->slug))
     @section('og_image', asset('images/og-share.jpg'))
 

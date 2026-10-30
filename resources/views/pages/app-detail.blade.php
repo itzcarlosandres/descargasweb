@@ -1,7 +1,34 @@
 <x-app-layout>
     @php
-        $appTitle = "Download {$application->name} {$application->version} for Mac - " . config('app.name');
-        $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: "Download {$application->name} {$application->version} for macOS. Safe and verified software.";
+        $cleanName = trim($application->name);
+        $version = trim((string) ($application->version ?? ''));
+        if (!empty($version) && !str_contains(strtolower($cleanName), strtolower($version))) {
+            $fullTitle = "{$cleanName} {$version}";
+        } else {
+            $fullTitle = $cleanName;
+        }
+
+        $siteBrand = setting('site_name', config('app.name', 'GigaMac')) . setting('site_name_highlight', '');
+        $siteBrand = trim($siteBrand) ?: config('app.name', 'GigaMac');
+        $categoryName = $application->category->name ?? 'macOS';
+
+        // Custom Title Template from Settings
+        $titleTemplate = setting('seo_app_title_template', '{title} for Mac - {site_name}');
+        $appTitle = str_replace(
+            ['{title}', '{version}', '{site_name}', '{category}'],
+            [$fullTitle, $version, $siteBrand, $categoryName],
+            $titleTemplate
+        );
+
+        // Custom Fallback Description Template from Settings
+        $descTemplate = setting('seo_app_desc_template', '{title} for macOS. Safe, clean and verified software for Mac.');
+        $fallbackDesc = str_replace(
+            ['{title}', '{version}', '{site_name}', '{category}'],
+            [$fullTitle, $version, $siteBrand, $categoryName],
+            $descTemplate
+        );
+
+        $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: $fallbackDesc;
         $shareImage = route('app.og-image', $application->slug);
     @endphp
 
