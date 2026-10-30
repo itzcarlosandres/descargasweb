@@ -2278,10 +2278,12 @@
                                       :class="topbarStyle === 'dark' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-black/25 text-white backdrop-blur-sm border border-white/20'"></span>
                                 <span class="font-medium" x-text="topbarText || 'Ingresa el texto informativo...'"></span>
                                 <span x-show="topbarButtonText"
-                                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm"
-                                      :class="topbarStyle === 'dark' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black' : 'bg-white text-[#181410]'">
-                                    <span x-text="topbarButtonText"></span>
-                                    <span>→</span>
+                                      style="color: #111827 !important; background-color: #ffffff !important;"
+                                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-md cursor-pointer flex-shrink-0">
+                                    <span style="color: #111827 !important;" x-text="topbarButtonText"></span>
+                                    <svg class="w-3 h-3 text-[#111827]" style="color: #111827 !important;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
                                 </span>
                             </div>
                             <span x-show="topbarClosable" class="text-white/60 text-xs px-1">✕</span>
