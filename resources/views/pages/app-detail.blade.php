@@ -20,15 +20,31 @@
             $titleTemplate
         );
 
-        // Custom Fallback Description Template from Settings
-        $descTemplate = setting('seo_app_desc_template', '{title} for macOS. Safe, clean and verified software for Mac.');
-        $fallbackDesc = str_replace(
-            ['{title}', '{version}', '{site_name}', '{category}'],
-            [$fullTitle, $version, $siteBrand, $categoryName],
-            $descTemplate
-        );
+        // Clean individual app description
+        $rawDesc = trim(strip_tags((string) ($application->short_description ?: $application->description ?: '')));
+        $rawDesc = preg_replace('/\s+/', ' ', $rawDesc);
+        $cleanDesc = Str::limit($rawDesc, 130, '...');
 
-        $appDesc = Str::limit(strip_tags($application->short_description ?: $application->description), 160) ?: $fallbackDesc;
+        // Custom Description Template from Settings
+        $descTemplate = setting('seo_app_desc_template', '{description} {title} for macOS. Safe, clean and verified software for Mac.');
+
+        if (str_contains($descTemplate, '{description}')) {
+            $descSnippet = !empty($cleanDesc) ? $cleanDesc : 'Safe, clean and verified software for Mac.';
+            $appDesc = str_replace(
+                ['{description}', '{title}', '{version}', '{site_name}', '{category}'],
+                [$descSnippet, $fullTitle, $version, $siteBrand, $categoryName],
+                $descTemplate
+            );
+        } else {
+            $fallbackDesc = str_replace(
+                ['{title}', '{version}', '{site_name}', '{category}'],
+                [$fullTitle, $version, $siteBrand, $categoryName],
+                $descTemplate
+            );
+            $appDesc = $cleanDesc ?: $fallbackDesc;
+        }
+
+        $appDesc = Str::limit(trim(preg_replace('/\s+/', ' ', $appDesc)), 160);
         $shareImage = route('app.og-image', $application->slug);
     @endphp
 

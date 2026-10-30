@@ -34,7 +34,7 @@ class Setting extends Model
         'seo_meta_title' => 'GigaMac.site - Aplicaciones y Software para macOS',
         'seo_meta_description' => 'Descubre las mejores aplicaciones y utilidades verificadas para macOS. Rápido, seguro y limpio.',
         'seo_app_title_template' => '{title} for Mac - {site_name}',
-        'seo_app_desc_template' => '{title} for macOS. Safe, clean and verified software for Mac.',
+        'seo_app_desc_template' => '{description} {title} for macOS. Safe, clean and verified software for Mac.',
         'seo_keywords' => 'mac apps, macos, apple silicon, gigamac, gigamac.site, utilidades mac, software mac, dmg macos',
         'seo_og_image' => 'images/og-share.jpg',
         'site_tagline' => 'Discover the best free Mac apps & games',
@@ -85,6 +85,14 @@ class Setting extends Model
         'notify_on_new_app' => '1',
         'notify_on_update' => '1',
         'notify_on_broken_link' => '1',
+        'topbar_enabled' => '0',
+        'topbar_text' => '🚀 Bienvenidos a GigaMac.site — Nuevo dominio oficial. Únete a nuestro canal para novedades.',
+        'topbar_badge' => 'AVISO',
+        'topbar_button_text' => 'Canal Telegram',
+        'topbar_button_url' => 'https://t.me/hackmac',
+        'topbar_style' => 'vip',
+        'topbar_closable' => '1',
+        'topbar_open_new_tab' => '1',
     ];
 
     /**

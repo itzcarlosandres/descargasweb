@@ -14,7 +14,7 @@
     seoTitle: '{{ old('seo_meta_title', $settings['seo_meta_title'] ?? '') }}',
     seoDesc: '{{ old('seo_meta_description', $settings['seo_meta_description'] ?? '') }}',
     seoAppTitleTemplate: '{{ old('seo_app_title_template', $settings['seo_app_title_template'] ?? '{title} for Mac - {site_name}') }}',
-    seoAppDescTemplate: '{{ old('seo_app_desc_template', $settings['seo_app_desc_template'] ?? '{title} for macOS. Safe, clean and verified software for Mac.') }}',
+    seoAppDescTemplate: '{{ old('seo_app_desc_template', $settings['seo_app_desc_template'] ?? '{description} {title} for macOS. Safe, clean and verified software for Mac.') }}',
     get previewAppTitle() {
         const brand = (this.siteName || 'GigaMac') + (this.siteHighlight || '.site');
         const tpl = this.seoAppTitleTemplate || '{title} for Mac - {site_name}';
@@ -26,8 +26,10 @@
     },
     get previewAppDesc() {
         const brand = (this.siteName || 'GigaMac') + (this.siteHighlight || '.site');
-        const tpl = this.seoAppDescTemplate || '{title} for macOS. Safe, clean and verified software for Mac.';
+        const tpl = this.seoAppDescTemplate || '{description} {title} for macOS. Safe, clean and verified software for Mac.';
+        const sampleDesc = 'Collection of vintage Roland synthesizers and drum machines modeled with component-level accuracy.';
         return tpl
+            .replace('{description}', sampleDesc)
             .replace('{title}', 'Roland Cloud AIRA Series 2025.04.18')
             .replace('{version}', '2025.04.18')
             .replace('{site_name}', brand)
@@ -87,6 +89,16 @@
     vipSubtext: '{{ old('vip_download_subtext', $settings['vip_download_subtext'] ?? 'Direct High-Speed Server • Max Priority • 0s Wait') }}',
     vipBadge: '{{ old('vip_download_badge', $settings['vip_download_badge'] ?? 'ULTRA FAST') }}',
     vipOpenNewTab: {{ old('vip_download_open_new_tab', (bool) ($settings['vip_download_open_new_tab'] ?? true)) ? 'true' : 'false' }},
+
+    // Top Bar Announcement State
+    topbarEnabled: {{ old('topbar_enabled', (bool) ($settings['topbar_enabled'] ?? false)) ? 'true' : 'false' }},
+    topbarText: '{{ addslashes(old('topbar_text', $settings['topbar_text'] ?? '🚀 Bienvenidos a GigaMac.site — Nuevo dominio oficial. Únete a nuestro canal para novedades.')) }}',
+    topbarBadge: '{{ addslashes(old('topbar_badge', $settings['topbar_badge'] ?? 'AVISO')) }}',
+    topbarButtonText: '{{ addslashes(old('topbar_button_text', $settings['topbar_button_text'] ?? 'Canal Telegram')) }}',
+    topbarButtonUrl: '{{ addslashes(old('topbar_button_url', $settings['topbar_button_url'] ?? 'https://t.me/hackmac')) }}',
+    topbarStyle: '{{ old('topbar_style', $settings['topbar_style'] ?? 'vip') }}',
+    topbarClosable: {{ old('topbar_closable', (bool) ($settings['topbar_closable'] ?? true)) ? 'true' : 'false' }},
+    topbarOpenNewTab: {{ old('topbar_open_new_tab', (bool) ($settings['topbar_open_new_tab'] ?? true)) ? 'true' : 'false' }},
 
     async testTelegramConnection() {
         if (!this.telegramBotToken || !this.telegramChannelId) {
@@ -493,7 +505,7 @@
                 <svg class="w-4 h-4 shrink-0 transition-colors" :class="tab === 'vip' ? 'text-amber-400' : 'text-[#8C847A] group-hover:text-white'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
-                <span>Botón VIP</span>
+                <span>Botón VIP & Top Bar</span>
             </button>
 
             <button type="button" @click="tab = 'scripts'"
@@ -1010,15 +1022,40 @@
                     </div>
                 </div>
 
-                <!-- Fallback Meta Description Input -->
+                <!-- Meta Description Template Input -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
-                        <label class="text-xs font-bold text-[#A8A199] uppercase tracking-wider">Plantilla de Meta Descripción de cada Programa</label>
-                        <span class="text-[11px] text-[#736B63]">Se usa cuando el programa no tiene descripción corta</span>
+                        <label class="text-xs font-bold text-[#A8A199] uppercase tracking-wider">Plantilla de Meta Descripción de cada Programa (&lt;meta name=&quot;description&quot;&gt;)</label>
+                        <span class="text-[11px] font-mono text-emerald-400 font-semibold">✓ Usa {description} para descripciones únicas en Google</span>
                     </div>
                     <textarea name="seo_app_desc_template" x-model="seoAppDescTemplate" rows="2"
                               class="w-full bg-[#12100E] border border-[#2B241C] focus:border-primary rounded-xl p-3 text-sm text-white placeholder-[#6E675E] focus:outline-none transition-colors resize-none font-mono"
-                              placeholder="{title} for macOS. Safe, clean and verified software for Mac.">{{ $settings['seo_app_desc_template'] ?? '{title} for macOS. Safe, clean and verified software for Mac.' }}</textarea>
+                              placeholder="{description} {title} for macOS. Safe, clean and verified software for Mac.">{{ $settings['seo_app_desc_template'] ?? '{description} {title} for macOS. Safe, clean and verified software for Mac.' }}</textarea>
+
+                    <!-- Variable Tags Helper for Description -->
+                    <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                        <span class="text-[#736B63] text-[11px] font-medium mr-1">Variables disponibles (haz clic para insertar):</span>
+                        <button type="button" @click="seoAppDescTemplate += ' {description}'"
+                                class="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 text-emerald-400 text-[11px] font-mono transition-colors cursor-pointer font-bold">
+                            {description} (Descripción de la App)
+                        </button>
+                        <button type="button" @click="seoAppDescTemplate += ' {title}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {title}
+                        </button>
+                        <button type="button" @click="seoAppDescTemplate += ' {version}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {version}
+                        </button>
+                        <button type="button" @click="seoAppDescTemplate += ' {site_name}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {site_name}
+                        </button>
+                        <button type="button" @click="seoAppDescTemplate += ' {category}'"
+                                class="px-2 py-0.5 rounded-lg bg-[#221C16] border border-[#3A3024] hover:border-sky-500/50 text-sky-400 text-[11px] font-mono transition-colors cursor-pointer">
+                            {category}
+                        </button>
+                    </div>
                 </div>
 
                 <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-200/90">
@@ -2183,10 +2220,153 @@
             </div>
         </div>
 
-        <!-- Tab: Botón Fake de Descarga VIP -->
+        <!-- Tab: Botón Fake de Descarga VIP & Top Bar -->
         <div x-show="tab === 'vip'" x-cloak class="space-y-6">
             @include('partials.vip-button-styles')
             <input type="hidden" name="vip_download_settings" value="1">
+
+            <!-- TOP BAR INFORMATIVA (ANNOUNCEMENT BAR) -->
+            <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl space-y-6">
+                <!-- Header Card with Toggle -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-[#241E18]">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 p-0.5 shadow-lg shadow-sky-500/20 flex-shrink-0 flex items-center justify-center">
+                            <div class="w-full h-full bg-[#18130E] rounded-[14px] flex items-center justify-center">
+                                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-base font-bold text-white tracking-tight">Barra Superior Informativa (Top Bar)</h2>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">GLOBAL AVISO</span>
+                            </div>
+                            <p class="text-xs text-[#8C847A] mt-0.5">
+                                Muestra una barra destacada en la parte superior de todo el portal para anunciar cambios de dominio, novedades importantes, enlaces a Telegram o promociones.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Switch -->
+                    <label class="relative inline-flex items-center cursor-pointer select-none flex-shrink-0">
+                        <input type="checkbox" name="topbar_enabled" value="1"
+                               x-model="topbarEnabled" class="sr-only peer">
+                        <div class="w-12 h-6 bg-[#2B241C] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#3A3025] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500 shadow-inner"></div>
+                        <span class="ml-3 text-xs font-bold" :class="topbarEnabled ? 'text-sky-400' : 'text-[#8C847A]'" x-text="topbarEnabled ? 'TOP BAR ACTIVA' : 'PAUSADA'"></span>
+                    </label>
+                </div>
+
+                <!-- Live Preview of Top Bar -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-[#736B63]">Previsualización en Vivo de la Barra</span>
+                        <span class="text-[10px] font-mono" :class="topbarEnabled ? 'text-emerald-400 font-bold' : 'text-[#736B63]'" x-text="topbarEnabled ? '● Visible en la web' : '○ Pausada'"></span>
+                    </div>
+
+                    <div class="rounded-xl overflow-hidden border border-[#2B241C] shadow-lg transition-all duration-300"
+                         :class="{
+                            'bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#EA580C] text-white': topbarStyle === 'vip',
+                            'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white': topbarStyle === 'sky',
+                            'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 text-white': topbarStyle === 'emerald',
+                            'bg-[#181410] border-b border-[#2E251C] text-[#E0D8CE]': topbarStyle === 'dark'
+                         }">
+                        <div class="py-2.5 px-4 flex items-center justify-between gap-3 text-xs">
+                            <div class="flex-1 flex flex-wrap items-center justify-center gap-2 text-center">
+                                <span x-show="topbarBadge" x-text="topbarBadge"
+                                      class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider uppercase"
+                                      :class="topbarStyle === 'dark' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-black/25 text-white backdrop-blur-sm border border-white/20'"></span>
+                                <span class="font-medium" x-text="topbarText || 'Ingresa el texto informativo...'"></span>
+                                <span x-show="topbarButtonText"
+                                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm"
+                                      :class="topbarStyle === 'dark' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black' : 'bg-white text-[#181410]'">
+                                    <span x-text="topbarButtonText"></span>
+                                    <span>→</span>
+                                </span>
+                            </div>
+                            <span x-show="topbarClosable" class="text-white/60 text-xs px-1">✕</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Fields Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                    <!-- Texto Principal Informativo -->
+                    <div class="col-span-1 md:col-span-2 space-y-2">
+                        <label class="block text-xs font-bold text-white flex items-center justify-between">
+                            <span>Texto del Mensaje Informativo <span class="text-danger">*</span></span>
+                            <span class="text-[11px] text-[#8C847A]" x-text="(topbarText ? topbarText.length : 0) + ' caracteres'"></span>
+                        </label>
+                        <input type="text" name="topbar_text" x-model="topbarText"
+                               placeholder="🚀 Bienvenidos a GigaMac.site — Nuevo dominio oficial. Únete a nuestro canal para novedades."
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all">
+                        <span class="text-[11px] text-[#8C847A] block">Mensaje visible para todos los usuarios en la parte superior de cada página.</span>
+                    </div>
+
+                    <!-- Badge / Etiqueta -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">Etiqueta / Badge</label>
+                        <input type="text" name="topbar_badge" x-model="topbarBadge"
+                               placeholder="AVISO"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all uppercase font-mono">
+                        <span class="text-[11px] text-[#8C847A] block">Ej: "AVISO", "NUEVO", "TELEGRAM", "VIP", "ACTUALIZACIÓN".</span>
+                    </div>
+
+                    <!-- Estilo Visual -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">Estilo de Color & Gradiente</label>
+                        <select name="topbar_style" x-model="topbarStyle"
+                                class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/60 rounded-xl text-xs text-white transition-all cursor-pointer">
+                            <option value="vip">🔥 Dorado VIP (Ámbar / Naranja radiante)</option>
+                            <option value="sky">💎 macOS Sky (Azul cielo / Apple)</option>
+                            <option value="emerald">🌿 Esmeralda (Verde éxito / lanzamiento)</option>
+                            <option value="dark">🌑 Dark Minimal (Gris oscuro moderno)</option>
+                        </select>
+                        <span class="text-[11px] text-[#8C847A] block">Elige la paleta que mejor combine con el aviso.</span>
+                    </div>
+
+                    <!-- Botón Texto -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">Texto del Botón de Acción (Opcional)</label>
+                        <input type="text" name="topbar_button_text" x-model="topbarButtonText"
+                               placeholder="Canal Telegram"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all">
+                        <span class="text-[11px] text-[#8C847A] block">Ej: "Canal Telegram", "Ver Detalles", "Unirme".</span>
+                    </div>
+
+                    <!-- Botón Enlace URL -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-white">Enlace de Destino (URL Opcional)</label>
+                        <input type="url" name="topbar_button_url" x-model="topbarButtonUrl"
+                               placeholder="https://t.me/hackmac"
+                               class="w-full px-4 py-2.5 bg-[#1B1713] border border-[#2F261E] focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/60 rounded-xl text-xs text-white placeholder-[#5A5248] transition-all font-mono">
+                        <span class="text-[11px] text-[#8C847A] block">URL a la que se dirigirá el usuario al hacer clic en el botón.</span>
+                    </div>
+
+                    <!-- Checkboxes de comportamiento -->
+                    <div class="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <label class="flex items-center gap-3 p-3.5 rounded-xl bg-[#1B1713] border border-[#2F261E] hover:border-[#3E342A] transition-all cursor-pointer">
+                            <input type="checkbox" name="topbar_closable" value="1"
+                                   x-model="topbarClosable"
+                                   class="w-4 h-4 rounded text-sky-500 bg-[#251F19] border-[#3E342A] focus:ring-0">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Permitir cerrar con botón "✕"</span>
+                                <span class="text-[11px] text-[#8C847A]">El usuario puede ocultar la barra y no se le vuelve a mostrar.</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-3 p-3.5 rounded-xl bg-[#1B1713] border border-[#2F261E] hover:border-[#3E342A] transition-all cursor-pointer">
+                            <input type="checkbox" name="topbar_open_new_tab" value="1"
+                                   x-model="topbarOpenNewTab"
+                                   class="w-4 h-4 rounded text-sky-500 bg-[#251F19] border-[#3E342A] focus:ring-0">
+                            <div>
+                                <span class="text-xs font-bold text-white block">Abrir enlace en pestaña nueva</span>
+                                <span class="text-[11px] text-[#8C847A]">Abre el link en otra pestaña para retener al visitante.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             <!-- Banner Card -->
             <div class="bg-[#14110E] border border-[#2B241C] p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

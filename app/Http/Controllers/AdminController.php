@@ -548,6 +548,14 @@ class AdminController extends Controller
             'vip_download_subtext' => 'nullable|string|max:150',
             'vip_download_badge' => 'nullable|string|max:50',
             'vip_download_open_new_tab' => 'nullable|boolean',
+            'topbar_enabled' => 'nullable|boolean',
+            'topbar_text' => 'nullable|string|max:500',
+            'topbar_badge' => 'nullable|string|max:50',
+            'topbar_button_text' => 'nullable|string|max:100',
+            'topbar_button_url' => 'nullable|string|max:1000',
+            'topbar_style' => 'nullable|string|in:vip,sky,emerald,dark',
+            'topbar_closable' => 'nullable|boolean',
+            'topbar_open_new_tab' => 'nullable|boolean',
         ]);
 
         // Text & Branding settings
@@ -706,7 +714,7 @@ class AdminController extends Controller
             Setting::set('notify_on_broken_link', $request->boolean('notify_on_broken_link') ? '1' : '0', 'notifications');
         }
 
-        // VIP Download Button Settings
+        // VIP Download Button & Top Bar Settings
         if ($request->has('vip_download_settings') || $request->input('active_tab') === 'vip') {
             Setting::set('vip_download_enabled', $request->boolean('vip_download_enabled') ? '1' : '0', 'vip');
             Setting::set('vip_download_url', trim((string) $request->input('vip_download_url', '')), 'vip');
@@ -714,6 +722,16 @@ class AdminController extends Controller
             Setting::set('vip_download_subtext', trim((string) $request->input('vip_download_subtext', 'Direct High-Speed Server • Max Priority • 0s Wait')), 'vip');
             Setting::set('vip_download_badge', trim((string) $request->input('vip_download_badge', 'ULTRA FAST')), 'vip');
             Setting::set('vip_download_open_new_tab', $request->boolean('vip_download_open_new_tab') ? '1' : '0', 'vip');
+
+            // Top Bar
+            Setting::set('topbar_enabled', $request->boolean('topbar_enabled') ? '1' : '0', 'vip');
+            Setting::set('topbar_text', trim((string) $request->input('topbar_text', '')), 'vip');
+            Setting::set('topbar_badge', trim((string) $request->input('topbar_badge', 'AVISO')), 'vip');
+            Setting::set('topbar_button_text', trim((string) $request->input('topbar_button_text', '')), 'vip');
+            Setting::set('topbar_button_url', trim((string) $request->input('topbar_button_url', '')), 'vip');
+            Setting::set('topbar_style', (string) $request->input('topbar_style', 'vip'), 'vip');
+            Setting::set('topbar_closable', $request->boolean('topbar_closable') ? '1' : '0', 'vip');
+            Setting::set('topbar_open_new_tab', $request->boolean('topbar_open_new_tab') ? '1' : '0', 'vip');
         }
 
         Setting::clearCache();

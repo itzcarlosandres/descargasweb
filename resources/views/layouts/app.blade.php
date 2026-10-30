@@ -107,6 +107,7 @@
         {!! setting('custom_body_code') !!}
     @endif
 
+    <x-topbar />
     <x-navbar />
 
     <main class="flex-1">
